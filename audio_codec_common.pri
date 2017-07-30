@@ -12,6 +12,8 @@ exists($$PWD/../../_common/lib_destdir.pri):{
 }
 exists($$PWD/../../_common/build_props.pri):{
     include($$PWD/../../_common/build_props.pri)
+} else {
+    include($$PWD/_common/build_props.pri)
 }
 
 # ================ Includes to install ===============
