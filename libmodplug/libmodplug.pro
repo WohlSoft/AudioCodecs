@@ -37,45 +37,46 @@ DEFINES += \
 
 HEADERS += \
     include/modplug.h \
-    config.h \
-    it_defs.h \
-    load_pat.h \
-    sndfile.h \
-    stdafx.h \
-    tables.h
+    src/config.h \
+    src/it_defs.h \
+    src/load_pat.h \
+    src/sndfile.h \
+    src/stdafx.h \
+    src/tables.h
 
 SOURCES += \
-    fastmix.cpp \
-    load_669.cpp \
-    load_abc.cpp \
-    load_amf.cpp \
-    load_ams.cpp \
-    load_dbm.cpp \
-    load_dmf.cpp \
-    load_dsm.cpp \
-    load_far.cpp \
-    load_it.cpp \
-    # load_j2b.cpp \
-    load_mdl.cpp \
-    load_med.cpp \
-    load_mid.cpp \
-    load_mod.cpp \
-    load_mt2.cpp \
-    load_mtm.cpp \
-    load_okt.cpp \
-    load_pat.cpp \
-    load_psm.cpp \
-    load_ptm.cpp \
-    load_s3m.cpp \
-    load_stm.cpp \
-    load_ult.cpp \
-    load_umx.cpp \
-    load_wav.cpp \
-    load_xm.cpp \
-    mmcmp.cpp \
-    modplug.cpp \
-    snd_dsp.cpp \
-    snd_flt.cpp \
-    snd_fx.cpp \
-    sndfile.cpp \
-    sndmix.cpp
+    src/fastmix.cpp \
+    src/load_669.cpp \
+    src/load_abc.cpp \
+    src/load_amf.cpp \
+    src/load_ams.cpp \
+    src/load_dbm.cpp \
+    src/load_dmf.cpp \
+    src/load_dsm.cpp \
+    src/load_far.cpp \
+    src/load_it.cpp \
+    # src/load_j2b.cpp \
+    src/load_mdl.cpp \
+    src/load_med.cpp \
+    src/load_mid.cpp \
+    src/load_mod.cpp \
+    src/load_mt2.cpp \
+    src/load_mtm.cpp \
+    src/load_okt.cpp \
+    src/load_pat.cpp \
+    src/load_psm.cpp \
+    src/load_ptm.cpp \
+    src/load_s3m.cpp \
+    src/load_stm.cpp \
+    src/load_ult.cpp \
+    src/load_umx.cpp \
+    src/load_wav.cpp \
+    src/load_xm.cpp \
+    src/mmcmp.cpp \
+    src/modplug.cpp \
+    src/snd_dsp.cpp \
+    src/snd_flt.cpp \
+    src/snd_fx.cpp \
+    src/sndfile.cpp \
+    src/sndmix.cpp
+

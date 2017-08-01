@@ -34,41 +34,42 @@ LIBS += -lSDL2
 
 HEADERS += \
     include/id3tag.h \
-    compat.h \
+    src/compat.h \
     crc.h \
-    debug.h \
-    field.h \
-    file.h \
-    frame.h \
-    frametype.h \
-    genre.h \
-    global.h \
-    latin1.h \
-    parse.h \
-    render.h \
-    tag.h \
-    ucs4.h \
-    utf8.h \
-    utf16.h \
-    util.h \
-    version.h
+    src/debug.h \
+    src/field.h \
+    src/file.h \
+    src/frame.h \
+    src/frametype.h \
+    src/genre.h \
+    src/global.h \
+    src/latin1.h \
+    src/parse.h \
+    src/render.h \
+    src/tag.h \
+    src/ucs4.h \
+    src/utf8.h \
+    src/utf16.h \
+    src/util.h \
+    src/version.h
 
 SOURCES += \
-    id3_file.c \
-    id3_compat.c \
-    id3_crc.c \
-    id3_field.c \
-    id3_frame.c \
-    id3_frametype.c \
-    id3_genre.c \
-    id3_latin1.c \
-    id3_parse.c \
-    id3_render.c \
-    id3_tag.c \
-    id3_ucs4.c \
-    id3_utf16.c \
-    id3_utf8.c \
-    id3_util.c \
-    id3_version.c
+    src/id3_file.c \
+    src/id3_compat.c \
+    src/id3_crc.c \
+    src/id3_field.c \
+    src/id3_frame.c \
+    src/id3_frametype.c \
+    src/id3_genre.c \
+    src/id3_latin1.c \
+    src/id3_parse.c \
+    src/id3_render.c \
+    src/id3_tag.c \
+    src/id3_ucs4.c \
+    src/id3_utf16.c \
+    src/id3_utf8.c \
+    src/id3_util.c \
+    src/id3_version.c
 
 contains(DEFINES, DEBUG): include($$PWD/debug.pri)
+

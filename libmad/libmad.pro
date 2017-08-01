@@ -33,36 +33,36 @@ HEADERS +=\
     include/mad.h
 
 HEADERS += \
-    bit.h \
-    decoder.h \
-    fixed.h \
-    frame.h \
-    global.h \
-    huffman.h \
-    layer12.h \
-    layer3.h \
-    stream.h \
-    synth.h \
-    timer.h \
-    version.h \
-    config.h
+    src/bit.h \
+    src/decoder.h \
+    src/fixed.h \
+    src/frame.h \
+    src/global.h \
+    src/huffman.h \
+    src/layer12.h \
+    src/layer3.h \
+    src/stream.h \
+    src/synth.h \
+    src/timer.h \
+    src/version.h \
+    src/config.h
 
 SOURCES += \
-    bit.c \
-    decoder.c \
-    fixed.c \
-    frame.c \
-    huffman.c \
-    layer12.c \
-    layer3.c \
-    stream.c \
-    synth.c \
-    timer.c \
-    version.c
+    src/bit.c \
+    src/decoder.c \
+    src/fixed.c \
+    src/frame.c \
+    src/huffman.c \
+    src/layer12.c \
+    src/layer3.c \
+    src/stream.c \
+    src/synth.c \
+    src/timer.c \
+    src/version.c
 
 DISTFILES += \
-    D.dat \
-    qc_table.dat \
-    rq_table.dat \
-    sf_table.dat \
-    imdct_s.dat
+    src/D.dat \
+    src/qc_table.dat \
+    src/rq_table.dat \
+    src/sf_table.dat \
+    src/imdct_s.dat

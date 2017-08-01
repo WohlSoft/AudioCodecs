@@ -1,3 +1,3 @@
 SOURCES += \
-    $$PWD/id3_debug.c \
+    $$PWD/src/id3_debug.c \
 

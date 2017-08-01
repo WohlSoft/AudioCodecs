@@ -17,20 +17,19 @@ INCLUDEPATH += $$PWD $$PWD/include
 
 HEADERS += \
     include/opnmidi.h \
-    fraction.h \
-    gm_opn_bank.h \
-    opnbank.h \
-    opnmidi_mus2mid.h \
-    opnmidi_private.hpp \
-    opnmidi_xmi2mid.h \
-    Ym2612_ChipEmu.h
+    src/fraction.h \
+    src/opnbank.h \
+    src/opnmidi_mus2mid.h \
+    src/opnmidi_private.hpp \
+    src/opnmidi_xmi2mid.h \
+    src/Ym2612_ChipEmu.h
 
 SOURCES += \
-    opnmidi.cpp \
-    opnmidi_load.cpp \
-    opnmidi_midiplay.cpp \
-    opnmidi_opn2.cpp \
-    opnmidi_private.cpp \
-    Ym2612_ChipEmu.cpp \
-    opnmidi_mus2mid.c \
-    opnmidi_xmi2mid.c
+    src/opnmidi.cpp \
+    src/opnmidi_load.cpp \
+    src/opnmidi_midiplay.cpp \
+    src/opnmidi_opn2.cpp \
+    src/opnmidi_private.cpp \
+    src/Ym2612_ChipEmu.cpp \
+    src/opnmidi_mus2mid.c \
+    src/opnmidi_xmi2mid.c

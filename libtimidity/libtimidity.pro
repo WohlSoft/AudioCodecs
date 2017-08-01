@@ -22,31 +22,31 @@ LIBS += -lSDL2
 
 HEADERS += \
     include/timidity.h \
-    common.h \
-    config.h \
-    ctrlmode.h \
-    filter.h \
-    instrum.h \
-    mix.h \
-    output.h \
-    playmidi.h \
-    readmidi.h \
-    resample.h \
-    tables.h \
+    src/common.h \
+    src/config.h \
+    src/ctrlmode.h \
+    src/filter.h \
+    src/instrum.h \
+    src/mix.h \
+    src/output.h \
+    src/playmidi.h \
+    src/readmidi.h \
+    src/resample.h \
+    src/tables.h \
 
 
 SOURCES += \
-    common.c \
-    filter.c \
-    instrum.c \
-    mix.c \
-    output.c \
-    playmidi.c \
-    readmidi.c \
-    sdl_a.c \
-    sdl_c.c \
-    tables.c \
-    timidity.c \
-    ctrlmode.c \
-    resample_timidity.c
+    src/common.c \
+    src/filter.c \
+    src/instrum.c \
+    src/mix.c \
+    src/output.c \
+    src/playmidi.c \
+    src/readmidi.c \
+    src/sdl_a.c \
+    src/sdl_c.c \
+    src/tables.c \
+    src/timidity.c \
+    src/ctrlmode.c \
+    src/resample_timidity.c
 

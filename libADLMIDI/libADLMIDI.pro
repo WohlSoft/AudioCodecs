@@ -17,20 +17,20 @@ INCLUDEPATH += $$PWD $$PWD/include
 
 HEADERS += \
     include/adlmidi.h \
-    adldata.hh \
-    adlmidi_mus2mid.h \
-    adlmidi_private.hpp \
-    adlmidi_xmi2mid.h \
-    fraction.h \
-    nukedopl3.h
+    src/adldata.hh \
+    src/adlmidi_mus2mid.h \
+    src/adlmidi_private.hpp \
+    src/adlmidi_xmi2mid.h \
+    src/fraction.h \
+    src/nukedopl3.h
 
 SOURCES += \
-    adldata.cpp \
-    adlmidi.cpp \
-    adlmidi_load.cpp \
-    adlmidi_midiplay.cpp \
-    adlmidi_opl3.cpp \
-    adlmidi_private.cpp \
-    adlmidi_mus2mid.c \
-    adlmidi_xmi2mid.c \
-    nukedopl3.c
+    src/adldata.cpp \
+    src/adlmidi.cpp \
+    src/adlmidi_load.cpp \
+    src/adlmidi_midiplay.cpp \
+    src/adlmidi_opl3.cpp \
+    src/adlmidi_private.cpp \
+    src/adlmidi_mus2mid.c \
+    src/adlmidi_xmi2mid.c \
+    src/nukedopl3.c
