@@ -1,6 +1,8 @@
 cmake_minimum_required (VERSION 2.8.11)
 project (libID3TAG)
 
+include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
+
 add_library(id3tag STATIC
     src/id3_file.c
     src/id3_compat.c
