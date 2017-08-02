@@ -37,3 +37,6 @@ CMakeFiles
 CMakeCache.txt
 cmake_install.cmake
 
+# libSDL2 must not be included here since it will be fetched separately
+/libSDL2/
+
