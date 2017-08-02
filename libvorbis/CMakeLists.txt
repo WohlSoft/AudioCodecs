@@ -1,6 +1,8 @@
 cmake_minimum_required (VERSION 2.8.11)
 project (libVorbis)
 
+include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
+
 add_definitions(
     -DHAVE_CONFIG_H
 )
