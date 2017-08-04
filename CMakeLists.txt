@@ -17,7 +17,6 @@ add_subdirectory(zlib)
 add_subdirectory(libgme)
 add_subdirectory(libtimidity)
 add_subdirectory(libmodplug)
-add_subdirectory(libtimidity)
 add_subdirectory(libADLMIDI)
 add_subdirectory(libOPNMIDI)
 
