@@ -7,13 +7,15 @@ CONFIG  -= qt
 CONFIG  += staticlib
 
 TARGET = smpeg
-INSTALLINCLUDES = $$PWD/smpeg.h
+INSTALLINCLUDES = $$PWD/include/smpeg.h
 include($$PWD/../audio_codec_common.pri)
 
 win*-msvc*: {
 DEFINES += _CRT_SECURE_NO_WARNINGS
 QMAKE_CFLAGS += /wd4244 /wd4146
 }
+
+INCLUDEPATH += $$PWD/src/ $$PWD/include/
 
 debug {
     DEFINES += DEBUG
@@ -27,49 +29,49 @@ debug {
 DEFINES += NOCONTROLS
 
 HEADERS +=\
-    smpeg.h \
-    MPEG.h \
-    MPEGaction.h \
-    MPEGaudio.h \
-    MPEGerror.h \
-    MPEGframe.h \
-    MPEGlist.h \
-    MPEGring.h \
-    MPEGstream.h \
-    MPEGsystem.h \
-    MPEGvideo.h \
-    video/decoders.h \
-    video/dither.h \
-    video/proto.h \
-    video/util.h \
-    video/video.h
+    $$PWD/include/smpeg.h \
+    $$PWD/src/MPEG.h \
+    $$PWD/src/MPEGaction.h \
+    $$PWD/src/MPEGaudio.h \
+    $$PWD/src/MPEGerror.h \
+    $$PWD/src/MPEGframe.h \
+    $$PWD/src/MPEGlist.h \
+    $$PWD/src/MPEGring.h \
+    $$PWD/src/MPEGstream.h \
+    $$PWD/src/MPEGsystem.h \
+    $$PWD/src/MPEGvideo.h \
+    $$PWD/src/video/decoders.h \
+    $$PWD/src/video/dither.h \
+    $$PWD/src/video/proto.h \
+    $$PWD/src/video/util.h \
+    $$PWD/src/video/video.h
 
 SOURCES += \
-    MPEG.cpp \
-    MPEGlist.cpp \
-    MPEGring.cpp \
-    MPEGstream.cpp \
-    MPEGsystem.cpp \
-    smpeg.cpp \
-    audio/bitwindow.cpp \
-    audio/filter.cpp \
-    audio/filter_2.cpp \
-    audio/hufftable.cpp \
-    audio/MPEGaudio.cpp \
-    audio/mpeglayer1.cpp \
-    audio/mpeglayer2.cpp \
-    audio/mpeglayer3.cpp \
-    audio/mpegtable.cpp \
-    audio/mpegtoraw.cpp \
-    video/decoders.cpp \
-    video/floatdct.cpp \
-    video/gdith.cpp \
-    video/jrevdct.cpp \
-    video/motionvec.cpp \
-    video/MPEGvideo.cpp \
-    video/parseblock.cpp \
-    video/readfile.cpp \
-    video/util.cpp \
-    video/video.cpp \
-    video/mmxflags_asm.S \
-    video/mmxidct_asm.S
+    $$PWD/src/MPEG.cpp \
+    $$PWD/src/MPEGlist.cpp \
+    $$PWD/src/MPEGring.cpp \
+    $$PWD/src/MPEGstream.cpp \
+    $$PWD/src/MPEGsystem.cpp \
+    $$PWD/src/smpeg.cpp \
+    $$PWD/src/audio/bitwindow.cpp \
+    $$PWD/src/audio/filter.cpp \
+    $$PWD/src/audio/filter_2.cpp \
+    $$PWD/src/audio/hufftable.cpp \
+    $$PWD/src/audio/MPEGaudio.cpp \
+    $$PWD/src/audio/mpeglayer1.cpp \
+    $$PWD/src/audio/mpeglayer2.cpp \
+    $$PWD/src/audio/mpeglayer3.cpp \
+    $$PWD/src/audio/mpegtable.cpp \
+    $$PWD/src/audio/mpegtoraw.cpp \
+    $$PWD/src/video/decoders.cpp \
+    $$PWD/src/video/floatdct.cpp \
+    $$PWD/src/video/gdith.cpp \
+    $$PWD/src/video/jrevdct.cpp \
+    $$PWD/src/video/motionvec.cpp \
+    $$PWD/src/video/MPEGvideo.cpp \
+    $$PWD/src/video/parseblock.cpp \
+    $$PWD/src/video/readfile.cpp \
+    $$PWD/src/video/util.cpp \
+    $$PWD/src/video/video.cpp \
+    $$PWD/src/video/mmxflags_asm.S \
+    $$PWD/src/video/mmxidct_asm.S
