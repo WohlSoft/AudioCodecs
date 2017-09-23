@@ -17,6 +17,7 @@ SUBDIRS += libFLAC
 libvorbis.depends = libogg
 libFLAC.depends = libogg
 SUBDIRS += libmad
+SUBDIRS += smpeg
 SUBDIRS += libid3tag
 SUBDIRS += libgme
 libgme.depends = zlib
