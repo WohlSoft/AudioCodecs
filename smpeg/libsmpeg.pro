@@ -22,6 +22,8 @@ debug {
     QMAKE_CFLAGS += -O3
 }
 
+*g++*||*clang*: QMAKE_CXXFLAGS_WARN_ON += -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-type-limits
+
 DEFINES += NOCONTROLS
 
 HEADERS +=\
