@@ -478,13 +478,13 @@ int Play_MPEGaudio(MPEGaudio *audio, Uint8 *stream, int len)
         assert(copylen >= 0);
         if ( copylen >= len ) {
             SDL_MixAudioFormat(stream, (Uint8 *)&audio->spillover[audio->rawdatareadoffset],
-                                                       audio->format, len*2, volume);
+                                                       audio->format, (Uint32)len*2, volume);
             mixed += len*2;
             audio->rawdatareadoffset += len;
             goto finished_mixing;
         }
         SDL_MixAudioFormat(stream, (Uint8 *)&audio->spillover[audio->rawdatareadoffset],
-                                                       audio->format, copylen*2, volume);
+                                                       audio->format, (Uint32)copylen*2, volume);
         mixed += copylen*2;
         len -= copylen;
         stream += copylen*2;
@@ -503,7 +503,7 @@ int Play_MPEGaudio(MPEGaudio *audio, Uint8 *stream, int len)
     audio->rawdatawriteoffset = 0;
     if ( audio->run(1) ) {
         assert(audio->rawdatawriteoffset > len);
-        SDL_MixAudioFormat(stream, (Uint8 *) audio->spillover, audio->format, len*2, volume);
+        SDL_MixAudioFormat(stream, (Uint8 *) audio->spillover, audio->format, (Uint32)len*2, volume);
         mixed += len*2;
         audio->rawdatareadoffset = len;
     } else {

@@ -15,7 +15,7 @@ DEFINES += _CRT_SECURE_NO_WARNINGS
 QMAKE_CFLAGS += /wd4244 /wd4146
 }
 
-INCLUDEPATH += $$PWD/src/ $$PWD/include/
+INCLUDEPATH += $$PWD/src/ $$PWD/include/smpeg/
 
 debug {
     DEFINES += DEBUG
@@ -46,12 +46,12 @@ DEFINES += \
 }
 
 HEADERS +=\
-    $$PWD/include/smpeg.h \
+    $$PWD/include/smneg/smpeg.h \
+    $$PWD/include/smneg/MPEGframe.h \
     $$PWD/src/MPEG.h \
     $$PWD/src/MPEGaction.h \
     $$PWD/src/MPEGaudio.h \
     $$PWD/src/MPEGerror.h \
-    $$PWD/src/MPEGframe.h \
     $$PWD/src/MPEGlist.h \
     $$PWD/src/MPEGring.h \
     $$PWD/src/MPEGstream.h \

@@ -15,6 +15,7 @@ add_definitions(
     -DHAVE_INTTYPES_H=1
     -DHAVE_STDINT_H=1
     -D_THREAD_SAFE
+    -DTHREADED_AUDIO
 )
 
 IF(NOT WIN32)
@@ -55,7 +56,7 @@ add_library(smpeg STATIC
     src/video/mmxidct_asm.S
 )
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/smpeg)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 target_include_directories(smpeg PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
