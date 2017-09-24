@@ -16,3 +16,12 @@ add_library(OPNMIDI STATIC
 
 target_include_directories(OPNMIDI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+install(TARGETS OPNMIDI
+        LIBRARY DESTINATION "lib"
+        ARCHIVE DESTINATION "lib"
+        INCLUDES DESTINATION "include")
+
+install(FILES
+        include/opnmidi.h
+        DESTINATION include/)
+

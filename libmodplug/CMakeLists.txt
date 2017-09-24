@@ -55,3 +55,12 @@ add_library(modplug STATIC
 
 target_include_directories(modplug PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+install(TARGETS modplug
+        LIBRARY DESTINATION "lib"
+        ARCHIVE DESTINATION "lib"
+        INCLUDES DESTINATION "include")
+
+install(FILES
+        include/modplug.h
+        DESTINATION include/)
+

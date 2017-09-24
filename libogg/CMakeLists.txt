@@ -10,3 +10,15 @@ add_library(ogg STATIC
 
 target_include_directories(ogg PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+
+install(TARGETS ogg
+        LIBRARY DESTINATION "lib"
+        ARCHIVE DESTINATION "lib"
+        INCLUDES DESTINATION "include")
+
+install(FILES
+        include/ogg/config_types.h
+        include/ogg/ogg.h
+        include/ogg/os_types.h
+        DESTINATION include/ogg)
+

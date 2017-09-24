@@ -37,3 +37,20 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libogg/include)
 
 target_include_directories(FLAC PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+install(TARGETS FLAC
+        LIBRARY DESTINATION "lib"
+        ARCHIVE DESTINATION "lib"
+        INCLUDES DESTINATION "include")
+
+install(FILES
+        include/FLAC/all.h
+        include/FLAC/assert.h
+        include/FLAC/callback.h
+        include/FLAC/export.h
+        include/FLAC/format.h
+        include/FLAC/metadata.h
+        include/FLAC/ordinals.h
+        include/FLAC/stream_decoder.h
+        include/FLAC/stream_encoder.h
+        DESTINATION include/FLAC/)
+

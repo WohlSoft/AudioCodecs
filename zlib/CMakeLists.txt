@@ -30,3 +30,14 @@ add_library(zlib STATIC
 
 target_include_directories(zlib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+install(TARGETS zlib
+        LIBRARY DESTINATION "lib"
+        ARCHIVE DESTINATION "lib"
+        INCLUDES DESTINATION "include")
+
+install(FILES
+        include/zconf.h
+        include/zlib.h
+        include/zutil.h
+        DESTINATION include/)
+

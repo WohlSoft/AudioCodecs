@@ -26,3 +26,12 @@ target_link_libraries(id3tag SDL2)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2/include)
 target_include_directories(id3tag PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+install(TARGETS id3tag
+        LIBRARY DESTINATION "lib"
+        ARCHIVE DESTINATION "lib"
+        INCLUDES DESTINATION "include")
+
+install(FILES
+        include/id3tag.h
+        DESTINATION include/)
+

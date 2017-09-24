@@ -63,4 +63,12 @@ target_link_libraries(gme zlib)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../zlib/include)
 target_include_directories(gme PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+install(TARGETS gme
+        LIBRARY DESTINATION "lib"
+        ARCHIVE DESTINATION "lib"
+        INCLUDES DESTINATION "include")
+
+install(FILES
+        include/gme.h
+        DESTINATION include/)
 

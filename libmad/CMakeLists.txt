@@ -24,3 +24,12 @@ add_library(mad STATIC
 
 target_include_directories(mad PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+install(TARGETS mad
+        LIBRARY DESTINATION "lib"
+        ARCHIVE DESTINATION "lib"
+        INCLUDES DESTINATION "include")
+
+install(FILES
+        include/mad.h
+        DESTINATION include/)
+

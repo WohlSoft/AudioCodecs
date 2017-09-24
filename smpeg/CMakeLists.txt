@@ -56,8 +56,29 @@ add_library(smpeg STATIC
     src/video/mmxidct_asm.S
 )
 
+# libSDL2
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../libSDL2/include/")
+    # TODO: Implement automatical downloading and unpacking of hg.libsdl.org/SDL
+    # or using of separated repository for libSDL's backup
+    message("SDL2 found in ${CMAKE_CURRENT_SOURCE_DIR}/../libSDL2/include folder")
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libSDL2/include)
+else()
+    find_library(SDL2_LIBRARY SDL2)
+    message("Found ${SDL2_LIBRARY}")
+endif()
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/smpeg)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 target_include_directories(smpeg PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+install(TARGETS smpeg
+        LIBRARY DESTINATION "lib"
+        ARCHIVE DESTINATION "lib"
+        INCLUDES DESTINATION "include")
+
+install(FILES
+        include/smpeg/smpeg.h
+        include/smpeg/MPEGframe.h
+        DESTINATION include/smpeg/)
 
