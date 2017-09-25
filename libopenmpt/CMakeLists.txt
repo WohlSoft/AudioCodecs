@@ -135,9 +135,9 @@ add_library(openmpt STATIC
     src/soundlib/XMTools.cpp
 )
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/build/svn_version)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/common)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/build/svn_version)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/libopenmpt)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/libmodplug)
