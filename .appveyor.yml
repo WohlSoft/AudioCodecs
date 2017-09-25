@@ -3,7 +3,7 @@ version: 1.0.{build}
 build_script:
   - cmd: md build
   - cmd: cd build
-  - cmd: set PATH=%PATH%;D:\Program Files\Git\bin
+  - cmd: set PATH=C:\MinGW\msys\1.0;%PATH%
   - cmd: cmake -G "MinGW Makefiles" %* -DCMAKE_CXX_COMPILER="C:/MinGW/bin/g++.exe" -DCMAKE_C_COMPILER="C:/MinGW/bin/gcc.exe" -DDOWNLOAD_SDL2_DEPENDENCY=ON -DCMAKE_INSTALL_PREFIX=test ..
   - cmd: cmake --build . --config release -j 2
   - cmd: mingw32-make install
