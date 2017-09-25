@@ -35,7 +35,9 @@ add_subdirectory(zlib)
 add_subdirectory(libgme)
 add_subdirectory(libtimidity)
 add_subdirectory(libmodplug)
-add_subdirectory(libopenmpt)
+if(NOT MSVC)
+    # For now this is not buildable under MSVC yet :-(
+    add_subdirectory(libopenmpt)
+endif()
 add_subdirectory(libADLMIDI)
 add_subdirectory(libOPNMIDI)
-
