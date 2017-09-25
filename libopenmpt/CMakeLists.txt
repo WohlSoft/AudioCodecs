@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 2.8.11)
 project (libOpenMPT)
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
+include(${libOpenMPT_SOURCE_DIR}/../audio_codec_common.cmake)
 
 macro(use_cxx11)
   if (CMAKE_VERSION VERSION_LESS "3.1")
@@ -135,14 +135,14 @@ add_library(openmpt STATIC
     src/soundlib/XMTools.cpp
 )
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/build/svn_version)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/common)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/libopenmpt)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/libmodplug)
+include_directories(${libOpenMPT_SOURCE_DIR}/src/build/svn_version)
+include_directories(${libOpenMPT_SOURCE_DIR}/src)
+include_directories(${libOpenMPT_SOURCE_DIR}/src/common)
+include_directories(${libOpenMPT_SOURCE_DIR}/include)
+include_directories(${libOpenMPT_SOURCE_DIR}/include/libopenmpt)
+include_directories(${libOpenMPT_SOURCE_DIR}/include/libmodplug)
 
-target_include_directories(openmpt PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(openmpt PUBLIC ${libOpenMPT_SOURCE_DIR}/include)
 
 install(TARGETS openmpt
         LIBRARY DESTINATION "lib"
