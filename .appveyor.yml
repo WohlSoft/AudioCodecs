@@ -5,7 +5,7 @@ build_script:
   - cmd: cd build
   - cmd: set PATH=C:\MinGW\bin;%PATH:C:\Program Files\Git\usr\bin;=%
   - cmd: echo %PATH%
-  - cmd: cmake -G "MinGW Makefiles" -DCMAKE_PREFIX_PATH=C:\MinGW -DDOWNLOAD_SDL2_DEPENDENCY=ON -DCMAKE_INSTALL_PREFIX=test ..
+  - cmd: cmake -G "MinGW Makefiles" -DDOWNLOAD_SDL2_DEPENDENCY=ON -DCMAKE_INSTALL_PREFIX=test ..
   - cmd: cmake --build . --config release -- -j 2
   - cmd: mingw32-make install
   - cmd: mingw32-make clean

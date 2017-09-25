@@ -18,6 +18,7 @@ use_cxx11()
 add_definitions(
     -DHAVE_CONFIG_H
     -DLIBOPENMPT_BUILD
+    -DMPT_ENABLE_FILEIO_STDIO
     #-DMODPLUG_TRACKER
 )
 if(NOT WIN32)
