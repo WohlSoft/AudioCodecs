@@ -20,6 +20,7 @@ Note: to build libid3tag and libtimidity, you need have latest libSDL2 be instal
 * **libModPlug:** Public Domain
 * **libOGG:** BSD 3-clause "New" or "Revised" License
 * **libOPNMIDI:** GNU LGPLv3+ or GNU GPLv3+
+* **libOpenMPT:** BSD
 * **libSMPEG:** GNU LGPLv2+
 * **libTimidity:** The "Artistic License"
 * **libVorbis:** BSD 3-clause "New" or "Revised" License
@@ -32,6 +33,7 @@ Note: to build libid3tag and libtimidity, you need have latest libSDL2 be instal
 * libFLAC
 * libModPlug
 * libOGG
+* libOpenMPT
 * libTimidity
 * libVorbis
 * libZlib
@@ -44,6 +46,7 @@ Note: to build libid3tag and libtimidity, you need have latest libSDL2 be instal
 * libMikMod
 * libModPlug
 * libOGG
+* libOpenMPT
 * libSMPEG
 * libTimidity
 * libVorbis
