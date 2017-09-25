@@ -1,0 +1,17 @@
+*.bat				linguist-vendored text eol=crlf
+CMakeLists.txt		linguist-vendored
+*.cmake				linguist-vendored
+*.cmd				linguist-vendored
+*.sh				linguist-vendored
+*.ac				linguist-vendored
+*.m4				linguist-vendored
+*.mk				linguist-vendored
+*.md				linguist-vendored
+*.plist				linguist-vendored
+*.vcxproj			linguist-vendored
+*.filters			linguist-vendored
+*.pro				linguist-vendored
+*.pri				linguist-vendored
+*.html				linguist-vendored
+*.txt				text eol=crlf
+
