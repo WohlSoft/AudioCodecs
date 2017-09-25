@@ -20,6 +20,15 @@ add_definitions(
     -DLIBOPENMPT_BUILD
     #-DMODPLUG_TRACKER
 )
+if(NOT WIN32)
+add_definitions(
+	-DMPT_WITH_VORBIS
+	-DMPT_WITH_OGG
+	-DMPT_WITH_VORBISFILE
+	-DMPT_WITH_FLAC
+	-DMPT_WITH_ZLIB
+	)
+endif()
 
 add_library(openmpt STATIC
     src/common/ComponentManager.cpp
@@ -142,6 +151,12 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/libopenmpt)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/libmodplug)
 
+target_link_libraries(openmpt zlib)
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../zlib/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libogg/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libvorbis/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libFLAC/include)
 target_include_directories(openmpt PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 install(TARGETS openmpt

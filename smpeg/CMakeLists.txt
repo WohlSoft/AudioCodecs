@@ -11,7 +11,6 @@ add_definitions(
     -DHAVE_STDLIB_H=1
     -DHAVE_STRING_H=1
     -DHAVE_MEMORY_H=1
-    -DHAVE_STRINGS_H=1
     -DHAVE_INTTYPES_H=1
     -DHAVE_STDINT_H=1
     -D_THREAD_SAFE
@@ -22,6 +21,7 @@ IF(NOT WIN32)
     add_definitions(
         -DHAVE_UNISTD_H=1
         -DHAVE_DLFCN_H=1
+        -DHAVE_STRINGS_H=1
     )
 ENDIF()
 
