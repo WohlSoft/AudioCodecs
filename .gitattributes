@@ -5,6 +5,7 @@ CMakeLists.txt		linguist-vendored
 *.sh				linguist-vendored
 *.ac				linguist-vendored
 *.m4				linguist-vendored
+*.tex				linguist-vendored
 *.mk				linguist-vendored
 *.md				linguist-vendored
 *.plist				linguist-vendored
