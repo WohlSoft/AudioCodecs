@@ -1,6 +1,10 @@
 /* src/config.h.  Generated from config.h.in by configure.  */
 /* src/config.h.in.  Generated from configure.ac by autoheader.  */
 
+#ifdef HAVE_CMAKE_CONFIG_H
+#include "cmake_config.h"
+#endif
+
 /* Define if building universal (internal helper macro) */
 /* #undef AC_APPLE_UNIVERSAL_BUILD */
 
@@ -17,7 +21,7 @@
 #define HAVE_MEMORY_H 1
 
 /* Define to 1 if you have the `setenv' function. */
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(HAVE_CMAKE_CONFIG_H)
 #define HAVE_SETENV 1
 #endif
 

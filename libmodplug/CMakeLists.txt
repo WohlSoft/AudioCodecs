@@ -1,16 +1,29 @@
 cmake_minimum_required (VERSION 2.8.11)
 project (libModPlug)
 
+include(CheckFunctionExists)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
 add_definitions(
     -DMODPLUG_NO_FILESAVE
     -DHAVE_CONFIG_H
+    -DHAVE_CMAKE_CONFIG_H
     -DMODPLUG_STATIC
     -DMODPLUG_BUILD=1
     -D_REENTRANT
     -D_USE_MATH_DEFINES
 )
+
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/src/cmake_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config/cmake_config.h)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/config/)
+
+foreach(_FN
+        setenv putenv
+        )
+    string(TOUPPER ${_FN} _UPPER)
+    set(_HAVEVAR "HAVE_${_UPPER}")
+    CHECK_FUNCTION_EXISTS("${_FN}" ${_HAVEVAR})
+endforeach()
 
 add_library(modplug STATIC
     src/fastmix.cpp
