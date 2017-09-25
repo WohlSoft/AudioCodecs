@@ -3,7 +3,7 @@ version: 1.0.{build}
 build_script:
   - cmd: md build
   - cmd: cd build
-  - cmd: set PATH=%PATH:C:\Program Files\Git\usr\bin;=%
+  - cmd: set PATH=C:\MinGW\bin;%PATH:C:\Program Files\Git\usr\bin;=%
   - cmd: echo %PATH%
   - cmd: cmake -G "MinGW Makefiles" -DCMAKE_PREFIX_PATH=C:\MinGW -DDOWNLOAD_SDL2_DEPENDENCY=ON -DCMAKE_INSTALL_PREFIX=test ..
   - cmd: cmake --build . --config release -j 2
