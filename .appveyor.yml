@@ -42,7 +42,7 @@ build_script:
   - if [%COMPILER%]==[MinGW] mingw32-make install
   - if [%COMPILER%]==[MinGW-w64] cmake --build . --config %BUILD_TYPE% -- -j 2
   - if [%COMPILER%]==[MinGW-w64] mingw32-make install
-  - if [%COMPILER%]==[MSVC15] cmake --build . --config %BUILD_TYPE% --target instal
+  - if [%COMPILER%]==[MSVC15] cmake --build . --config %BUILD_TYPE% --target install
 
 #on_finish:
 #  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
