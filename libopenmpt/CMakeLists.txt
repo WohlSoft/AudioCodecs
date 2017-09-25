@@ -133,6 +133,7 @@ add_library(openmpt STATIC
     src/soundlib/WAVTools.cpp
     src/soundlib/WindowedFIR.cpp
     src/soundlib/XMTools.cpp
+    ${libOpenMPT_SOURCE_DIR}/src/build/svn_version/svn_version.h
 )
 
 include_directories(${libOpenMPT_SOURCE_DIR}/src/build/svn_version)
