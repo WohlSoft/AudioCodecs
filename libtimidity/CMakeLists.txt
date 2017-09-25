@@ -19,6 +19,13 @@ add_library(timidity STATIC
     src/resample_timidity.c
 )
 
+if(SDL2_REPO_PATH)
+    add_dependencies(timidity SDL2HG)
+else()
+    find_library(SDL2_LIBRARY SDL2)
+    message("Found ${SDL2_LIBRARY}")
+endif()
+
 target_link_libraries(timidity SDL2)
 
 target_include_directories(timidity PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

@@ -22,8 +22,20 @@ add_library(id3tag STATIC
     src/id3_version.c
 )
 
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../libSDL2/include/")
+    message("SDL2 found in ${CMAKE_CURRENT_SOURCE_DIR}/../libSDL2/include folder")
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libSDL2/include)
+else()
+    if(SDL2_REPO_PATH)
+        add_dependencies(id3tag SDL2HG)
+    else()
+        find_library(SDL2_LIBRARY SDL2)
+        message("Found ${SDL2_LIBRARY}")
+    endif()
+endif()
+
 target_link_libraries(id3tag SDL2)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2/include)
+
 target_include_directories(id3tag PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 install(TARGETS id3tag

@@ -4,6 +4,23 @@ project (AudioCodecs)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
+option(DOWNLOAD_SDL2_DEPENDENCY "Downloads and compiles SDL2 from official Mercurial directly" OFF)
+set(SDL2_REPO_PATH "" CACHE PATH "Path to the SDL2")
+
+if(NOT SDL2_REPO_PATH)
+    # Try to resolve sqlite dependency
+    if(DOWNLOAD_SDL2_DEPENDENCY)
+        # Download and configure SDL2 dependency
+        include(download_sdl2_hg.cmake)
+        set(SDL2_REPO_PATH ${SDL2_INSTALL_DIR})
+    endif()
+endif()
+
+if(SDL2_REPO_PATH)
+    link_directories(${SDL2_INSTALL_DIR}/lib)
+    include_directories(${SDL2_INSTALL_DIR}/include)
+endif()
+
 # --- TODO: implement building or usage of pre-built libSDL here ---
 # set(SNDIO OFF) # Disable sndio that is not needed to us
 # add_subdirectory(libSDL2)
