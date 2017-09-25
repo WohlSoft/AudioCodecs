@@ -41,7 +41,9 @@
  */
 
 #ifdef WIN32
-#define __STDC__ 1
+# ifndef __STDC__
+#  define __STDC__ 1
+# endif
 #endif
 #ifdef __STDC__
 # define	P(s) s
