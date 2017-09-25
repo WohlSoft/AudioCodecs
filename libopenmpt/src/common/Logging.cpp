@@ -21,6 +21,7 @@
 
 #include <cstdarg>
 #include <cstring>
+#include <cstdio>
 
 #include <stdarg.h>
 
