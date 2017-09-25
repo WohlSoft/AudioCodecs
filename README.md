@@ -8,6 +8,10 @@ This set of libraries is designed to be buildable through QMake building system.
 
 Note: to build libid3tag and libtimidity, you need have latest libSDL2 be installed! (those libraries are modified to support files through SDL_RWops() API)
 
+# CI Badges
+
+[![Build Status](https://semaphoreci.com/api/v1/wohlstand/audiocodecs/branches/master/shields_badge.svg)](https://semaphoreci.com/wohlstand/audiocodecs)
+
 
 # Licenses
 * **libADLMIDI:** GNU LGPLv3+ or GNU GPLv3+
