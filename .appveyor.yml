@@ -11,3 +11,6 @@ build_script:
   - cmd: mingw32-make clean
   - cmd: cmake --build . --config debug -j 2
   - cmd: mingw32-make install
+
+on_finish:
+  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
