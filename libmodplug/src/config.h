@@ -1,8 +1,9 @@
 /* src/config.h.  Generated from config.h.in by configure.  */
 /* src/config.h.in.  Generated from configure.ac by autoheader.  */
 
-#ifdef HAVE_CMAKE_CONFIG_H
+#ifdef HAVE_CMAKE_CONFIG_H !defined(HAVE_CMAKE_CONFIG_H_INCLUDED)
 #include "cmake_config.h"
+#define HAVE_CMAKE_CONFIG_H_INCLUDED 1
 #endif
 
 /* Define if building universal (internal helper macro) */
