@@ -12,6 +12,7 @@
 #include "Loaders.h"
 #include "ChunkReader.h"
 #include "../common/StringFixer.h"
+#include <cstdio>
 #ifndef NO_PLUGINS
 #include "plugins/DigiBoosterEcho.h"
 #endif // NO_PLUGINS
