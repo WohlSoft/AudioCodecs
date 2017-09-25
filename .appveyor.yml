@@ -6,11 +6,11 @@ build_script:
   - cmd: set PATH=C:\MinGW\bin;%PATH:C:\Program Files\Git\usr\bin;=%
   - cmd: echo %PATH%
   - cmd: cmake -G "MinGW Makefiles" -DCMAKE_PREFIX_PATH=C:\MinGW -DDOWNLOAD_SDL2_DEPENDENCY=ON -DCMAKE_INSTALL_PREFIX=test ..
-  - cmd: cmake --build . --config release -j 2
+  - cmd: cmake --build . --config release -- -j 2
   - cmd: mingw32-make install
   - cmd: mingw32-make clean
-  - cmd: cmake --build . --config debug -j 2
+  - cmd: cmake --build . --config debug -- -j 2
   - cmd: mingw32-make install
 
-on_finish:
-  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+#on_finish:
+#  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
