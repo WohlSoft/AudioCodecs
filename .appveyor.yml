@@ -33,7 +33,7 @@ build_script:
   - md build-%COMPILER%-%BUILD_TYPE%-%PLATFORM%
   - cd build-%COMPILER%-%BUILD_TYPE%-%PLATFORM%
   - if [%COMPILER%]==[MinGW] set PATH=C:\MinGW\bin;%PATH:C:\Program Files\Git\usr\bin;=%
-  - if [%COMPILER%]==[MinGW-w64] set PATH=C:\mingw-w64\x86_64-6.3.0-posix-seh-rt_v5-rev1;%PATH:C:\Program Files\Git\usr\bin;=%
+  - if [%COMPILER%]==[MinGW-w64] set PATH=C:\mingw-w64\x86_64-6.3.0-posix-seh-rt_v5-rev1\mingw64\bin;%PATH:C:\Program Files\Git\usr\bin;=%
   - if [%COMPILER%]==[MinGW] cmake -G "MinGW Makefiles" -DDOWNLOAD_SDL2_DEPENDENCY=ON -DCMAKE_INSTALL_PREFIX=test ..
   - if [%COMPILER%]==[MinGW-w64] cmake -G "MinGW Makefiles" -DDOWNLOAD_SDL2_DEPENDENCY=ON -DCMAKE_INSTALL_PREFIX=test ..
   - if [%COMPILER%]==[MSVC15] if [%PLATFORM%]==[Win32] cmake -G "Visual Studio 14 2015" -DDOWNLOAD_SDL2_DEPENDENCY=ON -DCMAKE_INSTALL_PREFIX=test ..
