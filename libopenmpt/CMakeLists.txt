@@ -27,7 +27,6 @@ add_definitions(
 	-DMPT_WITH_OGG
 	-DMPT_WITH_VORBISFILE
 	-DMPT_WITH_FLAC
-	-DMPT_WITH_ZLIB
 	)
 endif()
 
