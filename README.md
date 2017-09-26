@@ -10,7 +10,8 @@ Note: to build libid3tag, SMPEG, and libtimidity, you need have latest libSDL2 b
 
 # CI Badges
 
-[![Build Status](https://semaphoreci.com/api/v1/wohlstand/audiocodecs/branches/master/shields_badge.svg)](https://semaphoreci.com/wohlstand/audiocodecs)
+**Linux:** [![Build Status](https://semaphoreci.com/api/v1/wohlstand/audiocodecs/branches/master/shields_badge.svg)](https://semaphoreci.com/wohlstand/audiocodecs)
+**Windows:** [![Build status](https://ci.appveyor.com/api/projects/status/fjmpe4luqbll8x6l?svg=true)](https://ci.appveyor.com/project/Wohlstand/audiocodecs)
 
 
 # Licenses
