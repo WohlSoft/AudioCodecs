@@ -16,6 +16,7 @@ Note: to build libid3tag, SMPEG, and libtimidity, you need have latest libSDL2 b
 | **Windows:** | [![Build status](https://ci.appveyor.com/api/projects/status/fjmpe4luqbll8x6l?svg=true)](https://ci.appveyor.com/project/Wohlstand/audiocodecs) |
 
 # How to build
+
 ## Linux
 You will need:
 * CMake >= 2.8
@@ -61,6 +62,9 @@ cmake -build . -config release -target install -- -j 2
 #   Tip: instead of "release" you can have "debug" to build debug versions. Instead of "2" put your actual count of CPU cores
 ```
 
+## macOS
+The build for macOS is very similar to Linux way, you just can follow Linux way to build libraries
+
 ## Windows
 You will need:
 * CMake >= 2.8
@@ -79,9 +83,9 @@ cd build
 rem Step 3: Configure project
 cmake -G "MinGW Makefiles" -DDOWNLOAD_SDL2_DEPENDENCY=ON -DCMAKE_INSTALL_PREFIX=%UserProfile%\MyLibs\ ..
 
-# Step 4: Build and install
+rem Step 4: Build and install
 cmake -build . -config release -target install -- -j 2
-#   Tip: instead of "release" you can have "debug" to build debug versions. Instead of "2" put your actual count of CPU cores
+rem Tip: instead of "release" you can have "debug" to build debug versions. Instead of "2" put your actual count of CPU cores
 ```
 
 **Build with MinGW-w64** (A way to get 64-bit Windows assemblies)
@@ -100,9 +104,9 @@ set PATH=C:\mingw-w64\x86_64-6.3.0-posix-seh-rt_v5-rev1\mingw64\bin;%PATH:C:\Pro
 rem Step 3: Configure project
 cmake -G "MinGW Makefiles" -DDOWNLOAD_SDL2_DEPENDENCY=ON -DCMAKE_INSTALL_PREFIX=%UserProfile%\MyLibs\ ..
 
-# Step 4: Build and install
+rem Step 4: Build and install
 cmake -build . -config release -target install -- -j 2
-#   Tip: instead of "release" you can have "debug" to build debug versions. Instead of "2" put your actual count of CPU cores
+rem Tip: instead of "release" you can have "debug" to build debug versions. Instead of "2" put your actual count of CPU cores
 ```
 
 **Build with MSVC**
@@ -120,9 +124,9 @@ cmake -G "Visual Studio 14 2015" -DDOWNLOAD_SDL2_DEPENDENCY=ON -DCMAKE_INSTALL_P
 rem HINT: If you want to have 64-bit build, use "Visual Studio 14 2015 Win64" generator
 rem HINT: You can take full list of available generators by requesting of "cmake --help"
 
-# Step 4: Build and install
+rem Step 4: Build and install
 cmake -build . -config release -target install -- -j 2
-#   Tip: instead of "release" you can have "debug" to build debug versions. Instead of "2" put your actual count of CPU cores
+rem Tip: instead of "release" you can have "debug" to build debug versions. Instead of "2" put your actual count of CPU cores
 ```
 
 
