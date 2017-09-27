@@ -19,6 +19,7 @@ endif()
 if(SDL2_REPO_PATH)
     link_directories(${SDL2_INSTALL_DIR}/lib)
     include_directories(${SDL2_INSTALL_DIR}/include)
+    message("SDL2 Repo folder is ${SDL2_REPO_PATH}")
 endif()
 
 # --- TODO: implement building or usage of pre-built libSDL here ---
