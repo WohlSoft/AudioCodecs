@@ -1,6 +1,9 @@
 #ifndef bqw_fraction_h
 #define bqw_fraction_h
 
+#include <cmath>
+#include <limits>
+
 /* Fraction number handling.
  * Copyright (C) 1992,2001 Bisqwit (http://iki.fi/bisqwit/)
  */
@@ -83,11 +86,16 @@ template<typename inttype>
 void fraction<inttype>::Optim()
 {
     /* Euclidean algorithm */
-    inttype n1, n2;
-    if(labs(num1) < labs(num2))
+    inttype n1, n2, nn1, nn2;
+    
+    nn1 = std::numeric_limits<inttype>::is_signed ? (num1 >= 0 ? num1 : -num1) : num1;
+    nn2 = std::numeric_limits<inttype>::is_signed ? (num2 >= 0 ? num2 : -num2) : num2;
+
+    if(nn1 < nn2)
         n1 = num1, n2 = num2;
     else
         n1 = num2, n2 = num1;
+    
     if(!num1) { num2 = 1; return; }
     for(;;)
     {

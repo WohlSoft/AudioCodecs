@@ -43,8 +43,8 @@ Uint8 const USERSTREAM_CODE[]   = { 0x00, 0x00, 0x01, 0xb2 };
 Uint8 const USERSTREAM_MASK[]   = { 0xff, 0xff, 0xff, 0xff };
 Uint8 const VIDEO_CODE[]        = { 0x00, 0x00, 0x01, 0xb3 };
 Uint8 const VIDEO_MASK[]        = { 0xff, 0xff, 0xff, 0xff };
-Uint8 const AUDIO_CODE[]        = { 0xff, 0xf0, 0x00, 0x00 };
-Uint8 const AUDIO_MASK[]        = { 0xff, 0xf0, 0x00, 0x00 };
+/* Uint8 const AUDIO_CODE[]        = { 0xff, 0xf0, 0x00, 0x00 }; */
+/* Uint8 const AUDIO_MASK[]        = { 0xff, 0xf0, 0x00, 0x00 }; */
 Uint8 const GOP_CODE[]          = { 0x00, 0x00, 0x01, 0xb8 };
 Uint8 const GOP_MASK[]          = { 0xff, 0xff, 0xff, 0xff };
 Uint8 const PICTURE_CODE[]      = { 0x00, 0x00, 0x01, 0x00 };
@@ -993,7 +993,7 @@ double MPEGsystem::TotalTime()
         return(false);
       }
     
-      if(SDL_RWread(source, buffer, 1, MPEG_BUFFER_SIZE) < 0) break;
+      if(SDL_RWread(source, buffer, 1, MPEG_BUFFER_SIZE) == 0) break;
 
       /* Search for a valid audio header */
       for(p = buffer; p < buffer + MPEG_BUFFER_SIZE; p++)
@@ -1036,7 +1036,7 @@ double MPEGsystem::TotalTime()
         return(false);
       }
       
-      if(SDL_RWread(source, buffer, 1, MPEG_BUFFER_SIZE) < 0) break;
+      if(SDL_RWread(source, buffer, 1, MPEG_BUFFER_SIZE) == 0) break;
       
       if(stream_list[0]->streamid == SYSTEM_STREAMID)
 	for(p = buffer + MPEG_BUFFER_SIZE - 1; p >= buffer;)
@@ -1136,7 +1136,7 @@ double MPEGsystem::TimeElapsedAudio(int atByte)
         return(false);
       }
     
-      if(SDL_RWread(source, buffer, 1, MPEG_BUFFER_SIZE) < 0) break;
+      if(SDL_RWread(source, buffer, 1, MPEG_BUFFER_SIZE) == 0) break;
 
       /* Search for a valid audio header */
       for(p = buffer; p < buffer + MPEG_BUFFER_SIZE; p++)
