@@ -6,7 +6,6 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 option(DOWNLOAD_SDL2_DEPENDENCY "Downloads and compiles SDL2 from official Mercurial directly" OFF)
 set(SDL2_REPO_PATH "" CACHE PATH "Path to the SDL2")
-option(SDL2_DEBUG_BUILD "Build downloaded SDL2 in debug mode" OFF)
 
 if(NOT SDL2_REPO_PATH)
     # Try to resolve sqlite dependency
