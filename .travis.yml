@@ -18,11 +18,6 @@ addons:
         sources: ['ubuntu-toolchain-r-test']
         packages: ['libsdl2-dev']
 
-before_install:
-    - if [[ $TRAVIS_OS_NAME == osx ]]; then
-          brew install cmake;
-      fi
-
 install:
     - mkdir build; cd build
     - cmake -DDOWNLOAD_SDL2_DEPENDENCY=ON -DCMAKE_INSTALL_PREFIX=~/AudioCodecs/ ..
