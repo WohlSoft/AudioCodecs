@@ -20,7 +20,7 @@ addons:
 
 before_install:
     - if [[ $TRAVIS_OS_NAME == osx ]]; then
-          brew install clang;
+          brew install cmake;
       fi
 
 install:
