@@ -1,0 +1,28 @@
+language: cpp
+
+os:
+    - linux
+    - osx
+
+dist: trusty
+
+git:
+    depth: 3
+
+addons:
+    apt:
+        sources: ['ubuntu-toolchain-r-test']
+        packages: ['libsdl2-dev']
+
+before_install:
+    - if [[ $TRAVIS_OS_NAME == osx ]]; then
+          brew install clang;
+      fi
+
+install:
+    - mkdir build; cd build
+    - cmake -DDOWNLOAD_SDL2_DEPENDENCY=ON -DCMAKE_INSTALL_PREFIX=~/AudioCodecs/ ..
+
+script:
+    - cmake -build . -config Release -target install -- -j 2
+
