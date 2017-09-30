@@ -28,5 +28,6 @@ install:
     - cmake -DDOWNLOAD_SDL2_DEPENDENCY=ON -DCMAKE_INSTALL_PREFIX=~/AudioCodecs/ ..
 
 script:
-    - cmake -build . -config Release -target install "--" "-j" "2"
+    - make -j 2
+    - make install
 
