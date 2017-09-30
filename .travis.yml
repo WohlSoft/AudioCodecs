@@ -9,6 +9,10 @@ dist: trusty
 git:
     depth: 3
 
+branches:
+    only:
+    - master
+
 addons:
     apt:
         sources: ['ubuntu-toolchain-r-test']
