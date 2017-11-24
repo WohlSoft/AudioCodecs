@@ -11,6 +11,8 @@ INSTALLINCLUDES = $$PWD/include/*
 INSTALLINCLUDESTO = ADLMIDI
 include($$PWD/../audio_codec_common.pri)
 
+DEFINES += ADLMIDI_DISABLE_CPP_EXTRAS
+
 macx: QMAKE_CXXFLAGS_WARN_ON += -Wno-absolute-value
 
 INCLUDEPATH += $$PWD $$PWD/include
