@@ -3,6 +3,8 @@ project (libOPNMIDI)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
+add_definitions(-DUSE_LEGACY_EMULATOR)
+
 add_library(OPNMIDI STATIC
     src/opnmidi.cpp
     src/opnmidi_load.cpp

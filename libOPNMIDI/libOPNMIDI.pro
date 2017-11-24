@@ -17,7 +17,7 @@ INCLUDEPATH += $$PWD $$PWD/include
 
 HEADERS += \
     include/opnmidi.h \
-    src/fraction.h \
+    src/fraction.hpp \
     src/opnbank.h \
     src/opnmidi_mus2mid.h \
     src/opnmidi_private.hpp \
@@ -33,3 +33,4 @@ SOURCES += \
     src/Ym2612_ChipEmu.cpp \
     src/opnmidi_mus2mid.c \
     src/opnmidi_xmi2mid.c
+

@@ -3,6 +3,8 @@ project (libADLMIDI)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
+add_definitions(-DADLMIDI_DISABLE_CPP_EXTRAS)
+
 add_library(ADLMIDI STATIC
     src/adldata.cpp
     src/adlmidi.cpp

@@ -98,7 +98,7 @@ static uint32_t read2(struct xmi_ctx *ctx)
     uint8_t b0, b1;
     b0 = *ctx->src_ptr++;
     b1 = *ctx->src_ptr++;
-    return (b0 + (b1 << 8));
+    return (b0 + ((uint32_t)b1 << 8));
 }
 
 static uint32_t read4(struct xmi_ctx *ctx)
@@ -108,7 +108,7 @@ static uint32_t read4(struct xmi_ctx *ctx)
     b2 = *ctx->src_ptr++;
     b1 = *ctx->src_ptr++;
     b0 = *ctx->src_ptr++;
-    return (b0 + (b1<<8) + (b2<<16) + (b3<<24));
+    return (b0 + ((uint32_t)b1<<8) + ((uint32_t)b2<<16) + ((uint32_t)b3<<24));
 }
 
 static void copy(struct xmi_ctx *ctx, char *b, uint32_t len)
@@ -119,7 +119,7 @@ static void copy(struct xmi_ctx *ctx, char *b, uint32_t len)
 
 #define DST_CHUNK 8192
 static void resize_dst(struct xmi_ctx *ctx) {
-    uint32_t pos = ctx->dst_ptr - ctx->dst;
+    uint32_t pos = (uint32_t)(ctx->dst_ptr - ctx->dst);
     ctx->dst = realloc(ctx->dst, ctx->dstsize + DST_CHUNK);
     ctx->dstsize += DST_CHUNK;
     ctx->dstrem += DST_CHUNK;
@@ -175,7 +175,7 @@ static void skipdst(struct xmi_ctx *ctx, int32_t pos) {
     newpos = ctx->dst_ptr - ctx->dst;
     while (ctx->dstsize < newpos)
         resize_dst(ctx);
-    ctx->dstrem = ctx->dstsize - newpos;
+    ctx->dstrem = (uint32_t)(ctx->dstsize - newpos);
 }
 
 static uint32_t getsrcsize(struct xmi_ctx *ctx) {
@@ -183,11 +183,11 @@ static uint32_t getsrcsize(struct xmi_ctx *ctx) {
 }
 
 static uint32_t getsrcpos(struct xmi_ctx *ctx) {
-    return (ctx->src_ptr - ctx->src);
+    return (uint32_t)(ctx->src_ptr - ctx->src);
 }
 
 static uint32_t getdstpos(struct xmi_ctx *ctx) {
-    return (ctx->dst_ptr - ctx->dst);
+    return (uint32_t)(ctx->dst_ptr - ctx->dst);
 }
 
 /* This is a default set of patches to convert from MT32 to GM
@@ -643,6 +643,11 @@ static int ConvertEvent(struct xmi_ctx *ctx, const int32_t time,
 
     data = read1(ctx);
 
+    /*HACK!*/
+    if (((status >> 4) == 0xB) && (status & 0xF) != 9 && (data == 114)) {
+        data = 32; /*Change XMI 114 controller into XG bank*/
+    }
+
     /* Bank changes are handled here */
     if ((status >> 4) == 0xB && data == 0) {
         data = read1(ctx);
@@ -659,7 +664,7 @@ static int ConvertEvent(struct xmi_ctx *ctx, const int32_t time,
         CreateNewEvent(ctx, time);
         ctx->current->status = status;
         ctx->current->data[0] = 0;
-        ctx->current->data[1] = data;
+        ctx->current->data[1] = data == 127 ? 0 : data;/*HACK:*/
 
         if (ctx->convert_type == XMIDI_CONVERT_GS127_TO_GS && data == 127)
             ctx->bank127[status & 0xF] = 1;
