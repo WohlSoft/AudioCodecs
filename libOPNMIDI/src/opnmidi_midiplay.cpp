@@ -1412,9 +1412,9 @@ void OPNMIDIplay::NoteUpdate(uint16_t MidCh,
                 else
                 {
                     // The formula below: SOLVE(V=127^3 * 2^( (A-63.49999) / 8), A)
-                    volume = volume > 8725 ? static_cast<uint32_t>((::log(static_cast<double>(volume)) * (11.541561) + (0.5 - 104.22845)) * 2.0) : 0;
+                    volume = volume > 8725 ? static_cast<uint32_t>((log(static_cast<double>(volume)) * (11.541561) + (0.5 - 104.22845)) * 2.0) : 0;
                     // The incorrect formula below: SOLVE(V=127^3 * (2^(A/63)-1), A)
-                    //opl.Touch_Real(c, volume>11210 ? 91.61112 * ::log(4.8819E-7*volume + 1.0)+0.5 : 0);
+                    //opl.Touch_Real(c, volume>11210 ? 91.61112 * log(4.8819E-7*volume + 1.0)+0.5 : 0);
                 }
 
                 opn.Touch_Real(c, volume, brightness);
@@ -2409,9 +2409,9 @@ retry_arpeggio:
 //    else
 //    {
 //        // The formula below: SOLVE(V=127^3 * 2^( (A-63.49999) / 8), A)
-//        opl->Touch_Real(c, volume > 8725 ? static_cast<unsigned int>(::log((double)volume) * 11.541561 + (0.5 - 104.22845)) : 0);
+//        opl->Touch_Real(c, volume > 8725 ? static_cast<unsigned int>(log((double)volume) * 11.541561 + (0.5 - 104.22845)) : 0);
 //        // The incorrect formula below: SOLVE(V=127^3 * (2^(A/63)-1), A)
-//        //Touch_Real(c, volume>11210 ? 91.61112 * ::log(4.8819E-7*volume + 1.0)+0.5 : 0);
+//        //Touch_Real(c, volume>11210 ? 91.61112 * log(4.8819E-7*volume + 1.0)+0.5 : 0);
 //    }
 //}
 
