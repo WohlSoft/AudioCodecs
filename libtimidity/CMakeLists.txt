@@ -5,18 +5,14 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
 add_library(timidity STATIC
     src/common.c
-    src/filter.c
     src/instrum.c
     src/mix.c
     src/output.c
     src/playmidi.c
     src/readmidi.c
-    src/sdl_a.c
-    src/sdl_c.c
+    src/resample.c
     src/tables.c
     src/timidity.c
-    src/ctrlmode.c
-    src/resample_timidity.c
 )
 
 if(SDL2_REPO_PATH)

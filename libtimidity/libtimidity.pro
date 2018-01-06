@@ -23,30 +23,23 @@ LIBS += -lSDL2
 HEADERS += \
     include/timidity.h \
     src/common.h \
-    src/config.h \
-    src/ctrlmode.h \
-    src/filter.h \
     src/instrum.h \
     src/mix.h \
+    src/options.h \
     src/output.h \
     src/playmidi.h \
     src/readmidi.h \
     src/resample.h \
-    src/tables.h \
-
+    src/tables.h
 
 SOURCES += \
     src/common.c \
-    src/filter.c \
     src/instrum.c \
     src/mix.c \
     src/output.c \
     src/playmidi.c \
     src/readmidi.c \
-    src/sdl_a.c \
-    src/sdl_c.c \
+    src/resample.c \
     src/tables.c \
-    src/timidity.c \
-    src/ctrlmode.c \
-    src/resample_timidity.c
+    src/timidity.c
 
