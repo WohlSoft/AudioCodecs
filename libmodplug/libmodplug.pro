@@ -7,11 +7,11 @@ CONFIG  -= qt
 CONFIG  += staticlib
 
 TARGET = modplug
-INSTALLINCLUDES = $$PWD/include/*
-INSTALLINCLUDESTO = modplug
+INSTALLINCLUDES = $$PWD/include/libmodplug/*
+INSTALLINCLUDESTO = libmodplug
 include($$PWD/../audio_codec_common.pri)
 
-INCLUDEPATH += $$PWD $$PWD/include
+INCLUDEPATH += $$PWD $$PWD/include $$PWD/include/libmodplug
 
 !win*-msvc*:{
     QMAKE_CXXFLAGS_WARN_ON  += \
@@ -36,7 +36,7 @@ DEFINES += \
     _USE_MATH_DEFINES
 
 HEADERS += \
-    include/modplug.h \
+    include/libmodplug/modplug.h \
     src/config.h \
     src/it_defs.h \
     src/load_pat.h \

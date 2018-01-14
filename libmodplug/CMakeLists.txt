@@ -67,6 +67,7 @@ add_library(modplug STATIC
 # include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libogg/include)
 
 target_include_directories(modplug PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(modplug PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/libmodplug)
 
 install(TARGETS modplug
         LIBRARY DESTINATION "lib"
@@ -74,6 +75,6 @@ install(TARGETS modplug
         INCLUDES DESTINATION "include")
 
 install(FILES
-        include/modplug.h
-        DESTINATION include/)
+        include/libmodplug/modplug.h
+        DESTINATION include/libmodplug/modplug.h)
 
