@@ -24,6 +24,8 @@
 
 /* The paths in this list will be tried whenever we're reading a file */
 static PathList *pathlist = NULL; /* This is a linked list */
+/* User-defined custom path which has a highest priority */
+static char *customPath = NULL;
 
 /* This is meant to find and open files for reading */
 SDL_RWops *open_file(const char *name)
@@ -87,6 +89,22 @@ void *safe_malloc(size_t count)
   return p;
 }
 
+const char *get_custom_path()
+{
+    return customPath;
+}
+
+void add_custom_path(const char *s)
+{
+    if (customPath) {
+        free(customPath);
+    }
+    customPath = safe_malloc(strlen(s) + 1);
+    if (customPath) {
+        strcpy(customPath, s);
+    }
+}
+
 /* This adds a directory to the path list */
 void add_to_pathlist(const char *s)
 {
@@ -111,6 +129,10 @@ void free_pathlist(void)
 {
     PathList *plp = pathlist;
     PathList *next;
+
+    if (customPath) {
+        free(customPath);
+    }
 
     while (plp)
     {

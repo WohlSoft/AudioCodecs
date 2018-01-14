@@ -438,6 +438,10 @@ int Timidity_Init()
 #ifdef DEFAULT_PATH3
     add_to_pathlist(DEFAULT_PATH3);
 #endif
+    /* Custom path must have highest priority */
+    if (get_custom_path()) {
+        add_to_pathlist(get_custom_path());
+    }
 
   Timidity_Init_NoConfig();
 
@@ -455,7 +459,7 @@ int Timidity_Init()
 
 void Timidity_AddConfigPath(const char *path)
 {
-  add_to_pathlist(path);
+  add_custom_path(path);
 }
 
 MidiSong *Timidity_LoadSong(SDL_RWops *rw, SDL_AudioSpec *audio)

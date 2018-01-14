@@ -15,6 +15,8 @@ typedef struct {
 } PathList;
 
 extern SDL_RWops *open_file(const char *name);
+const char *get_custom_path();
+extern void add_custom_path(const char *path);
 extern void add_to_pathlist(const char *s);
 extern void *safe_malloc(size_t count);
 extern void free_pathlist(void);
