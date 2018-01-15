@@ -76,5 +76,5 @@ install(TARGETS modplug
 
 install(FILES
         include/libmodplug/modplug.h
-        DESTINATION include/libmodplug/modplug.h)
+        DESTINATION include/libmodplug/)
 
