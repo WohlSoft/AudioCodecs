@@ -531,6 +531,7 @@ int const cpu_lag_max = 12 - 1; // DIV YA,X takes 12 clocks
 
 void Snes_Spc::end_frame( time_t end_time )
 {
+    (void)cpu_lag_max;// Warning muter
 	// Catch CPU up to as close to end as possible. If final instruction
 	// would exceed end, does NOT execute it and leaves m.spc_time < end.
 	if ( end_time > m.spc_time )
