@@ -1,12 +1,25 @@
 cmake_minimum_required (VERSION 2.8.11)
 project (libFLAC)
 
+include(CheckIncludeFiles)
+include(CheckFunctionExists)
+
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
+
+if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+    # Turn on warnings and legacy C/C++ standards to support more compilers
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -Wall -Wno-pedantic")
+endif()
 
 add_definitions(
     -DHAVE_CONFIG_H
     -DFLAC__NO_DLL
 )
+
+CHECK_FUNCTION_EXISTS(fseeko HAVE_FSEEKO)
+if(HAVE_FSEEKO)
+    add_definitions(-DHAVE_FSEEKO)
+endif()
 
 add_library(FLAC STATIC
     src/bitmath.c

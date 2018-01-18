@@ -639,7 +639,7 @@ int id3_file_close(struct id3_file *file)
 
     if(file->iorwops)
     {
-        //Don't close RWops, just remove id3-tag descriptor
+        /* Don't close RWops, just remove id3-tag descriptor */
         id3f_rewind(file);
         result = 0;
     }
