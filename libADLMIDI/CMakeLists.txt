@@ -5,6 +5,12 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
 add_definitions(-DADLMIDI_DISABLE_CPP_EXTRAS)
 
+if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+    # Turn on warnings and legacy C/C++ standards to support more compilers
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -pedantic -std=c90")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -std=c++98")
+endif()
+
 add_library(ADLMIDI STATIC
     src/adldata.cpp
     src/adlmidi.cpp

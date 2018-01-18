@@ -57,7 +57,7 @@ static Sint32 getvl(SDL_RWops *rw)
 static int dumpstring(SDL_RWops *rw, Sint32 len, char *label)
 {
   signed char *s=safe_malloc((size_t)len+1);
-  (void)label;//Unused
+  (void)label;/* Unused */
   if (len != (Sint32) SDL_RWread(rw, s, 1, len))
     {
       free(s);
