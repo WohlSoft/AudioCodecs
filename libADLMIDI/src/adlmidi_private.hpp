@@ -61,7 +61,6 @@ typedef int32_t ssize_t;
 #       endif
 #   endif
 #   include <windows.h>
-#   include <wchar.h>
 #endif
 
 #if defined(__DJGPP__) || (defined(__WATCOMC__) && (defined(__DOS__) || defined(__DOS4G__) || defined(__DOS4GNZ__)))
