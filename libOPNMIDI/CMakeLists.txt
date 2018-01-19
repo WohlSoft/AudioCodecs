@@ -11,6 +11,10 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -std=c++98")
 endif()
 
+if(WIN32)
+    add_definitions(-DUNICODE -D_UNICODE)
+endif()
+
 add_library(OPNMIDI STATIC
     src/opnmidi.cpp
     src/opnmidi_load.cpp
