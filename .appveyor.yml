@@ -5,18 +5,6 @@ environment:
     PLATFORMTOOLSET: "v140"
   matrix:
     - BUILD_TYPE: Debug
-      COMPILER: MSVC15
-      PLATFORM: x64
-    - BUILD_TYPE: Release
-      COMPILER: MSVC15
-      PLATFORM: x64
-    - BUILD_TYPE: Debug
-      COMPILER: MSVC15
-      PLATFORM: Win32
-    - BUILD_TYPE: Release
-      COMPILER: MSVC15
-      PLATFORM: Win32
-    - BUILD_TYPE: Debug
       COMPILER: MinGW
       PLATFORM: Win32
     - BUILD_TYPE: Release
@@ -28,6 +16,18 @@ environment:
     - BUILD_TYPE: Release
       COMPILER: MinGW-w64
       PLATFORM: x64
+    - BUILD_TYPE: Debug
+      COMPILER: MSVC15
+      PLATFORM: x64
+    - BUILD_TYPE: Release
+      COMPILER: MSVC15
+      PLATFORM: x64
+    - BUILD_TYPE: Debug
+      COMPILER: MSVC15
+      PLATFORM: Win32
+    - BUILD_TYPE: Release
+      COMPILER: MSVC15
+      PLATFORM: Win32
 
 build_script:
   - md build-%COMPILER%-%BUILD_TYPE%-%PLATFORM%
