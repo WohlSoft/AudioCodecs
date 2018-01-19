@@ -51,6 +51,7 @@ typedef __int32 ssize_t;
 #       define NOMINMAX //Don't override std::min and std::max
 #   endif
 #   include <windows.h>
+#   include <wchar.h>
 #endif
 
 #include <vector>
