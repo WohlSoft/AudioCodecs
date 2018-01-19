@@ -27,6 +27,10 @@ IF(NOT WIN32)
         -DHAVE_DLFCN_H=1
         -DHAVE_STRINGS_H=1
     )
+ELSEIF(NOT MSVC)
+    add_definitions(
+        -DWIN32
+    )
 ENDIF()
 
 add_library(smpeg STATIC
