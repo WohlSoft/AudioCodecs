@@ -49,7 +49,8 @@ on_success:
 #  - appveyor PushArtifact "AudioCodecs-%COMPILER%-%BUILD_TYPE%-%PLATFORM%.7z"
 
 artifacts:
-  - path: 'build-*-*-*\AudioCodecs-*-*-*.7z'
+  - path: 'build-*\AudioCodecs-*.7z'
+  - path: 'AudioCodecs-*.7z'
 
 deploy:
   - provider: Environment
