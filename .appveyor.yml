@@ -47,7 +47,7 @@ build_script:
   - move AudioCodecs-%COMPILER%-%BUILD_TYPE%-%PLATFORM%.7z ..
 
 artifacts:
-  - path: 'AudioCodecs-*.7z'
+  - path: 'AudioCodecs-$(COMPILER)-$(BUILD_TYPE)-$(PLATFORM).7z'
 
 deploy:
   - provider: Environment
