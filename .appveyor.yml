@@ -46,7 +46,10 @@ build_script:
 
 on_success:
   - 7z a -t7z -mx9 "AudioCodecs-%COMPILER%-%BUILD_TYPE%-%PLATFORM%.7z" "AudioCodecs"
-  - appveyor PushArtifact "AudioCodecs-%COMPILER%-%BUILD_TYPE%-%PLATFORM%.7z"
+#  - appveyor PushArtifact "AudioCodecs-%COMPILER%-%BUILD_TYPE%-%PLATFORM%.7z"
+
+artifacts:
+  - path: 'build-*-*-*\AudioCodecs-*-*-*.7z'
 
 deploy:
   - provider: Environment
