@@ -43,9 +43,10 @@ build_script:
   - if [%COMPILER%]==[MinGW-w64] cmake --build . --config %BUILD_TYPE% -- -j 2
   - if [%COMPILER%]==[MinGW-w64] mingw32-make install
   - if [%COMPILER%]==[MSVC15] cmake --build . --config %BUILD_TYPE% --target install
-
-on_success:
   - 7z a -t7z -mx9 "AudioCodecs-%COMPILER%-%BUILD_TYPE%-%PLATFORM%.7z" "AudioCodecs"
+
+#on_success:
+#  - 7z a -t7z -mx9 "AudioCodecs-%COMPILER%-%BUILD_TYPE%-%PLATFORM%.7z" "AudioCodecs"
 #  - appveyor PushArtifact "AudioCodecs-%COMPILER%-%BUILD_TYPE%-%PLATFORM%.7z"
 
 artifacts:
