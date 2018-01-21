@@ -1,4 +1,4 @@
-// Game_Music_Emu 0.6.0. http://www.slack.net/~ant/
+// Game_Music_Emu https://bitbucket.org/mpyne/game-music-emu/
 
 #include "Vgm_Emu.h"
 
@@ -203,10 +203,10 @@ static Music_Emu* new_vgm_emu () { return BLARGG_NEW Vgm_Emu ; }
 static Music_Emu* new_vgm_file() { return BLARGG_NEW Vgm_File; }
 
 static gme_type_t_ const gme_vgm_type_ = { "Sega SMS/Genesis", 1, &new_vgm_emu, &new_vgm_file, "VGM", 1 };
-gme_type_t const gme_vgm_type = &gme_vgm_type_;
+BLARGG_EXPORT extern gme_type_t const gme_vgm_type = &gme_vgm_type_;
 
 static gme_type_t_ const gme_vgz_type_ = { "Sega SMS/Genesis", 1, &new_vgm_emu, &new_vgm_file, "VGZ", 1 };
-gme_type_t const gme_vgz_type = &gme_vgz_type_;
+BLARGG_EXPORT extern gme_type_t const gme_vgz_type = &gme_vgz_type_;
 
 
 // Setup
@@ -231,6 +231,25 @@ blargg_err_t Vgm_Emu::set_sample_rate_( long sample_rate )
 {
 	RETURN_ERR( blip_buf.set_sample_rate( sample_rate, 1000 / 30 ) );
 	return Classic_Emu::set_sample_rate_( sample_rate );
+}
+
+blargg_err_t Vgm_Emu::set_multi_channel ( bool is_enabled )
+{
+	// we acutally should check here whether this is classic emu or not
+	// however set_multi_channel() is called before setup_fm() resulting in uninited is_classic_emu()
+	// hard code it to unsupported
+#if 0
+	if ( is_classic_emu() )
+	{
+		RETURN_ERR( Music_Emu::set_multi_channel_( is_enabled ) );
+		return 0;
+	}
+	else
+#endif
+	{
+		(void) is_enabled;
+		return "multichannel rendering not supported for YM2*** FM sound chip emulators";
+	}
 }
 
 void Vgm_Emu::update_eq( blip_eq_t const& eq )

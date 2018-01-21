@@ -1,4 +1,4 @@
-// Game_Music_Emu 0.6.0. http://www.slack.net/~ant/
+// Game_Music_Emu https://bitbucket.org/mpyne/game-music-emu/
 
 #include "Spc_Emu.h"
 
@@ -244,7 +244,7 @@ static Music_Emu* new_spc_emu () { return BLARGG_NEW Spc_Emu ; }
 static Music_Emu* new_spc_file() { return BLARGG_NEW Spc_File; }
 
 static gme_type_t_ const gme_spc_type_ = { "Super Nintendo", 1, &new_spc_emu, &new_spc_file, "SPC", 0 };
-gme_type_t const gme_spc_type = &gme_spc_type_;
+BLARGG_EXPORT extern gme_type_t const gme_spc_type = &gme_spc_type_;
 
 
 // Setup
