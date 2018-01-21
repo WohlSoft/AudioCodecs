@@ -5,6 +5,7 @@
 TEMPLATE = lib
 CONFIG  -= qt
 CONFIG  += staticlib
+CONFIG  += c++11
 
 TARGET = gme
 INSTALLINCLUDES = $$PWD/include/*
