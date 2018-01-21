@@ -26,7 +26,8 @@ INCLUDEPATH += $$PWD $$PWD/include $$PWD/../zlib/include
 DEFINES += \
     SPC_MORE_ACCURACY \
     _REENTRANT \
-    _USE_MATH_DEFINES
+    _USE_MATH_DEFINES \
+    HAVE_ZLIB_H
 
 LIBS += -lzlib
 
