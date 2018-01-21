@@ -23,6 +23,7 @@ add_definitions(
     -DSPC_MORE_ACCURACY
     -D_REENTRANT
     -D_USE_MATH_DEFINES
+    -DHAVE_ZLIB_H
 )
 
 add_library(gme STATIC
@@ -78,7 +79,6 @@ target_link_libraries(gme zlib)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../zlib/include)
 target_include_directories(gme PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-add_definitions(-DHAVE_ZLIB_H)
 
 install(TARGETS gme
         LIBRARY DESTINATION "lib"
