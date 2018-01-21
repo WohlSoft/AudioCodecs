@@ -70,7 +70,7 @@ static void select_sample(MidiSong *song, int v, Instrument *ip, int vel)
   Sint32 f, cdiff, diff;
   int s,i;
   Sample *sp, *closest;
-  (void)vel;//Unused
+  (void)vel;/* Unused */
 
   s=ip->samples;
   sp=ip->sample;

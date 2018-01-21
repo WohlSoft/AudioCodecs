@@ -10,6 +10,11 @@ ELSE()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4100 /wd4244 /wd4005 /wd4013 /wd4047 /wd4996")
 ENDIF()
 
+if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+    # Turn on warnings and legacy C/C++ standards to support more compilers
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-pedantic -std=c99")
+endif()
+
 add_library(zlib STATIC
     src/adler32.c
     src/compress.c

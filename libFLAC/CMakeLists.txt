@@ -1,14 +1,29 @@
 cmake_minimum_required (VERSION 2.8.11)
 project (libFLAC)
 
+include(CheckIncludeFiles)
+include(CheckFunctionExists)
+
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
+
+if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+    # Turn on warnings and legacy C/C++ standards to support more compilers
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -Wall -Wno-pedantic")
+endif()
 
 add_definitions(
     -DHAVE_CONFIG_H
     -DFLAC__NO_DLL
 )
 
-add_library(FLAC STATIC
+CHECK_FUNCTION_EXISTS(fseeko HAVE_FSEEKO)
+if(HAVE_FSEEKO)
+    add_definitions(-DHAVE_FSEEKO)
+endif()
+
+set(FLAC_SRC)
+
+list(APPEND FLAC_SRC
     src/bitmath.c
     src/bitreader.c
     src/bitwriter.c
@@ -28,7 +43,15 @@ add_library(FLAC STATIC
     src/stream_decoder.c
     src/stream_encoder.c
     src/stream_encoder_framing.c
-    src/window.c
+    src/window.c)
+
+if(WIN32)
+    add_definitions(-DUNICODE -D_UNICODE)
+    list(APPEND FLAC_SRC src/win_utf8_io.c)
+endif()
+
+add_library(FLAC STATIC
+    ${FLAC_SRC}
 )
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include_p)

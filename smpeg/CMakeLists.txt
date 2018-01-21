@@ -3,6 +3,10 @@ project (libsmpeg)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
+if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=gnu++98 -Wno-pedantic -Wno-unused-but-set-variable -Wno-sequence-point")
+endif()
+
 add_definitions(
     -DNOCONTROLS
     -DSTDC_HEADERS=1
@@ -22,6 +26,10 @@ IF(NOT WIN32)
         -DHAVE_UNISTD_H=1
         -DHAVE_DLFCN_H=1
         -DHAVE_STRINGS_H=1
+    )
+ELSEIF(NOT MSVC)
+    add_definitions(
+        -DWIN32
     )
 ENDIF()
 

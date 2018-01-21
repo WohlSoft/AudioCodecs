@@ -93,4 +93,4 @@
 /* Define to __typeof__ if your compiler spells it that way. */
 /* #undef typeof */
 
-#endif //FLAC_CONFIG_H
+#endif /* FLAC_CONFIG_H */

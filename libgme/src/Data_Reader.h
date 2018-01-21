@@ -89,25 +89,24 @@ private:
 };
 
 
-//TODO: Implement a support of GZIP-compressed range of memory
 #ifdef HAVE_ZLIB_H
 // Treats range of memory as a compressed file
 class GZipMem_File_Reader : public File_Reader {
 public:
-    GZipMem_File_Reader( const void*, long size );
-    ~GZipMem_File_Reader();
+	GZipMem_File_Reader( const void*, long size );
+	~GZipMem_File_Reader();
 
 public:
-    long size() const;
+	long size() const;
     long read_avail( void*, long );
     long tell() const;
     blargg_err_t seek( long );
 private:
-    const char* const begin_compressed;
-    const long size_compressed_;
-    char* begin;
-    long size_;
-    long pos;
+	const char* const begin_compressed;
+	const long size_compressed_;
+	char* begin;
+	long size_;
+	long pos;
 };
 #endif
 

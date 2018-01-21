@@ -1,6 +1,6 @@
 // Fast SNES SPC-700 DSP emulator (about 3x speed of accurate one)
 
-// Game_Music_Emu 0.6.0
+// Game_Music_Emu https://bitbucket.org/mpyne/game-music-emu/
 #ifndef SPC_DSP_H
 #define SPC_DSP_H
 
@@ -8,8 +8,6 @@
 
 struct Spc_Dsp {
 public:
-	typedef BOOST::uint8_t uint8_t;
-	
 // Setup
 	
 	// Initializes DSP and has it use the 64K RAM provided
@@ -88,9 +86,6 @@ public:
 	sample_t const* out_pos() const { return m.out; }
 public:
 	BLARGG_DISABLE_NOTHROW
-	
-	typedef BOOST::int8_t   int8_t;
-	typedef BOOST::int16_t int16_t;
 	
 	enum { echo_hist_size = 8 };
 	
@@ -207,6 +202,6 @@ inline void Spc_Dsp::disable_surround( bool disable )
 
 #define SPC_NO_COPY_STATE_FUNCS 1
 
-//#define SPC_LESS_ACCURATE 1
+#define SPC_LESS_ACCURATE 1
 
 #endif

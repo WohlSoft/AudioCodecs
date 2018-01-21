@@ -7,6 +7,8 @@ add_definitions(
     -DHAVE_CONFIG_H
 )
 
+add_definitions(-DFLOAT_LOOKUP -DINT_LOOKUP)
+
 add_library(vorbis STATIC
     lib/analysis.c
     lib/bitrate.c

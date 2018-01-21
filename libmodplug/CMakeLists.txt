@@ -4,6 +4,11 @@ project (libModPlug)
 include(CheckFunctionExists)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
+if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -pedantic -std=gnu99")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-pedantic -std=gnu++98 -Wno-unused-but-set-variable -Wno-sequence-point")
+endif()
+
 add_definitions(
     -DMODPLUG_NO_FILESAVE
     -DHAVE_CONFIG_H
@@ -76,5 +81,5 @@ install(TARGETS modplug
 
 install(FILES
         include/libmodplug/modplug.h
-        DESTINATION include/libmodplug/modplug.h)
+        DESTINATION include/libmodplug/)
 
