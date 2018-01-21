@@ -505,12 +505,26 @@ MidiEvent *read_midi_file(MidiSong *song, Sint32 *count, Sint32 *sp)
   song->at=0;
   song->evlist=0;
 
-  if (SDL_RWread(song->rw, tmp, 1, 4) != 4 || SDL_RWread(song->rw, &len, 4, 1) != 1)
+  if (SDL_RWread(song->rw, tmp, 1, 4) != 4)
     {
       SNDDBG(("Not a MIDI file!\n"));
       return 0;
     }
-  len=SDL_SwapBE32(len);
+  if (memcmp(tmp, "RIFF", 4) == 0)
+    {
+      SDL_RWseek(song->rw, 16, RW_SEEK_CUR);
+      if (SDL_RWread(song->rw, tmp, 1, 4) != 4)
+        {
+          SNDDBG(("Not a MIDI file!\n"));
+          return 0;
+        }
+    }
+  if (SDL_RWread(song->rw, &len, 4, 1) != 1)
+    {
+      SNDDBG(("Not a MIDI file!\n"));
+      return 0;
+    }
+  len=(Sint32)SDL_SwapBE32((Uint32)len);
   if (memcmp(tmp, "MThd", 4) || len < 6)
     {
       SNDDBG(("Not a MIDI file!\n"));
