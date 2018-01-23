@@ -54,7 +54,6 @@ HEADERS += \
     src/Gme_File.h \
     src/gme_types.h \
     src/Gym_Emu.h \
-    src/GZipHelper.h \
     src/Hes_Apu.h \
     src/Hes_Cpu.h \
     src/hes_cpu_io.h \
