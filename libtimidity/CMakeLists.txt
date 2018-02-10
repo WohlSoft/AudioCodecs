@@ -20,8 +20,10 @@ add_library(timidity STATIC
     src/timidity.c
 )
 
-if(SDL2_REPO_PATH)
+if(DOWNLOAD_SDL2_DEPENDENCY)
     add_dependencies(timidity SDL2HG)
+elseif(SDL2_REPO_PATH)
+    include_directories(${SDL2_REPO_PATH}/include)
 else()
     find_library(SDL2_LIBRARY SDL2)
     message("Found ${SDL2_LIBRARY}")

@@ -65,18 +65,27 @@ add_library(smpeg STATIC
 )
 
 # libSDL2
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../libSDL2/include/")
-    # TODO: Implement automatical downloading and unpacking of hg.libsdl.org/SDL
-    # or using of separated repository for libSDL's backup
-    message("SDL2 found in ${CMAKE_CURRENT_SOURCE_DIR}/../libSDL2/include folder")
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libSDL2/include)
+#if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../libSDL2/include/")
+#    # TODO: Implement automatical downloading and unpacking of hg.libsdl.org/SDL
+#    # or using of separated repository for libSDL's backup
+#    message("SDL2 found in ${CMAKE_CURRENT_SOURCE_DIR}/../libSDL2/include folder")
+#    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libSDL2/include)
+#else()
+#    if(DOWNLOAD_SDL2_DEPENDENCY)
+#        add_dependencies(smpeg SDL2HG)
+#    else()
+#        find_library(SDL2_LIBRARY SDL2)
+#        message("Found ${SDL2_LIBRARY}")
+#    endif()
+#endif()
+
+if(DOWNLOAD_SDL2_DEPENDENCY)
+    add_dependencies(smpeg SDL2HG)
+elseif(SDL2_REPO_PATH)
+    include_directories(${SDL2_REPO_PATH}/include)
 else()
-    if(SDL2_REPO_PATH)
-        add_dependencies(smpeg SDL2HG)
-    else()
-        find_library(SDL2_LIBRARY SDL2)
-        message("Found ${SDL2_LIBRARY}")
-    endif()
+    find_library(SDL2_LIBRARY SDL2)
+    message("Found ${SDL2_LIBRARY}")
 endif()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/smpeg)
