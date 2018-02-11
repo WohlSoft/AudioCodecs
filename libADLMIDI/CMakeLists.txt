@@ -15,7 +15,9 @@ if(WIN32)
     add_definitions(-DUNICODE -D_UNICODE)
 endif()
 
-add_library(ADLMIDI STATIC
+set(ADLMIDI_SRCS)
+
+list(APPEND ADLMIDI_SRCS
     src/adldata.cpp
     src/adlmidi.cpp
     src/adlmidi_load.cpp
@@ -24,7 +26,22 @@ add_library(ADLMIDI STATIC
     src/adlmidi_private.cpp
     src/adlmidi_mus2mid.c
     src/adlmidi_xmi2mid.c
-    src/nukedopl3.c
+)
+
+option(ADLMIDI_USE_DOSBOX_EMULATOR "Use faster but less accurate DosBox emulator" OFF)
+if(ADLMIDI_USE_DOSBOX_EMULATOR)
+    add_definitions(-DADLMIDI_USE_DOSBOX_OPL)
+    list(APPEND ADLMIDI_SRCS
+        src/dbopl.cpp
+    )
+else()
+    list(APPEND ADLMIDI_SRCS
+        src/nukedopl3.c
+    )
+endif()
+
+add_library(ADLMIDI STATIC
+    ${ADLMIDI_SRCS}
 )
 
 target_include_directories(ADLMIDI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

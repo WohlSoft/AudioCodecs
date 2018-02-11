@@ -64,6 +64,11 @@ typedef int32_t ssize_t;
 #   endif
 #endif
 
+#ifdef __EMSCRIPTEN__
+typedef int32_t ssize_t;
+#endif
+
+
 namespace DBOPL
 {
 
