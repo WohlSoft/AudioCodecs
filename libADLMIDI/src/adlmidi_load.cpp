@@ -2,7 +2,7 @@
  * libADLMIDI is a free MIDI to WAV conversion library with OPL3 emulation
  *
  * Original ADLMIDI code: Copyright (c) 2010-2014 Joel Yliluoma <bisqwit@iki.fi>
- * ADLMIDI Library API:   Copyright (c) 2017 Vitaly Novichkov <admin@wohlnet.ru>
+ * ADLMIDI Library API:   Copyright (c) 2015-2018 Vitaly Novichkov <admin@wohlnet.ru>
  *
  * Library is based on the ADLMIDI, a MIDI player for Linux and Windows with OPL3 emulation:
  * http://iki.fi/bisqwit/source/adlmidi.html
@@ -23,8 +23,14 @@
 
 #include "adlmidi_private.hpp"
 
-#include "adlmidi_mus2mid.h"
-#include "adlmidi_xmi2mid.h"
+#ifndef ADLMIDI_DISABLE_MIDI_SEQUENCER
+#   ifndef ADLMIDI_DISABLE_MUS_SUPPORT
+#       include "adlmidi_mus2mid.h"
+#   endif//MUS
+#   ifndef ADLMIDI_DISABLE_XMI_SUPPORT
+#       include "adlmidi_xmi2mid.h"
+#   endif//XMI
+#endif //ADLMIDI_DISABLE_MIDI_SEQUENCER
 
 uint64_t MIDIplay::ReadBEint(const void *buffer, size_t nbytes)
 {
@@ -97,7 +103,8 @@ enum WOPL_InstrumentFlags
 {
     WOPL_Flags_NONE      = 0,
     WOPL_Flag_Enable4OP  = 0x01,
-    WOPL_Flag_Pseudo4OP  = 0x02
+    WOPL_Flag_Pseudo4OP  = 0x02,
+    WOPL_Flag_NoSound    = 0x04,
 };
 
 struct WOPL_Inst
@@ -145,6 +152,7 @@ static bool readInstrument(MIDIplay::fileReader &file, WOPL_Inst &ins, uint16_t 
 
     uint8_t flags       = idata[39];
     ins.adlins.flags = (flags & WOPL_Flag_Enable4OP) && (flags & WOPL_Flag_Pseudo4OP) ? adlinsdata::Flag_Pseudo4op : 0;
+    ins.adlins.flags|= (flags & WOPL_Flag_NoSound) ? adlinsdata::Flag_NoSound : 0;
     ins.fourOps      = (flags & WOPL_Flag_Enable4OP) || (flags & WOPL_Flag_Pseudo4OP);
 
     ins.op[0].feedconn = (idata[40]);
@@ -339,6 +347,7 @@ tryAgain:
     return true;
 }
 
+#ifndef ADLMIDI_DISABLE_MIDI_SEQUENCER
 bool MIDIplay::LoadMIDI(const std::string &filename)
 {
     fileReader file;
@@ -412,6 +421,7 @@ riffskip:
         fr.seek(7 - static_cast<long>(HeaderSize), SEEK_CUR);
         is_GMF = true;
     }
+    #ifndef ADLMIDI_DISABLE_MUS_SUPPORT
     else if(std::memcmp(HeaderBuf, "MUS\x1A", 4) == 0)
     {
         // MUS/DMX files (Doom)
@@ -444,6 +454,8 @@ riffskip:
         //Re-Read header again!
         goto riffskip;
     }
+    #endif //ADLMIDI_DISABLE_MUS_SUPPORT
+    #ifndef ADLMIDI_DISABLE_XMI_SUPPORT
     else if(std::memcmp(HeaderBuf, "FORM", 4) == 0)
     {
         if(std::memcmp(HeaderBuf + 8, "XDIR", 4) != 0)
@@ -482,6 +494,7 @@ riffskip:
         //Re-Read header again!
         goto riffskip;
     }
+    #endif //ADLMIDI_DISABLE_XMI_SUPPORT
     else if(std::memcmp(HeaderBuf, "CTMF", 4) == 0)
     {
         opl.dynamic_instruments.clear();
@@ -761,3 +774,4 @@ riffskip:
     ch.resize(opl.NumChannels);
     return true;
 }
+#endif //ADLMIDI_DISABLE_MIDI_SEQUENCER

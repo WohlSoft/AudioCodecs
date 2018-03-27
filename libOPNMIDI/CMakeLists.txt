@@ -3,7 +3,7 @@ project (libOPNMIDI)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
-add_definitions(-DUSE_LEGACY_EMULATOR)
+add_definitions(-DOPNMIDI_USE_LEGACY_EMULATOR)
 
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     # Turn on warnings and legacy C/C++ standards to support more compilers

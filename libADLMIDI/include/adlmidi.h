@@ -2,7 +2,7 @@
  * libADLMIDI is a free MIDI to WAV conversion library with OPL3 emulation
  *
  * Original ADLMIDI code: Copyright (c) 2010-2014 Joel Yliluoma <bisqwit@iki.fi>
- * ADLMIDI Library API:   Copyright (c) 2017 Vitaly Novichkov <admin@wohlnet.ru>
+ * ADLMIDI Library API:   Copyright (c) 2015-2018 Vitaly Novichkov <admin@wohlnet.ru>
  *
  * Library is based on the ADLMIDI, a MIDI player for Linux and Windows with OPL3 emulation:
  * http://iki.fi/bisqwit/source/adlmidi.html
@@ -27,6 +27,17 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#define ADLMIDI_VERSION_MAJOR       1
+#define ADLMIDI_VERSION_MINOR       3
+#define ADLMIDI_VERSION_PATCHLEVEL  2
+
+#define ADLMIDI_TOSTR(s) #s
+#define ADLMIDI_VERSION \
+        ADLMIDI_TOSTR(OPNMIDI_VERSION_MAJOR) "." \
+        ADLMIDI_TOSTR(OPNMIDI_VERSION_MINOR) "." \
+        ADLMIDI_TOSTR(OPNMIDI_VERSION_PATCHLEVEL)
+
 
 #include <stddef.h>
 
@@ -117,8 +128,17 @@ extern int adl_openBankData(struct ADL_MIDIPlayer *device, const void *mem, unsi
 /*Returns name of currently used OPL3 emulator*/
 extern const char *adl_emulatorName();
 
+typedef struct {
+    ADL_UInt16 major;
+    ADL_UInt16 minor;
+    ADL_UInt16 patch;
+} ADL_Version;
+
 /*Returns string which contains a version number*/
 extern const char *adl_linkedLibraryVersion();
+
+/*Returns structure which contains a version number of library */
+extern const ADL_Version *adl_linkedVersion();
 
 /*Returns string which contains last error message of initialization*/
 extern const char *adl_errorString();

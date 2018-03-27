@@ -2,7 +2,7 @@
  * libOPNMIDI is a free MIDI to WAV conversion library with OPN2 (YM2612) emulation
  *
  * MIDI parser and player (Original code from ADLMIDI): Copyright (c) 2010-2014 Joel Yliluoma <bisqwit@iki.fi>
- * OPNMIDI Library and YM2612 support:   Copyright (c) 2017 Vitaly Novichkov <admin@wohlnet.ru>
+ * OPNMIDI Library and YM2612 support:   Copyright (c) 2017-2018 Vitaly Novichkov <admin@wohlnet.ru>
  *
  * Library is based on the ADLMIDI, a MIDI player for Linux and Windows with OPL3 emulation:
  * http://iki.fi/bisqwit/source/adlmidi.html
@@ -81,7 +81,7 @@ OPN2::~OPN2()
 
 void OPN2::PokeO(size_t card, uint8_t port, uint8_t index, uint8_t value)
 {
-    #ifdef USE_LEGACY_EMULATOR
+    #ifdef OPNMIDI_USE_LEGACY_EMULATOR
     if(port == 1)
         cardsOP2[card]->write1(index, value);
     else
@@ -281,12 +281,12 @@ void OPN2::Reset(unsigned long PCM_RATE)
     regBD.clear();
     cardsOP2.resize(NumCards, NULL);
 
-    #ifndef USE_LEGACY_EMULATOR
+    #ifndef OPNMIDI_USE_LEGACY_EMULATOR
     OPN2_SetChipType(ym3438_type_asic);
     #endif
     for(size_t i = 0; i < cardsOP2.size(); i++)
     {
-    #ifdef USE_LEGACY_EMULATOR
+    #ifdef OPNMIDI_USE_LEGACY_EMULATOR
         cardsOP2[i] = new OPNMIDI_Ym2612_Emu();
         cardsOP2[i]->set_rate(PCM_RATE, 7670454.0);
     #else

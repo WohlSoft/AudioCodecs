@@ -2,7 +2,7 @@
  * libOPNMIDI is a free MIDI to WAV conversion library with OPN2 (YM2612) emulation
  *
  * MIDI parser and player (Original code from ADLMIDI): Copyright (c) 2010-2014 Joel Yliluoma <bisqwit@iki.fi>
- * OPNMIDI Library and YM2612 support:   Copyright (c) 2017 Vitaly Novichkov <admin@wohlnet.ru>
+ * OPNMIDI Library and YM2612 support:   Copyright (c) 2017-2018 Vitaly Novichkov <admin@wohlnet.ru>
  *
  * Library is based on the ADLMIDI, a MIDI player for Linux and Windows with OPL3 emulation:
  * http://iki.fi/bisqwit/source/adlmidi.html
@@ -23,8 +23,14 @@
 
 #include "opnmidi_private.hpp"
 
-#include "opnmidi_mus2mid.h"
-#include "opnmidi_xmi2mid.h"
+#ifndef OPNMIDI_DISABLE_MIDI_SEQUENCER
+#   ifndef OPNMIDI_DISABLE_MUS_SUPPORT
+#       include "opnmidi_mus2mid.h"
+#   endif
+#   ifndef OPNMIDI_DISABLE_XMI_SUPPORT
+#       include "opnmidi_xmi2mid.h"
+#   endif
+#endif //OPNMIDI_DISABLE_MIDI_SEQUENCER
 
 uint64_t OPNMIDIplay::ReadBEint(const void *buffer, size_t nbytes)
 {
@@ -274,10 +280,14 @@ bool OPNMIDIplay::LoadBank(OPNMIDIplay::fileReader &fr)
             size_t off = 37 + op * 7;
             std::memcpy(data.OPS[op].data, idata + off, 7);
         }
+
+        meta.flags = 0;
         if(version >= 2)
         {
             meta.ms_sound_kon   = toUint16BE(idata + 65);
             meta.ms_sound_koff  = toUint16BE(idata + 67);
+            if((meta.ms_sound_kon == 0) && (meta.ms_sound_koff == 0))
+                meta.flags |= opnInstMeta::Flag_NoSound;
         }
         else
         {
@@ -289,7 +299,6 @@ bool OPNMIDIplay::LoadBank(OPNMIDIplay::fileReader &fr)
         meta.opnno2 = uint16_t(opn.dynamic_instruments.size());
 
         /* Junk, delete later */
-        meta.flags = 0;
         meta.fine_tune      = 0.0;
         /* Junk, delete later */
 
@@ -302,6 +311,7 @@ bool OPNMIDIplay::LoadBank(OPNMIDIplay::fileReader &fr)
     return true;
 }
 
+#ifndef OPNMIDI_DISABLE_MIDI_SEQUENCER
 bool OPNMIDIplay::LoadMIDI(const std::string &filename)
 {
     fileReader file;
@@ -370,6 +380,8 @@ riffskip:
         fr.seek(7 - static_cast<long>(HeaderSize), SEEK_CUR);
         is_GMF = true;
     }
+
+    #ifndef OPNMIDI_DISABLE_MUS_SUPPORT
     else if(std::memcmp(HeaderBuf, "MUS\x1A", 4) == 0)
     {
         // MUS/DMX files (Doom)
@@ -402,6 +414,9 @@ riffskip:
         //Re-Read header again!
         goto riffskip;
     }
+    #endif //OPNMIDI_DISABLE_MUS_SUPPORT
+
+    #ifndef OPNMIDI_DISABLE_XMI_SUPPORT
     else if(std::memcmp(HeaderBuf, "FORM", 4) == 0)
     {
         if(std::memcmp(HeaderBuf + 8, "XDIR", 4) != 0)
@@ -440,6 +455,8 @@ riffskip:
         //Re-Read header again!
         goto riffskip;
     }
+    #endif //OPNMIDI_DISABLE_XMI_SUPPORT
+
     else
     {
         // Try to identify RSXX format
@@ -555,3 +572,4 @@ riffskip:
     ch.resize(opn.NumChannels);
     return true;
 }
+#endif //OPNMIDI_DISABLE_MIDI_SEQUENCER

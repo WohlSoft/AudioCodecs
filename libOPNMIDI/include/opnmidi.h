@@ -2,7 +2,7 @@
  * libOPNMIDI is a free MIDI to WAV conversion library with OPN2 (YM2612) emulation
  *
  * MIDI parser and player (Original code from ADLMIDI): Copyright (c) 2010-2014 Joel Yliluoma <bisqwit@iki.fi>
- * OPNMIDI Library and YM2612 support:   Copyright (c) 2017 Vitaly Novichkov <admin@wohlnet.ru>
+ * OPNMIDI Library and YM2612 support:   Copyright (c) 2017-2018 Vitaly Novichkov <admin@wohlnet.ru>
  *
  * Library is based on the ADLMIDI, a MIDI player for Linux and Windows with OPL3 emulation:
  * http://iki.fi/bisqwit/source/adlmidi.html
@@ -27,6 +27,16 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#define OPNMIDI_VERSION_MAJOR       1
+#define OPNMIDI_VERSION_MINOR       1
+#define OPNMIDI_VERSION_PATCHLEVEL  1
+
+#define OPNMIDI_TOSTR(s) #s
+#define OPNMIDI_VERSION \
+        OPNMIDI_TOSTR(OPNMIDI_VERSION_MAJOR) "." \
+        OPNMIDI_TOSTR(OPNMIDI_VERSION_MINOR) "." \
+        OPNMIDI_TOSTR(OPNMIDI_VERSION_PATCHLEVEL)
 
 #include <stddef.h>
 
@@ -89,8 +99,17 @@ extern int opn2_openBankData(struct OPN2_MIDIPlayer *device, const void *mem, lo
 /*Returns chip emulator name string*/
 extern const char *opn2_emulatorName();
 
+typedef struct {
+    OPN2_UInt16 major;
+    OPN2_UInt16 minor;
+    OPN2_UInt16 patch;
+} OPN2_Version;
+
 /*Returns string which contains a version number*/
 extern const char *opn2_linkedLibraryVersion();
+
+/*Returns structure which contains a version number of library */
+extern const OPN2_Version *opn2_linkedVersion();
 
 /*Returns string which contains last error message*/
 extern const char *opn2_errorString();

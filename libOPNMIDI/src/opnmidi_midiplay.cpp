@@ -2,7 +2,7 @@
  * libOPNMIDI is a free MIDI to WAV conversion library with OPN2 (YM2612) emulation
  *
  * MIDI parser and player (Original code from ADLMIDI): Copyright (c) 2010-2014 Joel Yliluoma <bisqwit@iki.fi>
- * OPNMIDI Library and YM2612 support:   Copyright (c) 2017 Vitaly Novichkov <admin@wohlnet.ru>
+ * OPNMIDI Library and YM2612 support:   Copyright (c) 2017-2018 Vitaly Novichkov <admin@wohlnet.ru>
  *
  * Library is based on the ADLMIDI, a MIDI player for Linux and Windows with OPL3 emulation:
  * http://iki.fi/bisqwit/source/adlmidi.html
@@ -92,6 +92,8 @@ void OPNMIDIplay::OpnChannel::AddAge(int64_t ms)
         }
     }
 }
+
+#ifndef OPNMIDI_DISABLE_MIDI_SEQUENCER
 
 OPNMIDIplay::MidiEvent::MidiEvent() :
     type(T_UNKNOWN),
@@ -211,7 +213,9 @@ void OPNMIDIplay::MidiTrackRow::sortEvents(bool *noteStates)
     events.insert(events.end(), controllers.begin(), controllers.end());
     events.insert(events.end(), anyOther.begin(), anyOther.end());
 }
+#endif //OPNMIDI_DISABLE_MIDI_SEQUENCER
 
+#ifndef OPNMIDI_DISABLE_MIDI_SEQUENCER
 bool OPNMIDIplay::buildTrackData()
 {
     fullSongTimeLength = 0.0;
@@ -276,7 +280,7 @@ bool OPNMIDIplay::buildTrackData()
                 evtPos.delay = ReadVarLenEx(&trackPtr, end, ok);
             if(!ok)
             {
-                int len = std::sprintf(error, "buildTrackData: Can't read variable-length value at begin of track %d.\n", (int)tk);
+                int len = std::snprintf(error, 150, "buildTrackData: Can't read variable-length value at begin of track %d.\n", (int)tk);
                 if((len > 0) && (len < 150))
                     errorString += std::string(error, (size_t)len);
                 return false;
@@ -304,7 +308,7 @@ bool OPNMIDIplay::buildTrackData()
             event = parseEvent(&trackPtr, end, status);
             if(!event.isValid)
             {
-                int len = std::sprintf(error, "buildTrackData: Fail to parse event in the track %d.\n", (int)tk);
+                int len = std::snprintf(error, 150, "buildTrackData: Fail to parse event in the track %d.\n", (int)tk);
                 if((len > 0) && (len < 150))
                     errorString += std::string(error, (size_t)len);
                 return false;
@@ -648,12 +652,12 @@ bool OPNMIDIplay::buildTrackData()
 
     return true;
 }
+#endif //OPNMIDI_DISABLE_MIDI_SEQUENCER
 
 
-
-OPNMIDIplay::OPNMIDIplay(unsigned long sampleRate):
-    //cmf_percussion_mode(false),
-    fullSongTimeLength(0.0),
+OPNMIDIplay::OPNMIDIplay(unsigned long sampleRate)
+#ifndef OPNMIDI_DISABLE_MIDI_SEQUENCER
+    : fullSongTimeLength(0.0),
     postSongWaitDelay(1.0),
     loopStartTime(-1.0),
     loopEndTime(-1.0),
@@ -662,6 +666,7 @@ OPNMIDIplay::OPNMIDIplay(unsigned long sampleRate):
     loopStart(false),
     loopEnd(false),
     invalidLoop(false)
+#endif
 {
     devices.clear();
 
@@ -735,7 +740,7 @@ uint64_t OPNMIDIplay::ReadVarLenEx(uint8_t **ptr, uint8_t *end, bool &ok)
     return result;
 }
 
-
+#ifndef OPNMIDI_DISABLE_MIDI_SEQUENCER
 double OPNMIDIplay::Tick(double s, double granularity)
 {
     s *= tempoMultiplier;
@@ -770,6 +775,7 @@ double OPNMIDIplay::Tick(double s, double granularity)
 
     return CurrentPositionNew.wait;
 }
+#endif //OPNMIDI_DISABLE_MIDI_SEQUENCER
 
 void OPNMIDIplay::TickIteratos(double s)
 {
@@ -779,6 +785,7 @@ void OPNMIDIplay::TickIteratos(double s)
     UpdateArpeggio(s);
 }
 
+#ifndef OPNMIDI_DISABLE_MIDI_SEQUENCER
 void OPNMIDIplay::seek(double seconds)
 {
     if(seconds < 0.0)
@@ -884,6 +891,7 @@ void OPNMIDIplay::setTempo(double tempo)
 {
     tempoMultiplier = tempo;
 }
+#endif //OPNMIDI_DISABLE_MIDI_SEQUENCER
 
 void OPNMIDIplay::realTime_ResetState()
 {
@@ -973,7 +981,7 @@ bool OPNMIDIplay::realTime_NoteOn(uint8_t channel, uint8_t note, uint8_t velocit
             {
                 if(!caugh_missing_banks_melodic.count(bank))
                 {
-                    hooks.onDebugMessage(hooks.onDebugMessage_userData, "[%i] Playing missing percussion bank %i (patch %i)", channel, bank, midiins);
+                    hooks.onDebugMessage(hooks.onDebugMessage_userData, "[%i] Playing missing percussion MIDI bank %i (patch %i)", channel, bank, midiins);
                     caugh_missing_banks_melodic.insert(bank);
                 }
             }
@@ -988,7 +996,7 @@ bool OPNMIDIplay::realTime_NoteOn(uint8_t channel, uint8_t note, uint8_t velocit
             {
                 if(!caugh_missing_banks_melodic.count(bank))
                 {
-                    hooks.onDebugMessage(hooks.onDebugMessage_userData, "[%i] Playing missing melodic bank %i (patch %i)", channel, bank, midiins);
+                    hooks.onDebugMessage(hooks.onDebugMessage_userData, "[%i] Playing missing melodic MIDI bank %i (patch %i)", channel, bank, midiins);
                     caugh_missing_banks_melodic.insert(bank);
                 }
             }
@@ -1003,28 +1011,47 @@ bool OPNMIDIplay::realTime_NoteOn(uint8_t channel, uint8_t note, uint8_t velocit
         */
     //if(midiins == 56) vol = vol*6/10; // HACK
 
-    const size_t        meta    = opn.GetAdlMetaNumber(midiins);
-    const opnInstMeta  &ains    = opn.GetAdlMetaIns(meta);
+    size_t              meta    = opn.GetAdlMetaNumber(midiins);
+    const opnInstMeta  *ains    = &opn.GetAdlMetaIns(meta);
     int16_t tone = note;
 
-    if(ains.tone)
+    if(!isPercussion && !isXgPercussion && (bank > 0)) // For non-zero banks
+    {
+        if(ains->flags & opnInstMeta::Flag_NoSound)
+        {
+            if(hooks.onDebugMessage)
+            {
+                if(!caugh_missing_instruments.count(static_cast<uint8_t>(midiins)))
+                {
+                    hooks.onDebugMessage(hooks.onDebugMessage_userData, "[%i] Caugh a blank instrument %i (offset %i) in the MIDI bank %u", channel, Ch[channel].patch, midiins, bank);
+                    caugh_missing_instruments.insert(static_cast<uint8_t>(midiins));
+                }
+            }
+            bank = 0;
+            midiins = Ch[channel].patch;
+            meta    = opn.GetAdlMetaNumber(midiins);
+            ains    = &opn.GetAdlMetaIns(meta);
+        }
+    }
+
+    if(ains->tone)
     {
         /*if(ains.tone < 20)
             tone += ains.tone;
         else*/
-        if(ains.tone < 128)
-            tone = ains.tone;
+        if(ains->tone < 128)
+            tone = ains->tone;
         else
-            tone -= ains.tone - 128;
+            tone -= ains->tone - 128;
     }
 
-    uint16_t i[2] = { ains.opnno1, ains.opnno2 };
+    uint16_t i[2] = { ains->opnno1, ains->opnno2 };
     //bool pseudo_4op = ains.flags & opnInstMeta::Flag_Pseudo8op;
     //if((opn.AdlPercussionMode == 1) && PercussionMap[midiins & 0xFF]) i[1] = i[0];
 
     if(hooks.onDebugMessage)
     {
-        if(!caugh_missing_instruments.count(static_cast<uint8_t>(midiins)) && (ains.flags & opnInstMeta::Flag_NoSound))
+        if(!caugh_missing_instruments.count(static_cast<uint8_t>(midiins)) && (ains->flags & opnInstMeta::Flag_NoSound))
         {
             hooks.onDebugMessage(hooks.onDebugMessage_userData, "[%i] Playing missing instrument %i", channel, midiins);
             caugh_missing_instruments.insert(static_cast<uint8_t>(midiins));
@@ -1534,7 +1561,7 @@ void OPNMIDIplay::NoteUpdate(uint16_t MidCh,
         Ch[MidCh].activenotes.erase(i);
 }
 
-
+#ifndef OPNMIDI_DISABLE_MIDI_SEQUENCER
 bool OPNMIDIplay::ProcessEventsNew(bool isSeek)
 {
     if(CurrentPositionNew.track.size() == 0)
@@ -1646,7 +1673,9 @@ bool OPNMIDIplay::ProcessEventsNew(bool isSeek)
 
     return true;//Has events in queue
 }
+#endif //OPNMIDI_DISABLE_MIDI_SEQUENCER
 
+#ifndef OPNMIDI_DISABLE_MIDI_SEQUENCER
 OPNMIDIplay::MidiEvent OPNMIDIplay::parseEvent(uint8_t **pptr, uint8_t *end, int &status)
 {
     uint8_t *&ptr = *pptr;
@@ -1850,6 +1879,7 @@ OPNMIDIplay::MidiEvent OPNMIDIplay::parseEvent(uint8_t **pptr, uint8_t *end, int
 
     return evt;
 }
+#endif //OPNMIDI_DISABLE_MIDI_SEQUENCER
 
 const std::string &OPNMIDIplay::getErrorString()
 {
@@ -1861,7 +1891,7 @@ void OPNMIDIplay::setErrorString(const std::string &err)
     errorStringOut = err;
 }
 
-
+#ifndef OPNMIDI_DISABLE_MIDI_SEQUENCER
 void OPNMIDIplay::HandleEvent(size_t tk, const OPNMIDIplay::MidiEvent &evt, int &status)
 {
     if(hooks.onEvent)
@@ -2018,10 +2048,11 @@ void OPNMIDIplay::HandleEvent(size_t tk, const OPNMIDIplay::MidiEvent &evt, int 
     }
     }
 }
+#endif //OPNMIDI_DISABLE_MIDI_SEQUENCER
 
-long OPNMIDIplay::CalculateAdlChannelGoodness(size_t c, uint16_t ins, uint16_t) const
+int64_t OPNMIDIplay::CalculateAdlChannelGoodness(size_t c, uint16_t ins, uint16_t) const
 {
-    long s = -ch[c].koff_time_until_neglible;
+    int64_t s = -ch[c].koff_time_until_neglible;
 
     // Same midi-instrument = some stability
     //if(c == MidCh) s += 4;
@@ -2033,9 +2064,9 @@ long OPNMIDIplay::CalculateAdlChannelGoodness(size_t c, uint16_t ins, uint16_t) 
         s -= 4000;
 
         if(!j->second.sustained)
-            s -= (long)j->second.kon_time_until_neglible;
+            s -= j->second.kon_time_until_neglible;
         else
-            s -= (long)(j->second.kon_time_until_neglible / 2);
+            s -= (j->second.kon_time_until_neglible / 2);
 
         MIDIchannel::activenotemap_t::const_iterator
         k = Ch[j->first.MidCh].activenotes.find(j->first.note);
@@ -2053,7 +2084,7 @@ long OPNMIDIplay::CalculateAdlChannelGoodness(size_t c, uint16_t ins, uint16_t) 
             }
 
             // Percussion is inferior to melody
-            s += 50 * (k->second.midiins / 128);
+            s += 50 * (int64_t)(k->second.midiins / 128);
             /*
                     if(k->second.midiins >= 25
                     && k->second.midiins < 40
@@ -2536,12 +2567,12 @@ retry_arpeggio:
 //        if(ains.tone)
 //        {
 //            /*if(ains.tone < 20)
-//                    std::sprintf(ToneIndication, "+%-2d", ains.tone);
+//                    std::snprintf(ToneIndication, 8, "+%-2d", ains.tone);
 //                else*/
 //            if(ains.tone < 128)
-//                std::sprintf(ToneIndication, "=%-2d", ains.tone);
+//                std::snprintf(ToneIndication, 8, "=%-2d", ains.tone);
 //            else
-//                std::sprintf(ToneIndication, "-%-2d", ains.tone - 128);
+//                std::snprintf(ToneIndication, 8, "-%-2d", ains.tone - 128);
 //        }
 //        std::printf("%s%s%s%u\t",
 //                    ToneIndication,
