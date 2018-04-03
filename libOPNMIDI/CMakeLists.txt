@@ -1,39 +1,228 @@
 cmake_minimum_required (VERSION 2.8.11)
 project (libOPNMIDI)
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
+#===========================================================================================
+# Strip garbage
+if(APPLE)
+    set(LINK_FLAGS_RELEASE  "${LINK_FLAGS_RELEASE} -dead_strip")
+ELSEIF(NOT MSVC AND NOT MSDOS)
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Os -s -fdata-sections -ffunction-sections -Wl,--gc-sections -Wl,-s")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Os -s -fdata-sections -ffunction-sections -Wl,--gc-sections -Wl,-s")
+    set(LINK_FLAGS_RELEASE  "${LINK_FLAGS_RELEASE} -Wl,--gc-sections -Wl,-s")
+ENDIF()
 
-add_definitions(-DOPNMIDI_USE_LEGACY_EMULATOR)
+# Global optimization flags
+IF(NOT MSVC AND NOT MSDOS)
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -fno-omit-frame-pointer")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-omit-frame-pointer")
+ENDIF()
 
-if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-    # Turn on warnings and legacy C/C++ standards to support more compilers
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -pedantic -std=c90")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -std=gnu++98")
-endif()
+if (CMAKE_BUILD_TYPE EQUAL "RELEASE")
+    add_definitions(-DNDEBUG)
+ENDIF()
+
+# Disable bogus MSVC warnings
+if(MSVC)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+ENDIF()
+
+# -fPIC thing
+IF(NOT WIN32 AND NOT DJGPP AND NOT MSDOS)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+ENDIF()
 
 if(WIN32)
     add_definitions(-DUNICODE -D_UNICODE)
 endif()
 
-add_library(OPNMIDI STATIC
-    src/opnmidi.cpp
-    src/opnmidi_load.cpp
-    src/opnmidi_midiplay.cpp
-    src/opnmidi_opn2.cpp
-    src/opnmidi_private.cpp
-    src/Ym2612_ChipEmu.cpp
-    src/opnmidi_mus2mid.c
-    src/opnmidi_xmi2mid.c
+function(set_legacy_standard destTarget)
+    if(${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 3.2)
+        if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+            # Turn on warnings and legacy C/C++ standards to support more compilers
+            target_compile_options(${destTarget} PRIVATE
+                $<$<COMPILE_LANGUAGE:C>:-Wall -pedantic -std=c90>
+                $<$<COMPILE_LANGUAGE:CXX>:-Wall -pedantic -std=gnu++98>
+            )
+        endif()
+    endif()
+endfunction()
+#===========================================================================================
+
+option(WITH_MIDIPLAY        "Build also demo MIDI player" OFF)
+
+option(USE_MAME_EMULATOR    "Use MAME YM2612 emulator (for most of hardware)" ON)
+option(USE_GENS_EMULATOR    "Use GENS 2.10 emulator (fastest, very outdated, inaccurate)" ON)
+option(USE_NUKED_EMULATOR    "Use Nuked OPN2 emulator (most accurate, heavy)" ON)
+
+# WIP FEATURES
+# option(WITH_CPP_EXTRAS      "Build with support for C++ extras (features are can be found in 'adlmidi.hpp' header)" OFF)
+option(WITH_MIDI_SEQUENCER  "Build with embedded MIDI sequencer. Disable this if you want use library in real-time MIDI drivers or plugins.)" ON)
+option(WITH_MUS_SUPPORT     "Build with support for DMX MUS files)" ON)
+option(WITH_XMI_SUPPORT     "Build with support for AIL XMI files)" ON)
+
+option(libOPNMIDI_STATIC   "Build static library of libOPNMIDI" ON)
+option(libOPNMIDI_SHARED   "Build shared library of libOPNMIDI" OFF)
+
+if(CMAKE_VERSION VERSION_EQUAL "3.1" OR CMAKE_VERSION VERSION_GREATER "3.1")
+    set(CMAKE_CXX_STANDARD 11)
+endif()
+
+set(libOPNMIDI_INSTALLS)
+
+include_directories(${libOPNMIDI_SOURCE_DIR}/include)
+include_directories(${libOPNMIDI_SOURCE_DIR}/src/)
+link_directories(${libOPNMIDI_BINARY_DIR}/)
+
+set(libOPNMIDI_SOURCES)
+
+list(APPEND libOPNMIDI_SOURCES
+    ${libOPNMIDI_SOURCE_DIR}/src/opnmidi.cpp
+    ${libOPNMIDI_SOURCE_DIR}/src/opnmidi_load.cpp
+    ${libOPNMIDI_SOURCE_DIR}/src/opnmidi_midiplay.cpp
+    ${libOPNMIDI_SOURCE_DIR}/src/opnmidi_opn2.cpp
+    ${libOPNMIDI_SOURCE_DIR}/src/opnmidi_private.cpp
 )
 
-target_include_directories(OPNMIDI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+if(WITH_MUS_SUPPORT AND WITH_MIDI_SEQUENCER)
+    list(APPEND libOPNMIDI_SOURCES
+        ${libOPNMIDI_SOURCE_DIR}/src/opnmidi_mus2mid.c
+    )
+else()
+    add_definitions(-DOPNMIDI_DISABLE_MUS_SUPPORT)
+endif()
 
-install(TARGETS OPNMIDI
+if(WITH_XMI_SUPPORT AND WITH_MIDI_SEQUENCER)
+    list(APPEND libOPNMIDI_SOURCES
+        ${libOPNMIDI_SOURCE_DIR}/src/opnmidi_xmi2mid.c
+    )
+else()
+    add_definitions(-DOPNMIDI_DISABLE_XMI_SUPPORT)
+endif()
+
+list(APPEND libOPNMIDI_SOURCES
+    ${libOPNMIDI_SOURCE_DIR}/src/chips/opn_chip_base.cpp
+)
+
+if(USE_GENS_EMULATOR)
+    list(APPEND libOPNMIDI_SOURCES
+        ${libOPNMIDI_SOURCE_DIR}/src/chips/gens_opn2.cpp
+        ${libOPNMIDI_SOURCE_DIR}/src/chips/gens/Ym2612_Emu.cpp
+    )
+    set(HAS_EMULATOR TRUE)
+else()
+    add_definitions(-DOPNMIDI_DISABLE_GENS_EMULATOR)
+endif()
+
+if(USE_MAME_EMULATOR)
+    list(APPEND libOPNMIDI_SOURCES
+        ${libOPNMIDI_SOURCE_DIR}/src/chips/mame_opn2.cpp
+        ${libOPNMIDI_SOURCE_DIR}/src/chips/mame/mame_ym2612fm.c
+    )
+    set(HAS_EMULATOR TRUE)
+else()
+    add_definitions(-DOPNMIDI_DISABLE_MAME_EMULATOR)
+endif()
+
+if(USE_NUKED_EMULATOR)
+    list(APPEND libOPNMIDI_SOURCES
+        ${libOPNMIDI_SOURCE_DIR}/src/chips/nuked_opn2.cpp
+        ${libOPNMIDI_SOURCE_DIR}/src/chips/nuked/ym3438.c
+    )
+    set(HAS_EMULATOR TRUE)
+else()
+    add_definitions(-DOPNMIDI_DISABLE_NUKED_EMULATOR)
+endif()
+
+if(NOT HAS_EMULATOR)
+    message(FATAL_ERROR "No emulators enabled! You must enable at least one emulator!")
+endif()
+
+if(NOT WITH_MIDI_SEQUENCER)
+    add_definitions(-DOPNMIDI_DISABLE_MIDI_SEQUENCER)
+endif()
+
+# WIP
+#if(NOT WITH_CPP_EXTRAS)
+#    add_definitions(-DADLMIDI_DISABLE_CPP_EXTRAS)
+#endif()
+
+if(libOPNMIDI_STATIC)
+    add_library(OPNMIDI_static STATIC ${libOPNMIDI_SOURCES})
+    set_target_properties(OPNMIDI_static PROPERTIES OUTPUT_NAME OPNMIDI)
+    target_include_directories(OPNMIDI_static PUBLIC ${SDLMixerX_SOURCE_DIR}/include)
+    set_legacy_standard(OPNMIDI_static)
+    list(APPEND libOPNMIDI_INSTALLS OPNMIDI_static)
+endif()
+
+if(libOPNMIDI_SHARED)
+    add_library(OPNMIDI_shared SHARED ${libOPNMIDI_SOURCES})
+    set_target_properties(OPNMIDI_shared PROPERTIES OUTPUT_NAME OPNMIDI)
+    target_include_directories(OPNMIDI_shared PUBLIC ${SDLMixerX_SOURCE_DIR}/include)
+    set_legacy_standard(OPNMIDI_shared)
+    list(APPEND libOPNMIDI_INSTALLS OPNMIDI_shared)
+endif()
+
+if(NOT libOPNMIDI_STATIC AND NOT libOPNMIDI_SHARED)
+    message(FATAL_ERROR "Both static and shared libOPNMIDI builds are disabled!
+You must enable at least one of them!")
+endif()
+
+if(WITH_MIDIPLAY)
+    find_library(SDL2_LIBRARY SDL2 REQUIRED)
+    include_directories(${SDL2_INCLUDE_DIR})
+    message("Found ${SDL2_LIBRARY}")
+
+    add_executable(opnmidiplay
+        ${libOPNMIDI_SOURCE_DIR}/utils/midiplay/opnplay.cpp
+        ${libOPNMIDI_SOURCE_DIR}/utils/midiplay/wave_writer.c
+        # ${libOPNMIDI_SOURCE_DIR}/utils/midiplay/wave_writer.c # WIP
+    )
+
+    if(WIN32)
+        if(MSVC)
+            target_link_libraries(opnmidiplay OPNMIDI ${SDL2_LIBRARY})
+        else()
+            target_link_libraries(opnmidiplay OPNMIDI ${SDL2_LIBRARY} pthread)
+        endif()
+    else()
+        target_link_libraries(opnmidiplay OPNMIDI ${SDL2_LIBRARY} pthread dl m stdc++)
+    endif()
+
+    if(libOPNMIDI_SHARED)
+        add_dependencies(opnmidiplay OPNMIDI_shared)
+        # ========= WIP =========
+        # set_target_properties(opnmidiplay PROPERTIES COMPILE_FLAGS "-Wl,-rpath='$$ORIGIN/../lib'")
+    else()
+        if(NOT libOPNMIDI_STATIC)
+            message(FATAL_ERROR "libOPNMIDI is required to be built!")
+        endif()
+        add_dependencies(opnmidiplay OPNMIDI_static)
+    endif()
+
+    list(APPEND libOPNMIDI_INSTALLS opnmidiplay)
+endif()
+
+install(TARGETS ${libOPNMIDI_INSTALLS}
+        RUNTIME DESTINATION "bin"
         LIBRARY DESTINATION "lib"
         ARCHIVE DESTINATION "lib"
         INCLUDES DESTINATION "include")
 
 install(FILES
         include/opnmidi.h
+        #include/opnmidi.hpp # WIP
         DESTINATION include/)
+
+message("==== libOPNMIDI options ====")
+message("WITH_MIDIPLAY            = ${WITH_MIDIPLAY}")
+message("USE_MAME_EMULATOR        = ${USE_MAME_EMULATOR}")
+message("USE_GENS_EMULATOR        = ${USE_GENS_EMULATOR}")
+message("USE_NUKED_EMULATOR       = ${USE_NUKED_EMULATOR}")
+message("WITH_MIDI_SEQUENCER      = ${WITH_MIDI_SEQUENCER}")
+# message("WITH_CPP_EXTRAS          = ${WITH_CPP_EXTRAS}")
+message("WITH_MUS_SUPPORT         = ${WITH_MUS_SUPPORT}")
+message("WITH_XMI_SUPPORT         = ${WITH_XMI_SUPPORT}")
+message("libOPNMIDI_STATIC        = ${libOPNMIDI_STATIC}")
+message("libOPNMIDI_SHARED        = ${libOPNMIDI_SHARED}")
 

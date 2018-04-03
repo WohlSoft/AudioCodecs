@@ -1,21 +1,22 @@
-#
-#  Project file for the Qt Creator IDE
-#
+TEMPLATE=app
+CONFIG-=qt
+CONFIG+=console
 
-TEMPLATE = lib
-CONFIG  -= qt
-CONFIG  += staticlib
+TARGET=opnplay
+# DESTDIR=$$PWD/bin/
 
-TARGET = OPNMIDI
-INSTALLINCLUDES = $$PWD/include/*
-INSTALLINCLUDESTO = OPNMIDI
-include($$PWD/../audio_codec_common.pri)
+#INCLUDEPATH += /home/vitaly/_git_repos/PGE-Project/_Libs/_builds/linux/include
+#LIBS += -L/home/vitaly/_git_repos/PGE-Project/_Libs/_builds/linux/lib
+# LIBS += -Wl,-Bstatic -lSDL2 -Wl,-Bdynamic -lpthread -ldl
+LIBS += -lSDL2 -lpthread -ldl
 
-DEFINES += OPNMIDI_USE_LEGACY_EMULATOR
+# DEFINES += USE_LEGACY_EMULATOR
+# DEFINES += DEBUG_DUMP_RAW_STREAM
 
-macx: QMAKE_CXXFLAGS_WARN_ON += -Wno-absolute-value
+QMAKE_CFLAGS    += -std=c90 -pedantic
+QMAKE_CXXFLAGS  += -std=c++98 -pedantic
 
-INCLUDEPATH += $$PWD $$PWD/include
+INCLUDEPATH += $$PWD/include $$PWD/src
 
 HEADERS += \
     include/opnmidi.h \
@@ -47,5 +48,5 @@ SOURCES += \
     src/opnmidi_mus2mid.c \
     src/opnmidi_opn2.cpp \
     src/opnmidi_private.cpp \
-    src/opnmidi_xmi2mid.c
-
+    src/opnmidi_xmi2mid.c \
+    utils/midiplay/opnplay.cpp
