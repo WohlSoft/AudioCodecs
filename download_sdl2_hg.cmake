@@ -13,7 +13,7 @@ include(ExternalProject)
 
 # SET OUTPUT VARS
 # set(SDL2_INSTALL_DIR ${CMAKE_BINARY_DIR}/external/install)
-set(SDL2_INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
+set(SDL2_INSTALL_DIR ${CMAKE_BINARY_DIR})
 set(SDL2_REPOSITORY_PATH ${SDL2_INSTALL_DIR})
 
 set(SDL2_CMAKE_FPIC_FLAG "")
@@ -25,5 +25,15 @@ ExternalProject_Add(
     SDL2HG
     PREFIX ${CMAKE_BINARY_DIR}/external/SDL2
     URL https://hg.libsdl.org/SDL/archive/default.tar.bz2
-    CMAKE_ARGS "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}" "-DCMAKE_INSTALL_PREFIX=${SDL2_INSTALL_DIR}" -DSNDIO=OFF -DCMAKE_DEBUG_POSTFIX= ${SDL2_CMAKE_FPIC_FLAG}
+    CMAKE_ARGS "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}" "-DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}" -DSNDIO=OFF -DCMAKE_DEBUG_POSTFIX= ${SDL2_CMAKE_FPIC_FLAG}
+)
+
+# Install built SDL's headers and libraries into actual installation directory
+install(
+    CODE "file( GLOB builtSdl2Heads \"${CMAKE_BINARY_DIR}/include/SDL2/*.h\" )"
+    CODE "file( INSTALL \${builtSdl2Heads} DESTINATION \"${CMAKE_INSTALL_PREFIX}/include/SDL2\" )"
+    CODE "file( GLOB builtSdlLibs \"${CMAKE_BINARY_DIR}/lib/*SDL2*\" )"
+    CODE "file( INSTALL \${builtSdlLibs} DESTINATION \"${CMAKE_INSTALL_PREFIX}/lib\" )"
+    CODE "file( GLOB builtSdlBins \"${CMAKE_BINARY_DIR}/bin/*SDL2*\" )"
+    CODE "file( INSTALL \${builtSdlBins} DESTINATION \"${CMAKE_INSTALL_PREFIX}/bin\" )"
 )
