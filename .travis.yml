@@ -20,13 +20,12 @@ branches:
 addons:
     apt:
         sources: ['ubuntu-toolchain-r-test']
-        packages: ['libsdl2-dev']
+        packages: ['ninja-build']
 
 install:
     - mkdir build; cd build
-    - cmake -DDOWNLOAD_SDL2_DEPENDENCY=ON -DCMAKE_INSTALL_PREFIX=~/AudioCodecs/ -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
+    - cmake -G "Ninja" -DDOWNLOAD_SDL2_DEPENDENCY=ON -DCMAKE_INSTALL_PREFIX=~/AudioCodecs/ -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
 
 script:
-    - make -j 2
-    - make install
+    - cmake --build . --config ${BUILD_TYPE} --target install -- -j 2
 
