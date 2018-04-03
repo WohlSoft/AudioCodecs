@@ -24,7 +24,8 @@ addons:
 
 install:
     - mkdir build; cd build
-    - cmake -G "Ninja" -DDOWNLOAD_SDL2_DEPENDENCY=ON -DCMAKE_INSTALL_PREFIX=~/AudioCodecs/ -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
+    - if [ $TRAVIS_OS_NAME == linux ]; then cmake -G "Ninja" -DDOWNLOAD_SDL2_DEPENDENCY=ON -DCMAKE_INSTALL_PREFIX=~/AudioCodecs/ -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..; fi
+    - if [ $TRAVIS_OS_NAME == osx ];   then cmake -G "Xcode" -DDOWNLOAD_SDL2_DEPENDENCY=ON -DCMAKE_INSTALL_PREFIX=~/AudioCodecs/ -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..; fi
 
 script:
     - cmake --build . --config ${BUILD_TYPE} --target install -- -j 2
