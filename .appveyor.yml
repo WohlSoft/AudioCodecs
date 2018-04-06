@@ -44,7 +44,7 @@ environment:
       PLATFORMTOOLSET: "v140_xp"
     - BUILD_TYPE: Debug
       COMPILER: MSVC17
-      GENERATOR: "Visual Studio 15 2015 Win64"
+      GENERATOR: "Visual Studio 15 2017 Win64"
       APPVEYOR_BUILD_WORKER_IMAGE: "Visual Studio 2017"
       PLATFORM: x64
       PLATFORMTOOLSET: "v141_xp"
