@@ -5,6 +5,8 @@ OPNMIDI Library: Copyright (c) 2017-2018 Vitaly Novichkov <admin@wohlnet.ru>
 
 Library is based on core of the [libADLMIDI](https://github.com/Wohlstand/libADLMIDI), a MIDI playing library with OPL3 emulation.
 
+[![Build Status](https://semaphoreci.com/api/v1/wohlstand/libopnmidi/branches/master/badge.svg)](https://semaphoreci.com/wohlstand/libopnmidi)
+
 # Tested on platforms
 * Linux GCC 4.8, 4.9, 5.4 / CLang
 * Mac OS X CLang (Xcode 7.x)
@@ -40,11 +42,17 @@ sudo make install
 ```
 
 ## Available CMake options
-* **CMAKE_PREFIX_PATH** - destinition folder where libADLMIDI will be installed. On Linux it is /usr/local/ by default.
+* **CMAKE_PREFIX_PATH** - destinition folder where libOPNMIDI will be installed. On Linux it is /usr/local/ by default.
 * **CMAKE_BUILD_TYPE** - Build types: **Debug** or **Release**
 * **WITH_MIDIPLAY** - (ON/OFF, default OFF) Build demo MIDI player (Requires SDL2 and also pthread on Windows with MinGW)
-* **WITH_EMBEDDED_BANKS** - (ON/OFF, default ON) Enable or disable embedded banks (Original ADLMIDI and older versions of libADLMIDI are had embedded-only banks with no ability to load custom banks in runtime).
-* **USE_GENS_EMULATOR** - (ON/OFF, default ON) Use GENS 2.10 emulator instead of Nuked OPN2. This emulator has less accuracy and seems outdated (will be replaced with MAME), but it is well optimized for a work on slow devices such as older computers, embedded or mobile devices.
+* **WITH_VLC_PLUGIN** - (ON/OFF, default OFF) Compile VLC plugin. For now, works on Linux and VLC version 2.2.2. Support for newer VLC versions and other platforms comming soon!
+* **WITH_MIDI_SEQUENCER** - (ON/OFF, default ON) Enable built-in MIDI sequencer to play loaded MIDI files. When you will disable MIDI sequencer, Real-Time functions only will work. Use this option when you are making MIDI plugin or real-time MIDI driver.
+* **USE_MAME_EMULATOR** - (ON/OFF, default ON) Enable support for MAME YM2612 emulator. Well-accurate and fast on slow devices.
+* **USE_NUKED_EMULATOR** - (ON/OFF, default ON) Enable support for Nuked OPN2 emulator. Very accurate, however, requires a very powerful CPU. *Is not recommended for mobile devices!*.
+* **USE_GENS_EMULATOR** - (ON/OFF, default ON) Enable support for GENS 2.10 emulator. Very outdated and inaccurate, but fastest.
+* **WITH_MUS_SUPPORT** - (ON/OFF, default ON) Enable support for DMX MUS format in built-in MIDI sequencer.
+* **WITH_XMI_SUPPORT** - (ON/OFF, default ON) Enable support for AIL XMI format in built-in MIDI sequencer.
+* **WITH_UNIT_TESTS** - (ON/OFF, default OFF) Also compile unit-tests of internal features.
 
 * **libOPNMIDI_STATIC** - (ON/OFF, default ON) Build static library
 * **libOPNMIDI_SHARED** - (ON/OFF, default OFF) Build shared library
@@ -111,12 +119,16 @@ To remove XMI support, define `OPNMIDI_DISABLE_XMI_SUPPORT` macro and remove tho
 * [OPNMIDI Player for Android](https://github.com/Wohlstand/OPNMIDI-Player-Java/) - a little MIDI-player for Android which uses libOPNMIDI to play MIDI files and provides flexible GUI with ability to change bank, flags, number of emulated chips, etc.
 
 # Changelog
-## 1.2.0   dev
+## 1.2.0   2018-04-24
  * Added ability to disable MUS and XMI converters
  * Added ability to disable embedded MIDI sequencer to use library as RealTime synthesizer only or use any custom MIDI sequencer plugins.
  * Fixed blank instruments fallback in multi-bank support. When using non-zero bank, if instrument is blank, then, instrument will be taken from a root (I.e. zero bank).
  * Added support for real-time switching the emulator
  * Added support for MAME YM2612 Emulator
+ * Added support for CC-120 - "All sound off" on the MIDI channel
+ * Changed logic of CC-74 Brightness to affect sound only between 0 and 64 like real XG synthesizers. Ability to turn on a full-ranged brightness (to use full 0...127 range) is kept.
+ * Added support for different output sample formats (PCM8, PCM8U, PCM16, PCM16U, PCM32, PCM32U, Float32, and Float64) (Thanks to [Jean Pierre Cimalando](https://github.com/jpcima) for a work!)
+ * Reworked MIDI channels management to avoid any memory reallocations while music processing for a hard real time. (Thanks to [Jean Pierre Cimalando](https://github.com/jpcima) for a work!)
 
 ## 1.1.0   2018-01-21
 * First stable release

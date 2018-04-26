@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.8.11)
+cmake_minimum_required (VERSION 3.2)
 project (libOPNMIDI)
 
 #===========================================================================================
@@ -37,7 +37,7 @@ if(WIN32)
 endif()
 
 function(set_legacy_standard destTarget)
-    if(${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 3.2)
+    if(${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} VERSION_GREATER 3.2)
         if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
             # Turn on warnings and legacy C/C++ standards to support more compilers
             target_compile_options(${destTarget} PRIVATE
@@ -50,10 +50,11 @@ endfunction()
 #===========================================================================================
 
 option(WITH_MIDIPLAY        "Build also demo MIDI player" OFF)
+option(WITH_VLC_PLUGIN      "Build also a plugin for VLC Media Player" OFF)
 
 option(USE_MAME_EMULATOR    "Use MAME YM2612 emulator (for most of hardware)" ON)
 option(USE_GENS_EMULATOR    "Use GENS 2.10 emulator (fastest, very outdated, inaccurate)" ON)
-option(USE_NUKED_EMULATOR    "Use Nuked OPN2 emulator (most accurate, heavy)" ON)
+option(USE_NUKED_EMULATOR   "Use Nuked OPN2 emulator (most accurate, heavy)" ON)
 
 # WIP FEATURES
 # option(WITH_CPP_EXTRAS      "Build with support for C++ extras (features are can be found in 'adlmidi.hpp' header)" OFF)
@@ -150,7 +151,7 @@ endif()
 if(libOPNMIDI_STATIC)
     add_library(OPNMIDI_static STATIC ${libOPNMIDI_SOURCES})
     set_target_properties(OPNMIDI_static PROPERTIES OUTPUT_NAME OPNMIDI)
-    target_include_directories(OPNMIDI_static PUBLIC ${SDLMixerX_SOURCE_DIR}/include)
+    target_include_directories(OPNMIDI_static PUBLIC ${libOPNMIDI_SOURCE_DIR}/include)
     set_legacy_standard(OPNMIDI_static)
     list(APPEND libOPNMIDI_INSTALLS OPNMIDI_static)
 endif()
@@ -158,7 +159,7 @@ endif()
 if(libOPNMIDI_SHARED)
     add_library(OPNMIDI_shared SHARED ${libOPNMIDI_SOURCES})
     set_target_properties(OPNMIDI_shared PROPERTIES OUTPUT_NAME OPNMIDI)
-    target_include_directories(OPNMIDI_shared PUBLIC ${SDLMixerX_SOURCE_DIR}/include)
+    target_include_directories(OPNMIDI_shared PUBLIC ${libOPNMIDI_SOURCE_DIR}/include)
     set_legacy_standard(OPNMIDI_shared)
     list(APPEND libOPNMIDI_INSTALLS OPNMIDI_shared)
 endif()
@@ -166,6 +167,13 @@ endif()
 if(NOT libOPNMIDI_STATIC AND NOT libOPNMIDI_SHARED)
     message(FATAL_ERROR "Both static and shared libOPNMIDI builds are disabled!
 You must enable at least one of them!")
+endif()
+
+add_library(OPNMIDI INTERFACE)
+if(libOPNMIDI_SHARED)
+  target_link_libraries(OPNMIDI INTERFACE OPNMIDI_shared)
+else()
+  target_link_libraries(OPNMIDI INTERFACE OPNMIDI_static)
 endif()
 
 if(WITH_MIDIPLAY)
@@ -203,6 +211,40 @@ if(WITH_MIDIPLAY)
     list(APPEND libOPNMIDI_INSTALLS opnmidiplay)
 endif()
 
+
+if(WITH_VLC_PLUGIN)
+    include(cmake/FindLIBVLC.cmake)
+    message("Found ${LIBVLCCORE_LIBRARY} of version ${LIBVLC_VERSION} with includes ${LIBVLC_INCLUDE_DIR}")
+
+    set(opnmidi_vlc_src)
+    list(APPEND opnmidi_vlc_src
+        ${libOPNMIDI_SOURCE_DIR}/utils/vlc_codec/libopnmidi.c)
+
+    add_library(opnmidi_plugin MODULE ${opnmidi_vlc_src})
+    target_compile_options(opnmidi_plugin PUBLIC
+                "-DVLC_MODULE_COPYRIGHT=\"Copyright \(c\) Vitaly Novichkov\""
+                "-DVLC_MODULE_LICENSE=\"GPLv3\""
+                "-DMODULE_STRING=\"opnmidi\""
+                ${VLCPLUGIN_DEFINITIONS})
+    target_include_directories(opnmidi_plugin PRIVATE
+            ${LIBVLC_INCLUDE_DIR}/vlc/plugins
+            ${LIBVLC_INCLUDE_DIR}/vlc)
+    target_link_libraries(opnmidi_plugin OPNMIDI vlccore m stdc++)
+    # target_link_libraries(opnmidi_plugin INTERFACE "-export-symbol-regex ^vlc_entry")
+
+    if(libOPNMIDI_SHARED)
+        add_dependencies(opnmidi_plugin OPNMIDI_shared)
+        # ========= WIP =========
+        # set_target_properties(opnmidiplay PROPERTIES COMPILE_FLAGS "-Wl,-rpath='$$ORIGIN/../lib'")
+    else()
+        if(NOT libOPNMIDI_STATIC)
+            message(FATAL_ERROR "libOPNMIDI is required to be built!")
+        endif()
+        add_dependencies(opnmidi_plugin OPNMIDI_static)
+    endif()
+
+endif()
+
 install(TARGETS ${libOPNMIDI_INSTALLS}
         RUNTIME DESTINATION "bin"
         LIBRARY DESTINATION "lib"
@@ -214,8 +256,17 @@ install(FILES
         #include/opnmidi.hpp # WIP
         DESTINATION include/)
 
+option(WITH_UNIT_TESTS   "Enable unit testing" OFF)
+if(WITH_UNIT_TESTS)
+    enable_testing ()
+    add_subdirectory(test/activenotes)
+    add_subdirectory(test/channel-users)
+endif()
+
+
 message("==== libOPNMIDI options ====")
 message("WITH_MIDIPLAY            = ${WITH_MIDIPLAY}")
+message("WITH_VLC_PLUGIN          = ${WITH_VLC_PLUGIN}")
 message("USE_MAME_EMULATOR        = ${USE_MAME_EMULATOR}")
 message("USE_GENS_EMULATOR        = ${USE_GENS_EMULATOR}")
 message("USE_NUKED_EMULATOR       = ${USE_NUKED_EMULATOR}")
@@ -225,4 +276,5 @@ message("WITH_MUS_SUPPORT         = ${WITH_MUS_SUPPORT}")
 message("WITH_XMI_SUPPORT         = ${WITH_XMI_SUPPORT}")
 message("libOPNMIDI_STATIC        = ${libOPNMIDI_STATIC}")
 message("libOPNMIDI_SHARED        = ${libOPNMIDI_SHARED}")
+message("WITH_UNIT_TESTS          = ${WITH_UNIT_TESTS}")
 
