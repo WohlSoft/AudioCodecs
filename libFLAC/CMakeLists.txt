@@ -25,11 +25,15 @@ endif()
 
 if(WIN32)
     CHECK_FUNCTION_EXISTS(_wutime64 HAFE_WUTIME64)
-    if(HAFE_WUTIME64)
-        message("TEST: _wutime64 has found!")
+    try_compile(HAFE_WUTIME64_BUILT
+                ${CMAKE_BINARY_DIR}/compile_tests
+                ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/wutime64/wutime64_test.c
+    )
+    if(HAFE_WUTIME64 AND HAFE_WUTIME64_BUILT)
+        message("TEST: _wutime64 found and compiling!")
         add_definitions(-DHAFE_WUTIME64)
     else()
-        message("TEST: _wutime64 IS NOT EXIST!")
+        message("TEST: _wutime64 DISABLED: found: [${HAFE_WUTIME64}] compiling: [${HAFE_WUTIME64_BUILT}]")
     endif()
 endif()
 
