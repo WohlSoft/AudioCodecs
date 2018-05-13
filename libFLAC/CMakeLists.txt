@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 2.8.11)
-project (libFLAC)
+project (libFLAC C)
 
 include(CheckIncludeFiles)
 include(CheckFunctionExists)
@@ -26,7 +26,10 @@ endif()
 if(WIN32)
     CHECK_FUNCTION_EXISTS(_wutime64 HAFE_WUTIME64)
     if(HAFE_WUTIME64)
+        message("TEST: _wutime64 has found!")
         add_definitions(-DHAFE_WUTIME64)
+    else()
+        message("TEST: _wutime64 IS NOT EXIST!")
     endif()
 endif()
 

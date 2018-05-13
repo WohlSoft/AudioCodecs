@@ -1,4 +1,14 @@
+#ifdef _WIN32
+#undef  NO_OLDNAMES
+#undef _NO_OLDNAMES
+#endif
+
+#include <io.h>
 #include <sys/utime.h>
+#include <stdio.h>
+#include <sys/stat.h>
+#include <sys/utime.h>
+#include <windows.h>
 
 int main()
 {
