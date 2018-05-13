@@ -34,6 +34,7 @@
 #endif
 
 #include <io.h>
+#include <sys/utime.h>
 #include "share/compat.h"
 #include "share/windows_unicode_filenames.h"
 
