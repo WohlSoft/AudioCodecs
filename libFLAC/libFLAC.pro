@@ -11,7 +11,7 @@ INSTALLINCLUDES = $$PWD/include/FLAC/*
 INSTALLINCLUDESTO = FLAC
 include($$PWD/../audio_codec_common.pri)
 
-DEFINES += VERSION="1.3.2" PACKAGE_VERSION="1.3.2"
+DEFINES += "VERSION=\\\"1.3.2\\\"" "PACKAGE_VERSION=\\\"1.3.2\\\""
 
 DEFINES     += HAVE_CONFIG_H FLAC__NO_DLL
 win*-msvc*: {
@@ -24,8 +24,7 @@ win*-msvc*: {
 #win32:DEFINES += HAVE_FSEEKO
 macx: QMAKE_CFLAGS_WARN_ON = -Wall -Wno-unused-variable
 
-INCLUDEPATH += $$PWD $$PWD/include $$PWD/include_p $$PWD/src/
-
+INCLUDEPATH += $$PWD $$PWD/include $$PWD/include_p $$PWD/src/libFLAC $$PWD/src/libFLAC/include
 INCLUDEPATH += $$PWD/../libogg/include
 
 HEADERS += \
@@ -55,54 +54,54 @@ HEADERS += \
     include_p/share/safe_str.h \
     include_p/share/utf8.h \
     include_p/share/win_utf8_io.h \
-    src/ia32/nasm.h \
-    src/include/private/all.h \
-    src/include/private/bitmath.h \
-    src/include/private/bitreader.h \
-    src/include/private/bitwriter.h \
-    src/include/private/cpu.h \
-    src/include/private/crc.h \
-    src/include/private/fixed.h \
-    src/include/private/float.h \
-    src/include/private/format.h \
-    src/include/private/lpc.h \
-    src/include/private/macros.h \
-    src/include/private/md5.h \
-    src/include/private/memory.h \
-    src/include/private/metadata.h \
-    src/include/private/ogg_decoder_aspect.h \
-    src/include/private/ogg_encoder_aspect.h \
-    src/include/private/ogg_helper.h \
-    src/include/private/ogg_mapping.h \
-    src/include/private/stream_encoder.h \
-    src/include/private/stream_encoder_framing.h \
-    src/include/private/window.h \
-    src/include/protected/all.h \
-    src/include/protected/stream_decoder.h \
-    src/include/protected/stream_encoder.h \
-    config.h
+    src/libFLAC/ia32/nasm.h \
+    src/libFLAC/include/private/all.h \
+    src/libFLAC/include/private/bitmath.h \
+    src/libFLAC/include/private/bitreader.h \
+    src/libFLAC/include/private/bitwriter.h \
+    src/libFLAC/include/private/cpu.h \
+    src/libFLAC/include/private/crc.h \
+    src/libFLAC/include/private/fixed.h \
+    src/libFLAC/include/private/float.h \
+    src/libFLAC/include/private/format.h \
+    src/libFLAC/include/private/lpc.h \
+    src/libFLAC/include/private/macros.h \
+    src/libFLAC/include/private/md5.h \
+    src/libFLAC/include/private/memory.h \
+    src/libFLAC/include/private/metadata.h \
+    src/libFLAC/include/private/ogg_decoder_aspect.h \
+    src/libFLAC/include/private/ogg_encoder_aspect.h \
+    src/libFLAC/include/private/ogg_helper.h \
+    src/libFLAC/include/private/ogg_mapping.h \
+    src/libFLAC/include/private/stream_encoder.h \
+    src/libFLAC/include/private/stream_encoder_framing.h \
+    src/libFLAC/include/private/window.h \
+    src/libFLAC/include/protected/all.h \
+    src/libFLAC/include/protected/stream_decoder.h \
+    src/libFLAC/include/protected/stream_encoder.h \
+    src/libFLAC/config.h
 
 SOURCES += \
-    src/bitmath.c \
-    src/bitreader.c \
-    src/bitwriter.c \
-    src/cpu.c \
-    src/crc.c \
-    src/fixed.c \
-    src/format.c \
-    src/lpc.c \
-    src/md5.c \
-    src/memory.c \
-    src/metadata_iterators.c \
-    src/metadata_object.c \
-    src/ogg_decoder_aspect.c \
-    src/ogg_encoder_aspect.c \
-    src/ogg_helper.c \
-    src/ogg_mapping.c \
-    src/stream_decoder.c \
-    src/stream_encoder.c \
-    src/stream_encoder_framing.c \
-    src/window.c
+    src/libFLAC/bitmath.c \
+    src/libFLAC/bitreader.c \
+    src/libFLAC/bitwriter.c \
+    src/libFLAC/cpu.c \
+    src/libFLAC/crc.c \
+    src/libFLAC/fixed.c \
+    src/libFLAC/format.c \
+    src/libFLAC/lpc.c \
+    src/libFLAC/md5.c \
+    src/libFLAC/memory.c \
+    src/libFLAC/metadata_iterators.c \
+    src/libFLAC/metadata_object.c \
+    src/libFLAC/ogg_decoder_aspect.c \
+    src/libFLAC/ogg_encoder_aspect.c \
+    src/libFLAC/ogg_helper.c \
+    src/libFLAC/ogg_mapping.c \
+    src/libFLAC/stream_decoder.c \
+    src/libFLAC/stream_encoder.c \
+    src/libFLAC/stream_encoder_framing.c \
+    src/libFLAC/window.c
 
 # Include this if you want use integer-only version
 #SOURCES += \

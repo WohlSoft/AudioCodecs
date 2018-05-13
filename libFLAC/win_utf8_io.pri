@@ -1,3 +1,4 @@
 DEFINES += UNICODE _UNICODE
-SOURCES += $$PWD/src/win_utf8_io.c
-SOURCES += $$PWD/src/windows_unicode_filenames.c
+SOURCES += \
+    $$PWD/src/share/win_utf8_io/win_utf8_io.c \
+    $$PWD/src/libFLAC/windows_unicode_filenames.c

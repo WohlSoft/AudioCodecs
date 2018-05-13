@@ -26,32 +26,32 @@ endif()
 set(FLAC_SRC)
 
 list(APPEND FLAC_SRC
-    src/bitmath.c
-    src/bitreader.c
-    src/bitwriter.c
-    src/cpu.c
-    src/crc.c
-    src/fixed.c
-    src/format.c
-    src/lpc.c
-    src/md5.c
-    src/memory.c
-    src/metadata_iterators.c
-    src/metadata_object.c
-    src/ogg_decoder_aspect.c
-    src/ogg_encoder_aspect.c
-    src/ogg_helper.c
-    src/ogg_mapping.c
-    src/stream_decoder.c
-    src/stream_encoder.c
-    src/stream_encoder_framing.c
-    src/window.c
+    src/libFLAC/bitmath.c
+    src/libFLAC/bitreader.c
+    src/libFLAC/bitwriter.c
+    src/libFLAC/cpu.c
+    src/libFLAC/crc.c
+    src/libFLAC/fixed.c
+    src/libFLAC/format.c
+    src/libFLAC/lpc.c
+    src/libFLAC/md5.c
+    src/libFLAC/memory.c
+    src/libFLAC/metadata_iterators.c
+    src/libFLAC/metadata_object.c
+    src/libFLAC/ogg_decoder_aspect.c
+    src/libFLAC/ogg_encoder_aspect.c
+    src/libFLAC/ogg_helper.c
+    src/libFLAC/ogg_mapping.c
+    src/libFLAC/stream_decoder.c
+    src/libFLAC/stream_encoder.c
+    src/libFLAC/stream_encoder_framing.c
+    src/libFLAC/window.c
 )
 
 if(WIN32)
     add_definitions(-DUNICODE -D_UNICODE)
     list(APPEND FLAC_SRC
-        src/win_utf8_io.c
+        src/share/win_utf8_io/win_utf8_io.c
         src/windows_unicode_filenames.c
     )
 endif()
@@ -60,14 +60,19 @@ add_library(FLAC STATIC
     ${FLAC_SRC}
 )
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include_p)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libogg/include)
-
 target_include_directories(FLAC PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_definitions(FLAC PRIVATE
     -DVERSION="${FLAC_VERSION}"
     -DPACKAGE_VERSION="${FLAC_VERSION}"
+)
+target_include_directories(FLAC PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../libogg/include
+)
+target_include_directories(FLAC PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/include_p
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/libFLAC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/libFLAC/include
 )
 
 install(TARGETS FLAC
@@ -86,4 +91,3 @@ install(FILES
         include/FLAC/stream_decoder.h
         include/FLAC/stream_encoder.h
         DESTINATION include/FLAC/)
-
