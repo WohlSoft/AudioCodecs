@@ -16,6 +16,8 @@ add_definitions(
     -DFLAC__NO_DLL
 )
 
+set(FLAC_VERSION "1.3.2")
+
 CHECK_FUNCTION_EXISTS(fseeko HAVE_FSEEKO)
 if(HAVE_FSEEKO)
     add_definitions(-DHAVE_FSEEKO)
@@ -43,11 +45,15 @@ list(APPEND FLAC_SRC
     src/stream_decoder.c
     src/stream_encoder.c
     src/stream_encoder_framing.c
-    src/window.c)
+    src/window.c
+)
 
 if(WIN32)
     add_definitions(-DUNICODE -D_UNICODE)
-    list(APPEND FLAC_SRC src/win_utf8_io.c)
+    list(APPEND FLAC_SRC
+        src/win_utf8_io.c
+        src/windows_unicode_filenames.c
+    )
 endif()
 
 add_library(FLAC STATIC
@@ -59,6 +65,10 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libogg/include)
 
 target_include_directories(FLAC PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_compile_definitions(FLAC PRIVATE
+    -DVERSION="${FLAC_VERSION}"
+    -DPACKAGE_VERSION="${FLAC_VERSION}"
+)
 
 install(TARGETS FLAC
         LIBRARY DESTINATION "lib"

@@ -1,5 +1,5 @@
 /* libFLAC - Free Lossless Audio Codec library
- * Copyright (C) 2012-2016  Xiph.org Foundation
+ * Copyright (C) 2013-2016  Xiph.Org Foundation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,44 +29,39 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef FLAC__PRIVATE__MACROS_H
-#define FLAC__PRIVATE__MACROS_H
+#ifdef _WIN32
 
-#if defined(__GNUC__) && (__GNUC__ > 4 || ( __GNUC__ == 4 && __GNUC_MINOR__ >= 3))
+#ifndef flac__windows_unicode_filenames_h
+#define flac__windows_unicode_filenames_h
 
-#define flac_max(a,b) \
-	({ __typeof__ (a) _a = (a); \
-	__typeof__ (b) _b = (b); \
-	_a > _b ? _a : _b; })
+#include <stdio.h>
+#include <sys/stat.h>
+#include <sys/utime.h>
+#include "FLAC/ordinals.h"
 
-#define MIN_PASTE(A,B) A##B
-#define MIN_IMPL(A,B,L) ({ \
-	__typeof__(A) MIN_PASTE(__a,L) = (A); \
-	__typeof__(B) MIN_PASTE(__b,L) = (B); \
-	MIN_PASTE(__a,L) < MIN_PASTE(__b,L) ? MIN_PASTE(__a,L) : MIN_PASTE(__b,L); \
-	})
-
-#define flac_min(A,B) MIN_IMPL(A,B,__COUNTER__)
-
-/* Whatever other unix that has sys/param.h */
-#elif defined(HAVE_SYS_PARAM_H)
-#include <sys/param.h>
-#define flac_max(a,b) MAX(a,b)
-#define flac_min(a,b) MIN(a,b)
-
-/* Windows VS has them in stdlib.h.. XXX:Untested */
-#elif defined(_MSC_VER)
-#include <stdlib.h>
-#define flac_max(a,b) __max(a,b)
-#define flac_min(a,b) __min(a,b)
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-#ifndef flac_min
-#define flac_min(x,y)	((x) <= (y) ? (x) : (y))
+void flac_internal_set_utf8_filenames(FLAC__bool flag);
+FLAC__bool flac_internal_get_utf8_filenames(void);
+#define flac_set_utf8_filenames flac_internal_set_utf8_filenames
+#define flac_get_utf8_filenames flac_internal_get_utf8_filenames
+
+FILE* flac_internal_fopen_utf8(const char *filename, const char *mode);
+int flac_internal_stat64_utf8(const char *path, struct __stat64 *buffer);
+int flac_internal_chmod_utf8(const char *filename, int pmode);
+int flac_internal_utime_utf8(const char *filename, struct utimbuf *times);
+int flac_internal_unlink_utf8(const char *filename);
+int flac_internal_rename_utf8(const char *oldname, const char *newname);
+
+#include <windows.h>
+HANDLE WINAPI flac_internal_CreateFile_utf8(const char *lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile);
+#define CreateFile_utf8 flac_internal_CreateFile_utf8
+
+#ifdef __cplusplus
+} /* extern "C" */
 #endif
 
-#ifndef flac_max
-#define flac_max(x,y)	((x) >= (y) ? (x) : (y))
 #endif
-
 #endif

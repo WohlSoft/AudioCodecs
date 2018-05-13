@@ -20,7 +20,7 @@
 #  include <config.h>
 #endif
 
-#ifdef HAVE_ICONV
+#if !defined _WIN32 && defined HAVE_ICONV
 
 #include <assert.h>
 #include <errno.h>
@@ -29,8 +29,8 @@
 #include <string.h>
 
 #include "iconvert.h"
-#include <share/alloc.h>
-#include <share/safe_str.h>
+#include "share/alloc.h"
+#include "share/safe_str.h"
 
 /*
  * Convert data from one encoding to another. Return:

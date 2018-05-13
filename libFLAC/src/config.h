@@ -60,7 +60,7 @@
 #define HAVE_STDINT_H 1
 
 /* Version number of package */
-#define VERSION "1.3.1"
+/* #define VERSION "..." */
 
 /* Target processor is big endian. */
 #define WORDS_BIGENDIAN 0

@@ -11,6 +11,8 @@ INSTALLINCLUDES = $$PWD/include/FLAC/*
 INSTALLINCLUDESTO = FLAC
 include($$PWD/../audio_codec_common.pri)
 
+DEFINES += VERSION="1.3.2" PACKAGE_VERSION="1.3.2"
+
 DEFINES     += HAVE_CONFIG_H FLAC__NO_DLL
 win*-msvc*: {
     DEFINES += _CRT_SECURE_NO_WARNINGS
