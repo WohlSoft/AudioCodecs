@@ -134,13 +134,13 @@ int flac_internal_utime_utf8(const char *filename, struct utimbuf *times)
 		return utime(filename, times);
 	} else {
 		wchar_t *wname;
-		struct __utimbuf64 ut;
+		struct FLAC_struct_utime ut;
 		int ret;
 
 		if (!(wname = wchar_from_utf8(filename))) return -1;
 		ut.actime = times->actime;
 		ut.modtime = times->modtime;
-		ret = _wutime64(wname, &ut);
+		ret = FLAC_utime(wname, &ut);
 		free(wname);
 
 		return ret;

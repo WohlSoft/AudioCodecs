@@ -29,6 +29,14 @@ if(qtCompileTest(fseeko)) {
 } else {
     message("TEST: fseeko was not found!")
 }
+win32:{
+    if(qtCompileTest(wutime64)) {
+        DEFINES += HAFE_WUTIME64
+        message("TEST: _wutime64 has been found!")
+    } else {
+        message("TEST: _wutime64 was not found!")
+    }
+}
 
 macx: QMAKE_CFLAGS_WARN_ON = -Wall -Wno-unused-variable
 
@@ -128,4 +136,3 @@ SOURCES += \
 #    src/stream_encoder_intrin_ssse3.c
 
 win32: include($$PWD/win_utf8_io.pri)
-

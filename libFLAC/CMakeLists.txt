@@ -23,6 +23,13 @@ if(HAVE_FSEEKO)
     add_definitions(-DHAVE_FSEEKO)
 endif()
 
+if(WIN32)
+    CHECK_FUNCTION_EXISTS(_wutime64 HAFE_WUTIME64)
+    if(HAFE_WUTIME64)
+        add_definitions(-DHAFE_WUTIME64)
+    endif()
+endif()
+
 set(FLAC_SRC)
 
 list(APPEND FLAC_SRC

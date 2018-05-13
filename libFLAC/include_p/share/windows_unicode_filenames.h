@@ -43,6 +43,14 @@
 extern "C" {
 #endif
 
+#ifdef HAFE_WUTIME64
+#define FLAC_struct_utime __utimbuf64
+#define FLAC_utime _wutime64
+#else
+#define FLAC_struct_utime _utimbuf
+#define FLAC_utime _wutime
+#endif
+
 void flac_internal_set_utf8_filenames(FLAC__bool flag);
 FLAC__bool flac_internal_get_utf8_filenames(void);
 #define flac_set_utf8_filenames flac_internal_set_utf8_filenames
