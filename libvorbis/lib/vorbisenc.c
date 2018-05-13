@@ -11,7 +11,6 @@
  ********************************************************************
 
  function: simple programmatic interface for encoder mode setup
- last mod: $Id: vorbisenc.c 19457 2015-03-03 00:15:29Z giles $
 
  ********************************************************************/
 
@@ -910,8 +909,8 @@ int vorbis_encode_setup_vbr(vorbis_info *vi,
   ci=vi->codec_setup;
   hi=&ci->hi;
 
-  quality += .0000001f;
-  if(quality >= 1.f) quality = .9999f;
+  quality+=.0000001;
+  if(quality>=1.)quality=.9999;
 
   hi->req=quality;
   hi->setup=get_setup_template(channels,rate,quality,0,&hi->base_setting);
@@ -1211,7 +1210,7 @@ int vorbis_encode_ctl(vorbis_info *vi,int number,void *arg){
                                           hi->req,
                                           hi->managed,
                                           &new_base);
-        if(!hi->setup)return OV_EIMPL;
+        if(!new_template)return OV_EIMPL;
         hi->setup=new_template;
         hi->base_setting=new_base;
         vorbis_encode_setup_setting(vi,vi->channels,vi->rate);
