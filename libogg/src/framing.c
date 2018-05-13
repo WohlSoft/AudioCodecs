@@ -12,13 +12,16 @@
 
  function: code raw packets into framed OggSquish stream and
            decode Ogg streams back into raw packets
- last mod: $Id: framing.c 18758 2013-01-08 16:29:56Z tterribe $
 
  note: The CRC code is directly derived from public domain code by
  Ross Williams (ross@guest.adelaide.edu.au).  See docs/framing.html
  for details.
 
  ********************************************************************/
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <stdlib.h>
 #include <limits.h>
@@ -723,8 +726,10 @@ long ogg_sync_pageseek(ogg_sync_state *oy,ogg_page *og){
       /* replace the computed checksum with the one actually read in */
       memcpy(page+22,chksum,4);
 
+#ifndef DISABLE_CRC
       /* Bad checksum. Lose sync */
       goto sync_fail;
+#endif
     }
   }
 
@@ -875,6 +880,7 @@ int ogg_stream_pagein(ogg_stream_state *os, ogg_page *og){
      some segments */
   if(continued){
     if(os->lacing_fill<1 ||
+       (os->lacing_vals[os->lacing_fill-1]&0xff)<255 ||
        os->lacing_vals[os->lacing_fill-1]==0x400){
       bos=0;
       for(;segptr<segments;segptr++){
@@ -1492,6 +1498,34 @@ const int head3_7[] = {0x4f,0x67,0x67,0x53,0,0x05,
                        1,
                        0};
 
+int compare_packet(const ogg_packet *op1, const ogg_packet *op2){
+  if(op1->packet!=op2->packet){
+    fprintf(stderr,"op1->packet != op2->packet\n");
+    return(1);
+  }
+  if(op1->bytes!=op2->bytes){
+    fprintf(stderr,"op1->bytes != op2->bytes\n");
+    return(1);
+  }
+  if(op1->b_o_s!=op2->b_o_s){
+    fprintf(stderr,"op1->b_o_s != op2->b_o_s\n");
+    return(1);
+  }
+  if(op1->e_o_s!=op2->e_o_s){
+    fprintf(stderr,"op1->e_o_s != op2->e_o_s\n");
+    return(1);
+  }
+  if(op1->granulepos!=op2->granulepos){
+    fprintf(stderr,"op1->granulepos != op2->granulepos\n");
+    return(1);
+  }
+  if(op1->packetno!=op2->packetno){
+    fprintf(stderr,"op1->packetno != op2->packetno\n");
+    return(1);
+  }
+  return(0);
+}
+
 void test_pack(const int *pl, const int **headers, int byteskip,
                int pageskip, int packetskip){
   unsigned char *data=_ogg_malloc(1024*1024); /* for scripted test cases only */
@@ -1600,7 +1634,7 @@ void test_pack(const int *pl, const int **headers, int byteskip,
               ogg_stream_packetout(&os_de,&op_de); /* just catching them all */
 
               /* verify peek and out match */
-              if(memcmp(&op_de,&op_de2,sizeof(op_de))){
+              if(compare_packet(&op_de,&op_de2)){
                 fprintf(stderr,"packetout != packetpeek! pos=%ld\n",
                         depacket);
                 exit(1);
@@ -1785,6 +1819,7 @@ int main(void){
     test_pack(packets,headret,0,0,0);
   }
 
+#ifndef DISABLE_CRC
   {
     /* test for the libogg 1.1.1 resync in large continuation bug
        found by Josh Coalson)  */
@@ -1794,6 +1829,9 @@ int main(void){
     fprintf(stderr,"testing continuation resync in very large packets... ");
     test_pack(packets,headret,100,2,3);
   }
+#else
+    fprintf(stderr,"Skipping continuation resync test due to --disable-crc\n");
+#endif
 
   {
     /* term only page.  why not? */
@@ -2055,6 +2093,7 @@ int main(void){
       fprintf(stderr,"ok.\n");
     }
 
+#ifndef DISABLE_CRC
     /* Test recapture: page + garbage + page */
     {
       ogg_page og_de;
@@ -2096,6 +2135,9 @@ int main(void){
 
       fprintf(stderr,"ok.\n");
     }
+#else
+    fprintf(stderr,"Skipping recapture test due to --disable-crc\n");
+#endif
 
     /* Free page data that was previously copied */
     {
