@@ -52,7 +52,7 @@ if(WIN32)
     add_definitions(-DUNICODE -D_UNICODE)
     list(APPEND FLAC_SRC
         src/share/win_utf8_io/win_utf8_io.c
-        src/windows_unicode_filenames.c
+        src/libFLAC/windows_unicode_filenames.c
     )
 endif()
 
