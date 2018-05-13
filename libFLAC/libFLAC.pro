@@ -21,7 +21,15 @@ win*-msvc*: {
     QMAKE_CFLAGS_WARN_ON = \
         -Wno-implicit-fallthrough
 }
-#win32:DEFINES += HAVE_FSEEKO
+
+load(configure)
+if(qtCompileTest(fseeko)) {
+    DEFINES += HAVE_FSEEKO
+    message("TEST: fseeko has been found!")
+} else {
+    message("TEST: fseeko was not found!")
+}
+
 macx: QMAKE_CFLAGS_WARN_ON = -Wall -Wno-unused-variable
 
 INCLUDEPATH += $$PWD $$PWD/include $$PWD/include_p $$PWD/src/libFLAC $$PWD/src/libFLAC/include
