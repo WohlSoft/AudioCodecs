@@ -9,7 +9,8 @@ Library is based on the ADLMIDI, a MIDI player for Linux and Windows with OPL3 e
 
 [http://iki.fi/bisqwit/source/adlmidi.html](http://iki.fi/bisqwit/source/adlmidi.html)
 
-[![Build Status](https://semaphoreci.com/api/v1/wohlstand/libadlmidi/branches/master/badge.svg)](https://semaphoreci.com/wohlstand/libadlmidi)
+* Semaphore-CI: [![Build Status](https://semaphoreci.com/api/v1/wohlstand/libadlmidi/branches/master/shields_badge.svg)](https://semaphoreci.com/wohlstand/libadlmidi)
+* AppVeyor CI: [![Build status](https://ci.appveyor.com/api/projects/status/bfhwdsm13s17rn49?svg=true)](https://ci.appveyor.com/project/Wohlstand/libadlmidi)
 
 # Differences with original tool
 * Reverb code has been removed.
@@ -135,6 +136,9 @@ To build that example you will need to have installed SDL2 library.
 * Add support of MIDI Format 2 files (FL Studio made MIDI-files are wired and opening of those files making lossy of tempo and some meta-information events)
 
 # Changelog
+## 1.3.3   dev
+ * Fixed an inability to load another custom bank without of library re-initialization
+
 ## 1.3.2   2018-04-24
  * Added ability to disable MUS and XMI converters
  * Added ability to disable embedded MIDI sequencer to use library as RealTime synthesizer only or use any custom MIDI sequencer plugins.

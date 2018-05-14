@@ -120,7 +120,7 @@ ADLMIDI_EXPORT int adl_setBank(ADL_MIDIPlayer *device, int bank)
     if(static_cast<uint32_t>(bankno) >= NumBanks)
     {
         char errBuf[150];
-        snprintf(errBuf, 150, "Embedded bank number may only be 0..%" PRIu32 "!\n", (NumBanks - 1));
+        snprintf(errBuf, 150, "Embedded bank number may only be 0..%u!\n", static_cast<unsigned int>(NumBanks - 1));
         play->setErrorString(errBuf);
         return -1;
     }
@@ -631,8 +631,8 @@ static void CopySamplesTransformed(ADL_UInt8 *dstLeft, ADL_UInt8 *dstRight, cons
                                    Ret(&transform)(int32_t))
 {
     for(size_t i = 0; i < frameCount; ++i) {
-        *(Dst *)(dstLeft + (i * sampleOffset)) = transform(src[2 * i]);
-        *(Dst *)(dstRight + (i * sampleOffset)) = transform(src[(2 * i) + 1]);
+        *(Dst *)(dstLeft + (i * sampleOffset)) = (Dst)transform(src[2 * i]);
+        *(Dst *)(dstRight + (i * sampleOffset)) = (Dst)transform(src[(2 * i) + 1]);
     }
 }
 

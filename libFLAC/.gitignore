@@ -1,0 +1,3 @@
+.qmake.cache
+config.log
+config.tests/*/*.exe

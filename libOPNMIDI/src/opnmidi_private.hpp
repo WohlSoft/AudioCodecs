@@ -78,6 +78,28 @@ typedef __int32 ssize_t;
 #include <deque>
 #include <algorithm>
 
+/*
+ * Workaround for some compilers are has no those macros in their headers!
+ */
+#ifndef INT8_MIN
+#define INT8_MIN    (-0x7f - 1)
+#endif
+#ifndef INT16_MIN
+#define INT16_MIN   (-0x7fff - 1)
+#endif
+#ifndef INT32_MIN
+#define INT32_MIN   (-0x7fffffff - 1)
+#endif
+#ifndef INT8_MAX
+#define INT8_MAX    0x7f
+#endif
+#ifndef INT16_MAX
+#define INT16_MAX   0x7fff
+#endif
+#ifndef INT32_MAX
+#define INT32_MAX   0x7fffffff
+#endif
+
 #ifdef _MSC_VER
 #pragma warning(disable:4244)
 #pragma warning(disable:4267)
@@ -539,6 +561,7 @@ public:
         uint8_t panning, vibrato, sustain;
         char ____padding[6];
         double  bend, bendsense;
+        int bendsense_lsb, bendsense_msb;
         double  vibpos, vibspeed, vibdepth;
         int64_t vibdelay;
         uint8_t lastlrpn, lastmrpn;
@@ -728,7 +751,9 @@ public:
         void resetAllControllers()
         {
             bend = 0.0;
-            bendsense = 2 / 8192.0;
+            bendsense_msb = 2;
+            bendsense_lsb = 0;
+            updateBendSensitivity();
             volume  = 100;
             expression = 127;
             sustain = 0;
@@ -740,7 +765,11 @@ public:
             portamento = 0;
             brightness = 127;
         }
-
+        void updateBendSensitivity()
+        {
+            int cent = bendsense_msb * 100 + bendsense_lsb;
+            bendsense = cent * (0.01 / 8192.0);
+        }
         MIDIchannel()
         {
             activenotes_clear();
