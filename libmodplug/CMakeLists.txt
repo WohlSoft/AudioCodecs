@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 2.8.11)
-project (libModPlug)
+project (libModPlug CXX)
 
 include(CheckFunctionExists)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)

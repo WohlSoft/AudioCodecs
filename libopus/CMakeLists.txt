@@ -1,8 +1,10 @@
 cmake_minimum_required (VERSION 2.8.11)
 project (libOPUS C)
 
+include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
+
 if(NOT MSVC)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wstrict-prototypes -Wno-unused-variable -Wno-incompatible-pointer-types")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wstrict-prototypes -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-incompatible-pointer-types")
 endif()
 
 set(CMAKE_C_STANDARD 99)
@@ -625,6 +627,11 @@ if(FLOAT_POINT)
 endif()
 
 add_library(opus STATIC ${OPUS_SRC})
+
+if(CMAKE_BUILD_TYPE_LOWER STREQUAL "debug")
+    target_compile_definitions(opus PRIVATE "-DOPUS_WILL_BE_SLOW")
+    message("WARNING!!! OPUS built without of any optimizations will be very slow!")
+endif()
 
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/

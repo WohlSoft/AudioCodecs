@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 3.2)
-project (libADLMIDI)
+project (libADLMIDI C CXX)
 
 #===========================================================================================
 # Strip garbage
@@ -17,7 +17,7 @@ IF(NOT MSVC AND NOT MSDOS)
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-omit-frame-pointer")
 ENDIF()
 
-if (CMAKE_BUILD_TYPE EQUAL "RELEASE")
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_definitions(-DNDEBUG)
 ENDIF()
 

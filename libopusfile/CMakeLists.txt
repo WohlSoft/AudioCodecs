@@ -1,6 +1,8 @@
 cmake_minimum_required (VERSION 2.8.11)
 project (libOpusFile C)
 
+include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
+
 if(NOT MSVC)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wstrict-prototypes -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-incompatible-pointer-types")
 endif()
