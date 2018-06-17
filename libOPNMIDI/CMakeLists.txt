@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 3.2)
-project (libOPNMIDI C CXX)
+project(libOPNMIDI C CXX)
 
 #===========================================================================================
 # Strip garbage
@@ -13,11 +13,16 @@ ENDIF()
 
 # Global optimization flags
 IF(NOT MSVC AND NOT MSDOS)
+# Global optimization flags
     set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -fno-omit-frame-pointer")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-omit-frame-pointer")
+# Turn on all warnings
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 ENDIF()
 
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
+string(TOLOWER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_LOWER)
+if(CMAKE_BUILD_TYPE_LOWER EQUAL "release")
     add_definitions(-DNDEBUG)
 ENDIF()
 
@@ -49,21 +54,23 @@ function(set_legacy_standard destTarget)
 endfunction()
 #===========================================================================================
 
-option(WITH_MIDIPLAY        "Build also demo MIDI player" OFF)
-option(WITH_VLC_PLUGIN      "Build also a plugin for VLC Media Player" OFF)
+option(libOPNMIDI_STATIC   "Build static library of libOPNMIDI" ON)
+option(libOPNMIDI_SHARED   "Build shared library of libOPNMIDI" OFF)
 
+option(WITH_MIDI_SEQUENCER  "Build with embedded MIDI sequencer. Disable this if you want use library in real-time MIDI drivers or plugins.)" ON)
+option(WITH_HQ_RESAMPLER    "Build with support for high quality resampling" OFF)
+option(WITH_MUS_SUPPORT     "Build with support for DMX MUS files)" ON)
+option(WITH_XMI_SUPPORT     "Build with support for AIL XMI files)" ON)
 option(USE_MAME_EMULATOR    "Use MAME YM2612 emulator (for most of hardware)" ON)
 option(USE_GENS_EMULATOR    "Use GENS 2.10 emulator (fastest, very outdated, inaccurate)" ON)
 option(USE_NUKED_EMULATOR   "Use Nuked OPN2 emulator (most accurate, heavy)" ON)
-
+option(USE_GX_EMULATOR      "Use Genesis Plus GX emulator (experimental)" OFF)
 # WIP FEATURES
 # option(WITH_CPP_EXTRAS      "Build with support for C++ extras (features are can be found in 'adlmidi.hpp' header)" OFF)
-option(WITH_MIDI_SEQUENCER  "Build with embedded MIDI sequencer. Disable this if you want use library in real-time MIDI drivers or plugins.)" ON)
-option(WITH_MUS_SUPPORT     "Build with support for DMX MUS files)" ON)
-option(WITH_XMI_SUPPORT     "Build with support for AIL XMI files)" ON)
 
-option(libOPNMIDI_STATIC   "Build static library of libOPNMIDI" ON)
-option(libOPNMIDI_SHARED   "Build shared library of libOPNMIDI" OFF)
+option(WITH_MIDIPLAY        "Build also demo MIDI player" OFF)
+option(WITH_VLC_PLUGIN      "Build also a plugin for VLC Media Player" OFF)
+option(WITH_DAC_UTIL        "Build also OPN2 DAC testing utility" OFF)
 
 if(CMAKE_VERSION VERSION_EQUAL "3.1" OR CMAKE_VERSION VERSION_GREATER "3.1")
     set(CMAKE_CXX_STANDARD 11)
@@ -101,10 +108,6 @@ else()
     add_definitions(-DOPNMIDI_DISABLE_XMI_SUPPORT)
 endif()
 
-list(APPEND libOPNMIDI_SOURCES
-    ${libOPNMIDI_SOURCE_DIR}/src/chips/opn_chip_base.cpp
-)
-
 if(USE_GENS_EMULATOR)
     list(APPEND libOPNMIDI_SOURCES
         ${libOPNMIDI_SOURCE_DIR}/src/chips/gens_opn2.cpp
@@ -133,6 +136,16 @@ if(USE_NUKED_EMULATOR)
     set(HAS_EMULATOR TRUE)
 else()
     add_definitions(-DOPNMIDI_DISABLE_NUKED_EMULATOR)
+endif()
+
+if(USE_GX_EMULATOR)
+    list(APPEND libOPNMIDI_SOURCES
+        ${libOPNMIDI_SOURCE_DIR}/src/chips/gx_opn2.cpp
+        ${libOPNMIDI_SOURCE_DIR}/src/chips/gx/gx_ym2612.c
+    )
+    set(HAS_EMULATOR TRUE)
+else()
+    add_definitions(-DOPNMIDI_DISABLE_GX_EMULATOR)
 endif()
 
 if(NOT HAS_EMULATOR)
@@ -176,26 +189,31 @@ else()
   target_link_libraries(OPNMIDI INTERFACE OPNMIDI_static)
 endif()
 
-if(WITH_MIDIPLAY)
+if(WITH_MIDIPLAY OR WITH_DAC_UTIL)
     find_library(SDL2_LIBRARY SDL2 REQUIRED)
     include_directories(${SDL2_INCLUDE_DIR})
     message("Found ${SDL2_LIBRARY}")
 
+    set(SDL2_NEEDED_LIBRARIES)
+    if(WIN32)
+        if(MSVC)
+            list(APPEND SDL2_NEEDED_LIBRARIES ${SDL2_LIBRARY})
+        else()
+            list(APPEND SDL2_NEEDED_LIBRARIES ${SDL2_LIBRARY} pthread)
+        endif()
+    else()
+        list(APPEND SDL2_NEEDED_LIBRARIES ${SDL2_LIBRARY} pthread dl m stdc++)
+    endif()
+
+endif()
+
+if(WITH_MIDIPLAY)
     add_executable(opnmidiplay
         ${libOPNMIDI_SOURCE_DIR}/utils/midiplay/opnplay.cpp
         ${libOPNMIDI_SOURCE_DIR}/utils/midiplay/wave_writer.c
         # ${libOPNMIDI_SOURCE_DIR}/utils/midiplay/wave_writer.c # WIP
     )
-
-    if(WIN32)
-        if(MSVC)
-            target_link_libraries(opnmidiplay OPNMIDI ${SDL2_LIBRARY})
-        else()
-            target_link_libraries(opnmidiplay OPNMIDI ${SDL2_LIBRARY} pthread)
-        endif()
-    else()
-        target_link_libraries(opnmidiplay OPNMIDI ${SDL2_LIBRARY} pthread dl m stdc++)
-    endif()
+    target_link_libraries(opnmidiplay OPNMIDI ${SDL2_NEEDED_LIBRARIES})
 
     if(libOPNMIDI_SHARED)
         add_dependencies(opnmidiplay OPNMIDI_shared)
@@ -245,6 +263,32 @@ if(WITH_VLC_PLUGIN)
 
 endif()
 
+if(WITH_DAC_UTIL)
+    add_executable(dac_test
+        ${libOPNMIDI_SOURCE_DIR}/utils/dac_test/dac_test.cpp
+        ${libOPNMIDI_SOURCE_DIR}/src/chips/nuked_opn2.cpp
+        ${libOPNMIDI_SOURCE_DIR}/src/chips/nuked/ym3438.c
+    )
+    target_include_directories(dac_test PRIVATE
+            ${libOPNMIDI_SOURCE_DIR}/src/chips/
+    )
+    target_link_libraries(dac_test ${SDL2_NEEDED_LIBRARIES})
+endif()
+
+if(WITH_HQ_RESAMPLER)
+    find_library(ZITA_RESAMPLER_LIBRARY "zita-resampler" REQUIRED)
+    add_definitions(-DOPNMIDI_ENABLE_HQ_RESAMPLER)
+    if(libOPNMIDI_SHARED)
+        target_link_libraries(OPNMIDI_shared PUBLIC "${ZITA_RESAMPLER_LIBRARY}")
+    endif()
+    if(libOPNMIDI_STATIC)
+        target_link_libraries(OPNMIDI_static PUBLIC "${ZITA_RESAMPLER_LIBRARY}")
+    endif()
+    if(WITH_DAC_UTIL)
+        target_link_libraries(dac_test "${ZITA_RESAMPLER_LIBRARY}")
+    endif()
+endif()
+
 install(TARGETS ${libOPNMIDI_INSTALLS}
         RUNTIME DESTINATION "bin"
         LIBRARY DESTINATION "lib"
@@ -259,22 +303,26 @@ install(FILES
 option(WITH_UNIT_TESTS   "Enable unit testing" OFF)
 if(WITH_UNIT_TESTS)
     enable_testing ()
-    add_subdirectory(test/activenotes)
-    add_subdirectory(test/channel-users)
+    add_subdirectory(test)
 endif()
 
 
 message("==== libOPNMIDI options ====")
-message("WITH_MIDIPLAY            = ${WITH_MIDIPLAY}")
-message("WITH_VLC_PLUGIN          = ${WITH_VLC_PLUGIN}")
-message("USE_MAME_EMULATOR        = ${USE_MAME_EMULATOR}")
-message("USE_GENS_EMULATOR        = ${USE_GENS_EMULATOR}")
-message("USE_NUKED_EMULATOR       = ${USE_NUKED_EMULATOR}")
-message("WITH_MIDI_SEQUENCER      = ${WITH_MIDI_SEQUENCER}")
-# message("WITH_CPP_EXTRAS          = ${WITH_CPP_EXTRAS}")
-message("WITH_MUS_SUPPORT         = ${WITH_MUS_SUPPORT}")
-message("WITH_XMI_SUPPORT         = ${WITH_XMI_SUPPORT}")
 message("libOPNMIDI_STATIC        = ${libOPNMIDI_STATIC}")
 message("libOPNMIDI_SHARED        = ${libOPNMIDI_SHARED}")
 message("WITH_UNIT_TESTS          = ${WITH_UNIT_TESTS}")
 
+# message("WITH_CPP_EXTRAS          = ${WITH_CPP_EXTRAS}")
+message("WITH_MIDI_SEQUENCER      = ${WITH_MIDI_SEQUENCER}")
+message("WITH_HQ_RESAMPLER        = ${WITH_HQ_RESAMPLER}")
+message("WITH_MUS_SUPPORT         = ${WITH_MUS_SUPPORT}")
+message("WITH_XMI_SUPPORT         = ${WITH_XMI_SUPPORT}")
+message("USE_MAME_EMULATOR        = ${USE_MAME_EMULATOR}")
+message("USE_GENS_EMULATOR        = ${USE_GENS_EMULATOR}")
+message("USE_NUKED_EMULATOR       = ${USE_NUKED_EMULATOR}")
+message("USE_GX_EMULATOR          = ${USE_GX_EMULATOR}")
+
+message("===== Utils and extras =====")
+message("WITH_MIDIPLAY            = ${WITH_MIDIPLAY}")
+message("WITH_VLC_PLUGIN          = ${WITH_VLC_PLUGIN}")
+message("WITH_DAC_UTIL            = ${WITH_DAC_UTIL}")

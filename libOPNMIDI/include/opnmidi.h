@@ -29,7 +29,7 @@ extern "C" {
 #endif
 
 #define OPNMIDI_VERSION_MAJOR       1
-#define OPNMIDI_VERSION_MINOR       2
+#define OPNMIDI_VERSION_MINOR       3
 #define OPNMIDI_VERSION_PATCHLEVEL  0
 
 #define OPNMIDI_TOSTR_I(s) #s
@@ -112,7 +112,7 @@ extern void opn2_setFullRangeBrightness(struct OPN2_MIDIPlayer *device, int fr_b
 /*Enable or disable built-in loop (built-in loop supports 'loopStart' and 'loopEnd' tags to loop specific part)*/
 extern void opn2_setLoopEnabled(struct OPN2_MIDIPlayer *device, int loopEn);
 
-/*Enable or disable Logariphmic volume changer (-1 sets default per bank, 0 disable, 1 enable) */
+/* !!!DEPRECATED!!! */
 extern void opn2_setLogarithmicVolumes(struct OPN2_MIDIPlayer *device, int logvol);
 
 /*Set different volume range model */
@@ -136,6 +136,7 @@ enum Opn2_Emulator
     OPNMIDI_EMU_MAME = 0,
     OPNMIDI_EMU_NUKED,
     OPNMIDI_EMU_GENS,
+    OPNMIDI_EMU_GX,
     OPNMIDI_EMU_end
 };
 
@@ -147,6 +148,9 @@ typedef struct {
     OPN2_UInt16 minor;
     OPN2_UInt16 patch;
 } OPN2_Version;
+
+/*Run emulator with PCM rate to reduce CPU usage on slow devices. May decrease sounding accuracy.*/
+extern int opn2_setRunAtPcmRate(struct OPN2_MIDIPlayer *device, int enabled);
 
 /*Returns string which contains a version number*/
 extern const char *opn2_linkedLibraryVersion();

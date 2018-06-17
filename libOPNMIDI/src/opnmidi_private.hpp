@@ -100,18 +100,13 @@ typedef __int32 ssize_t;
 #define INT32_MAX   0x7fffffff
 #endif
 
-#ifdef _MSC_VER
-#pragma warning(disable:4244)
-#pragma warning(disable:4267)
-#pragma warning(disable:4146)
-#endif
-
-
 #include "fraction.hpp"
 #include "chips/opn_chip_base.h"
 
 #include "opnbank.h"
 #include "opnmidi.h"
+#include "opnmidi_ptr.hpp"
+#include "opnmidi_bankmap.h"
 
 #define ADL_UNUSED(x) (void)x
 
@@ -166,117 +161,6 @@ inline int32_t opn2_cvtU32(int32_t x)
     return (uint32_t)opn2_cvtS32(x) - (uint32_t)INT32_MIN;
 }
 
-/*
-    Smart pointer for C heaps, created with malloc() call.
-    FAQ: Why not std::shared_ptr? Because of Android NDK now doesn't supports it
-*/
-template<class PTR>
-class AdlMIDI_CPtr
-{
-    PTR *m_p;
-public:
-    AdlMIDI_CPtr() : m_p(NULL) {}
-    ~AdlMIDI_CPtr()
-    {
-        reset(NULL);
-    }
-
-    void reset(PTR *p = NULL)
-    {
-        if(p != m_p) {
-            if(m_p)
-                free(m_p);
-            m_p = p;
-        }
-    }
-
-    PTR *get()
-    {
-        return m_p;
-    }
-    PTR &operator*()
-    {
-        return *m_p;
-    }
-    PTR *operator->()
-    {
-        return m_p;
-    }
-private:
-    AdlMIDI_CPtr(const AdlMIDI_CPtr &);
-    AdlMIDI_CPtr &operator=(const AdlMIDI_CPtr &);
-};
-
-/*
-    Shared pointer with non-atomic counter
-    FAQ: Why not std::shared_ptr? Because of Android NDK now doesn't supports it
-*/
-template<class VALUE>
-class AdlMIDI_SPtr
-{
-    VALUE *m_p;
-    size_t *m_counter;
-public:
-    AdlMIDI_SPtr() : m_p(NULL), m_counter(NULL) {}
-    ~AdlMIDI_SPtr()
-    {
-        reset(NULL);
-    }
-
-    AdlMIDI_SPtr(const AdlMIDI_SPtr &other)
-        : m_p(other.m_p), m_counter(other.m_counter)
-    {
-        if(m_counter)
-            ++*m_counter;
-    }
-
-    AdlMIDI_SPtr &operator=(const AdlMIDI_SPtr &other)
-    {
-        if(this == &other)
-            return *this;
-        reset();
-        m_p = other.m_p;
-        m_counter = other.m_counter;
-        if(m_counter)
-            ++*m_counter;
-        return *this;
-    }
-
-    void reset(VALUE *p = NULL)
-    {
-        if(p != m_p) {
-            if(m_p && --*m_counter == 0)
-                delete m_p;
-            m_p = p;
-            if(!p) {
-                if(m_counter) {
-                    delete m_counter;
-                    m_counter = NULL;
-                }
-            }
-            else
-            {
-                if(!m_counter)
-                    m_counter = new size_t;
-                *m_counter = 1;
-            }
-        }
-    }
-
-    VALUE *get()
-    {
-        return m_p;
-    }
-    VALUE &operator*()
-    {
-        return *m_p;
-    }
-    VALUE *operator->()
-    {
-        return m_p;
-    }
-};
-
 class OPNMIDIplay;
 class OPN2
 {
@@ -286,33 +170,30 @@ public:
     char ____padding[4];
     std::vector<AdlMIDI_SPtr<OPNChipBase > > cardsOP2;
 private:
-    std::vector<size_t>     ins; // index to adl[], cached, needed by Touch()
+    std::vector<opnInstData> ins;  // patch data, cached, needed by Touch()
     std::vector<uint8_t>    pit;  // value poked to B0, cached, needed by NoteOff)(
     std::vector<uint8_t>    regBD;
     uint8_t                 regLFO;
 
     void cleanInstrumentBanks();
-    //! Meta information about every instrument
-    std::vector<opnInstMeta> dynamic_metainstruments;
-    //! Raw instrument data ready to be sent to the chip
-    std::vector<opnInstData>    dynamic_instruments;
-    size_t                      dynamic_percussion_offset;
-
-    typedef std::map<uint16_t, size_t> BankMap;
-    BankMap dynamic_melodic_banks;
-    BankMap dynamic_percussion_banks;
-
-    const opnInstMeta       &GetAdlMetaIns(size_t n);
-    size_t                  GetAdlMetaNumber(size_t midiins);
-    const opnInstData       &GetAdlIns(size_t insno);
-
 public:
+    struct Bank
+    {
+        opnInstMeta2 ins[128];
+    };
+    typedef BasicBankMap<Bank> BankMap;
+    BankMap dynamic_banks;
+public:
+    static const opnInstMeta2 emptyInstrument;
+    enum { PercussionTag = 1 << 15 };
+
     //! Total number of running concurrent emulated chips
     unsigned int NumCards;
     //! Carriers-only are scaled by default by volume level. This flag will tell to scale modulators too.
     bool ScaleModulators;
-    //! Required to play CMF files. Can be turned on by using of "CMF" volume model
-    bool LogarithmicVolumes;
+    //! Run emulator at PCM rate if that possible. Reduces sounding accuracy, but decreases CPU usage on lower rates.
+    bool runAtPcmRate;
+
     char ___padding2[3];
 
     enum MusicMode
@@ -349,7 +230,7 @@ public:
     void NoteOn(unsigned c, double hertz);
     void Touch_Real(unsigned c, unsigned volume, uint8_t brightness = 127);
 
-    void Patch(uint16_t c, size_t i);
+    void Patch(uint16_t c, const opnInstData &adli);
     void Pan(unsigned c, unsigned value);
     void Silence();
     void ChangeVolumeRangesModel(OPNMIDI_VolumeModels volumeModel);
@@ -540,7 +421,7 @@ public:
         bool eof()
         {
             if(fp)
-                return std::feof(fp);
+                return (std::feof(fp) != 0);
             else
                 return mp_tell >= mp_size;
         }
@@ -558,9 +439,14 @@ public:
         uint8_t bank_lsb, bank_msb;
         uint8_t patch;
         uint8_t volume, expression;
-        uint8_t panning, vibrato, sustain;
+        uint8_t panning, vibrato, aftertouch, sustain;
+        //! Per note Aftertouch values
+        uint8_t noteAftertouch[128];
+        //! Is note aftertouch has any non-zero value
+        bool    noteAfterTouchInUse;
         char ____padding[6];
-        double  bend, bendsense;
+        int bend;
+        double bendsense;
         int bendsense_lsb, bendsense_msb;
         double  vibpos, vibspeed, vibdepth;
         int64_t vibdelay;
@@ -574,14 +460,16 @@ public:
             bool active;
             // Current pressure
             uint8_t vol;
+            // Note vibrato (a part of Note Aftertouch feature)
+            uint8_t vibrato;
             char ____padding[1];
             // Tone selected on noteon:
             int16_t tone;
-            char ____padding2[4];
+            char ____padding2[10];
             // Patch selected on noteon; index to banks[AdlBank][]
             size_t  midiins;
-            // Index to physical adlib data structure, adlins[]
-            size_t  insmeta;
+            // Patch selected
+            const opnInstMeta2 *ains;
             enum
             {
                 MaxNumPhysChans = 2,
@@ -592,15 +480,15 @@ public:
                 //! Destination chip channel
                 uint16_t chip_chan;
                 //! ins, inde to adl[]
-                size_t  insId;
+                opnInstData ains;
 
                 void assign(const Phys &oth)
                 {
-                    insId = oth.insId;
+                    ains = oth.ains;
                 }
                 bool operator==(const Phys &oth) const
                 {
-                    return (insId == oth.insId);
+                    return (ains == oth.ains);
                 }
                 bool operator!=(const Phys &oth) const
                 {
@@ -639,9 +527,9 @@ public:
             }
             void phys_erase_at(const Phys *ph)
             {
-                unsigned pos = ph - chip_channels;
-                assert(pos < chip_channels_count);
-                for(unsigned i = pos + 1; i < chip_channels_count; ++i)
+                intptr_t pos = ph - chip_channels;
+                assert(pos < static_cast<intptr_t>(chip_channels_count));
+                for(intptr_t i = pos + 1; i < static_cast<intptr_t>(chip_channels_count); ++i)
                     chip_channels[i - 1] = chip_channels[i];
                 --chip_channels_count;
             }
@@ -730,7 +618,7 @@ public:
 
         void activenotes_clear()
         {
-            for(unsigned i = 0; i < 128; ++i) {
+            for(uint8_t i = 0; i < 128; ++i) {
                 activenotes[i].note = i;
                 activenotes[i].active = false;
             }
@@ -750,7 +638,7 @@ public:
         }
         void resetAllControllers()
         {
-            bend = 0.0;
+            bend = 0;
             bendsense_msb = 2;
             bendsense_lsb = 0;
             updateBendSensitivity();
@@ -758,6 +646,9 @@ public:
             expression = 127;
             sustain = 0;
             vibrato = 0;
+            aftertouch = 0;
+            std::memset(noteAftertouch, 0, 128);
+            noteAfterTouchInUse = false;
             vibspeed = 2 * 3.141592653 * 5.0;
             vibdepth = 0.5 / 127;
             vibdelay = 0;
@@ -765,10 +656,14 @@ public:
             portamento = 0;
             brightness = 127;
         }
+        bool hasVibrato()
+        {
+            return (vibrato > 0) || (aftertouch > 0) || noteAfterTouchInUse;
+        }
         void updateBendSensitivity()
         {
-            int cent = bendsense_msb * 100 + bendsense_lsb;
-            bendsense = cent * (0.01 / 8192.0);
+            int cent = bendsense_msb * 128 + bendsense_lsb;
+            bendsense = cent * (1.0 / (128 * 8192));
         }
         MIDIchannel()
         {
@@ -797,6 +692,9 @@ public:
             bool sustained;
             char ____padding[3];
             MIDIchannel::NoteInfo::Phys ins;  // a copy of that in phys[]
+            //! Has fixed sustain, don't iterate "on" timeout
+            bool    fixed_sustain;
+            //! Timeout until note will be allowed to be killed by channel manager while it is on
             int64_t kon_time_until_neglible;
             int64_t vibdelay;
         };
@@ -826,15 +724,21 @@ public:
 
         OpnChannel(const OpnChannel &oth): koff_time_until_neglible(oth.koff_time_until_neglible)
         {
-            users_assign(oth.users_first, oth.users_size);
+            if(oth.users_first)
+            {
+                users_first = NULL;
+                users_assign(oth.users_first, oth.users_size);
+            }
+            else
+                users_clear();
         }
 
         OpnChannel &operator=(const OpnChannel &oth)
-         {
-             koff_time_until_neglible = oth.koff_time_until_neglible;
-             users_assign(oth.users_first, oth.users_size);
-             return *this;
-         }
+        {
+            koff_time_until_neglible = oth.koff_time_until_neglible;
+            users_assign(oth.users_first, oth.users_size);
+            return *this;
+        }
 
         void AddAge(int64_t ms);
     };
@@ -969,6 +873,7 @@ public:
     struct Setup
     {
         int     emulator;
+        bool    runAtPcmRate;
         unsigned int OpnBank;
         unsigned int NumCards;
         unsigned int LogarithmicVolumes;
@@ -1010,6 +915,8 @@ private:
     std::map<uint64_t /*track*/, uint64_t /*channel begin index*/> current_device;
 
     std::vector<OpnChannel> ch;
+    //! Counter of arpeggio processing
+    size_t m_arpeggioCounter;
 
 #ifndef OPNMIDI_DISABLE_MIDI_SEQUENCER
     std::vector<std::vector<uint8_t> > TrackData;
