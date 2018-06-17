@@ -7,6 +7,10 @@ if(NOT MSVC)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wstrict-prototypes -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-incompatible-pointer-types")
 endif()
 
+if(MSVC)
+    set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /ignore:4221")
+endif()
+
 set(CMAKE_C_STANDARD 99)
 
 include(CheckSymbolExists)
@@ -16,17 +20,23 @@ include(CheckIncludeFiles)
 include(CheckLibraryExists)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/config.tests/TargetArch.cmake)
 
-if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "^i.86$")
+target_architecture(TARGET_PROCESSOR)
+
+message("System processor is [${CMAKE_SYSTEM_PROCESSOR}]")
+message("Target processor is [${TARGET_PROCESSOR}]")
+if(TARGET_PROCESSOR MATCHES "x86_64|AMD64" OR TARGET_PROCESSOR MATCHES "^i.86$")
     message("X86 detected")
     set(OPUS_X86_ARCHITECTURE 1)
-elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
+elseif(${TARGET_PROCESSOR} MATCHES "arm.*")
     message("ARM detected")
     set(OPUS_ARM_ARCHITECTURE 1)
     message(WARNING "BE CAREFUL, ARM SUPPORT IN CMAKE BUILD HERE IS WIP!!!")
 else()
-    message("Unsupported CPU architecture detected!")
+    message(WARNING "Unsupported CPU architecture detected! [${TARGET_PROCESSOR}]")
 endif()
+
 
 set(PACKAGE_NAME "Opus")
 set(PACKAGE_VERSION "1.3-rc-2-gc1c247d")
@@ -428,7 +438,7 @@ if(FLOAT_POINT)
 endif()
 
 if(OPUS_X86_ARCHITECTURE)
-    if(HAVE_SSE)
+    if(HAVE_SSE OR MSVC)
         list(APPEND OPUS_SRC
             celt/x86/x86cpu.c
             celt/x86/x86_celt_map.c
@@ -436,14 +446,14 @@ if(OPUS_X86_ARCHITECTURE)
         )
     endif()
 
-    if(HAVE_SSE2)
+    if(HAVE_SSE2 OR MSVC)
         list(APPEND OPUS_SRC
             celt/x86/pitch_sse2.c
             celt/x86/vq_sse2.c
         )
     endif()
 
-    if(HAVE_SSE4_1)
+    if(HAVE_SSE4_1 OR MSVC)
         list(APPEND OPUS_SRC
             celt/x86/pitch_sse4_1.c
             celt/x86/celt_lpc_sse4_1.c
