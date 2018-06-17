@@ -8,6 +8,10 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -pedantic -std=c90")
 endif()
 
+if(MSVC)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4244 /wd4267 /wd4996")
+endif()
+
 add_library(id3tag STATIC
     src/id3_file.c
     src/id3_compat.c

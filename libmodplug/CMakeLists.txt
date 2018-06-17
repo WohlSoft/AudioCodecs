@@ -9,6 +9,10 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-pedantic -std=gnu++98 -Wno-unused-but-set-variable -Wno-sequence-point")
 endif()
 
+if(MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4100 /wd4244 /wd4267 /wd4996 /wd4702 /wd4706 /wd4456")
+endif()
+
 add_definitions(
     -DMODPLUG_NO_FILESAVE
     -DHAVE_CONFIG_H
