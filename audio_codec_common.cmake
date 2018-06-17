@@ -24,9 +24,13 @@ IF(NOT MSVC)
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-omit-frame-pointer")
 ENDIF()
 
+if(CMAKE_BUILD_TYPE STREQUAL "")
+    set(CMAKE_BUILD_TYPE "Release")
+endif()
+
 string(TOLOWER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_LOWER)
 
-if(CMAKE_BUILD_TYPE_LOWER EQUAL "release")
+if(CMAKE_BUILD_TYPE_LOWER STREQUAL "release")
     add_definitions(-DNDEBUG)
 ENDIF()
 
