@@ -32,6 +32,7 @@ HEADERS += \
     src/chips/nuked_opl3.h \
     src/chips/nuked_opl3_v174.h \
     src/chips/opl_chip_base.h \
+    src/chips/opl_chip_base.tcc \
     src/fraction.hpp
 
 SOURCES += \
@@ -50,6 +51,5 @@ SOURCES += \
     src/chips/nuked/nukedopl3_174.c \
     src/chips/nuked/nukedopl3.c \
     src/chips/nuked_opl3.cpp \
-    src/chips/nuked_opl3_v174.cpp \
-    src/chips/opl_chip_base.cpp
+    src/chips/nuked_opl3_v174.cpp
 
