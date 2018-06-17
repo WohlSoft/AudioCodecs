@@ -150,7 +150,7 @@ bool_to_yesno(ENABLE_ASSERTIONS     SUMMARY_ASSERTIONS)
 
 message(
 "------------------------------------------------------------------------
-  ${PACKAGE_NAME} ${PACKAGE_VERSION}:  CMake configuration OK.
+  ${PACKAGE_NAME} ${PACKAGE_VERSION} CMake configuration OK.
 
     Assertions ................... ${SUMMARY_ASSERTIONS}
 

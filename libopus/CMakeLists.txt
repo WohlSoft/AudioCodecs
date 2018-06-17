@@ -687,7 +687,7 @@ bool_to_yesno(ENABLE_EXPERIMENTAL_AMBISONICS    SUMMARY_EXPERIMENTAL_AMBISONICS)
 
 message(
 "------------------------------------------------------------------------
-${PACKAGE_NAME} ${PACKAGE_VERSION}:  CMake configuration OK.
+  ${PACKAGE_NAME} ${PACKAGE_VERSION} CMake configuration OK.
 
   Compiler support:
 
