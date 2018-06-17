@@ -8,6 +8,10 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-pedantic -std=c99")
 endif()
 
+if(MSVC)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4244 /wd4146")
+endif()
+
 add_definitions(
     -DFPM_DEFAULT
     -DHAVE_CONFIG_H

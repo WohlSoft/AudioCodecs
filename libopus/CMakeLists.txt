@@ -132,7 +132,7 @@ if(VAR_ARRAYS)
     set(USE_ALLOCA 0)
 endif()
 
-if(NOT VAR_ARRAYS)
+if(NOT VAR_ARRAYS AND NOT MSVC)
     try_compile(USE_ALLOCA
         ${CMAKE_BINARY_DIR}/compile_tests
         ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/c99/alloca.c
@@ -140,6 +140,10 @@ if(NOT VAR_ARRAYS)
     if(USE_ALLOCA)
         set(USE_ALLOCA 1)
     endif()
+endif()
+
+if(MSVC)
+    set(USE_ALLOCA 1)
 endif()
 
 foreach(RESTRICT_KEYWORD "__restrict" "__restrict__" "_Restrict" "restrict")
@@ -223,87 +227,92 @@ if(OPUS_X86_ARCHITECTURE)
     set(SUMMARY_INTRUISTIC "")
     list(APPEND SUMMARY_INTRUISTIC "x86")
 
-    try_compile(HAVE_X86_SSE
-        ${CMAKE_BINARY_DIR}/compile_tests
-        ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/x86/have_sse.c
-    )
-    try_compile(HAVE_X86_SSE_WITH_FLAG
-        ${CMAKE_BINARY_DIR}/compile_tests
-        ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/x86/have_sse.c
-        COMPILE_DEFINITIONS "-msse"
-    )
-    if(HAVE_X86_SSE OR HAVE_X86_SSE_WITH_FLAG)
-        set(OPUS_X86_MAY_HAVE_SSE 1)
-        set(OPUS_X86_PRESUME_SSE 1)
-        set(HAVE_X86_SSE 1)
-        if(HAVE_X86_SSE_WITH_FLAG)
-            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse")
+    if(NOT MSVC) #Do CPU tests on non-MSVC compilers
+        # === Detect SSE ===
+        try_compile(HAVE_X86_SSE
+            ${CMAKE_BINARY_DIR}/compile_tests
+            ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/x86/have_sse.c
+        )
+        try_compile(HAVE_X86_SSE_WITH_FLAG
+            ${CMAKE_BINARY_DIR}/compile_tests
+            ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/x86/have_sse.c
+            COMPILE_DEFINITIONS "-msse"
+        )
+        if(HAVE_X86_SSE OR HAVE_X86_SSE_WITH_FLAG)
+            set(OPUS_X86_MAY_HAVE_SSE 1)
+            set(OPUS_X86_PRESUME_SSE 1)
+            set(HAVE_X86_SSE 1)
+            if(HAVE_X86_SSE_WITH_FLAG)
+                set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse")
+            endif()
+            list(APPEND SUMMARY_INTRUISTIC "SSE")
         endif()
-        list(APPEND SUMMARY_INTRUISTIC "SSE")
-    endif()
 
-    try_compile(HAVE_X86_SSE2
-        ${CMAKE_BINARY_DIR}/compile_tests
-        ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/x86/have_sse2.c
-    )
-    try_compile(HAVE_X86_SSE2_WITH_FLAG
-        ${CMAKE_BINARY_DIR}/compile_tests
-        ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/x86/have_sse2.c
-        COMPILE_DEFINITIONS "-msse2"
-    )
-    if(HAVE_X86_SSE2 OR HAVE_X86_SSE2_WITH_FLAG)
-        set(OPUS_X86_MAY_HAVE_SSE2 1)
-        set(OPUS_X86_PRESUME_SSE2 1)
-        set(HAVE_X86_SSE2 1)
-        if(HAVE_X86_SSE2_WITH_FLAG)
-            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse2")
+        # === Detect SSE2 ===
+        try_compile(HAVE_X86_SSE2
+            ${CMAKE_BINARY_DIR}/compile_tests
+            ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/x86/have_sse2.c
+        )
+        try_compile(HAVE_X86_SSE2_WITH_FLAG
+            ${CMAKE_BINARY_DIR}/compile_tests
+            ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/x86/have_sse2.c
+            COMPILE_DEFINITIONS "-msse2"
+        )
+        if(HAVE_X86_SSE2 OR HAVE_X86_SSE2_WITH_FLAG)
+            set(OPUS_X86_MAY_HAVE_SSE2 1)
+            set(OPUS_X86_PRESUME_SSE2 1)
+            set(HAVE_X86_SSE2 1)
+            if(HAVE_X86_SSE2_WITH_FLAG)
+                set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse2")
+            endif()
+            list(APPEND SUMMARY_INTRUISTIC "SSE2")
         endif()
-        list(APPEND SUMMARY_INTRUISTIC "SSE2")
-    endif()
 
-    try_compile(HAVE_X86_SSE4_1
-        ${CMAKE_BINARY_DIR}/compile_tests
-        ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/x86/have_sse4-1.c
-    )
-    try_compile(HAVE_X86_SSE4_1_WITH_FLAG
-        ${CMAKE_BINARY_DIR}/compile_tests
-        ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/x86/have_sse4-1.c
-    )
-    if(HAVE_X86_SSE4_1 OR HAVE_X86_SSE4_1_WITH_FLAG)
-        set(OPUS_X86_MAY_HAVE_SSE4_1 1)
-        set(OPUS_X86_PRESUME_SSE4_1 1)
-        set(HAVE_X86_SSE4_1 1)
-        if(HAVE_X86_SSE4_1_WITH_FLAG)
-            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse4.1")
+        # === Detect SSE4.1 ===
+        try_compile(HAVE_X86_SSE4_1
+            ${CMAKE_BINARY_DIR}/compile_tests
+            ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/x86/have_sse4-1.c
+        )
+        try_compile(HAVE_X86_SSE4_1_WITH_FLAG
+            ${CMAKE_BINARY_DIR}/compile_tests
+            ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/x86/have_sse4-1.c
+        )
+        if(HAVE_X86_SSE4_1 OR HAVE_X86_SSE4_1_WITH_FLAG)
+            set(OPUS_X86_MAY_HAVE_SSE4_1 1)
+            set(OPUS_X86_PRESUME_SSE4_1 1)
+            set(HAVE_X86_SSE4_1 1)
+            if(HAVE_X86_SSE4_1_WITH_FLAG)
+                set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse4.1")
+            endif()
+            list(APPEND SUMMARY_INTRUISTIC "SSE4.1")
+            if(NOT DISABLE_RTCD)
+                list(APPEND SUMMARY_RTCD "SSE4.1")
+            endif()
         endif()
-        list(APPEND SUMMARY_INTRUISTIC "SSE4.1")
-        if(NOT DISABLE_RTCD)
-            list(APPEND SUMMARY_RTCD "SSE4.1")
-        endif()
-    endif()
 
-
-    try_compile(HAVE_X86_AVX
-        ${CMAKE_BINARY_DIR}/compile_tests
-        ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/x86/have_avx.c
-    )
-    try_compile(HAVE_X86_AVX_WITH_FLAG
-        ${CMAKE_BINARY_DIR}/compile_tests
-        ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/x86/have_avx.c
-        COMPILE_DEFINITIONS "-mavx"
-    )
-    if(HAVE_X86_AVX OR HAVE_X86_AVX_WITH_FLAG)
-        set(OPUS_X86_MAY_HAVE_AVX 1)
-        set(OPUS_X86_PRESUME_AVX 1)
-        if(HAVE_X86_AVX_WITH_FLAG)
-            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mavx")
+        # === Detect AVX ===
+        try_compile(HAVE_X86_AVX
+            ${CMAKE_BINARY_DIR}/compile_tests
+            ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/x86/have_avx.c
+        )
+        try_compile(HAVE_X86_AVX_WITH_FLAG
+            ${CMAKE_BINARY_DIR}/compile_tests
+            ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/x86/have_avx.c
+            COMPILE_DEFINITIONS "-mavx"
+        )
+        if(HAVE_X86_AVX OR HAVE_X86_AVX_WITH_FLAG)
+            set(OPUS_X86_MAY_HAVE_AVX 1)
+            set(OPUS_X86_PRESUME_AVX 1)
+            if(HAVE_X86_AVX_WITH_FLAG)
+                set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mavx")
+            endif()
+            list(APPEND SUMMARY_INTRUISTIC "AVX")
+            if(NOT DISABLE_RTCD)
+                list(APPEND SUMMARY_RTCD "AVX")
+            endif()
         endif()
-        list(APPEND SUMMARY_INTRUISTIC "AVX")
-        if(NOT DISABLE_RTCD)
-            list(APPEND SUMMARY_RTCD "AVX")
-        endif()
-    endif()
-endif()
+    endif()#Not-MSVC
+endif()#Is X86 architecture
 
 if(OPUS_ARM_ARCHITECTURE)
     #AS_GCC_INLINE_ASSEMBLY(
@@ -361,20 +370,17 @@ if(OPUS_ARM_ARCHITECTURE)
     endif()
 
     configure_file(celt/arm/armopts.s.in ${CMAKE_CURRENT_BINARY_DIR}/config/celt/arm/armopts.s)
-endif()
-
+endif()#Is ARM architecture
 
 add_definitions(
     -DHAVE_CONFIG_H
 )
-
 
 configure_file(config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config/config.h)
 
 set(OPUS_SRC)
 
 list(APPEND OPUS_SRC
-    src/mapping_matrix.c
     src/opus.c
     src/opus_decoder.c
     src/opus_encoder.c
@@ -385,6 +391,12 @@ list(APPEND OPUS_SRC
     src/opus_projection_encoder.c
     src/repacketizer.c
 )
+
+if(ENABLE_EXPERIMENTAL_AMBISONICS)
+    list(APPEND OPUS_SRC
+        src/mapping_matrix.c
+    )
+endif()
 
 list(APPEND OPUS_SRC
     celt/bands.c
@@ -498,7 +510,7 @@ list(APPEND OPUS_SRC
     silk/control_audio_bandwidth.c
     silk/control_codec.c
     silk/control_SNR.c
-    silk/debug.c
+    # silk/debug.c #Useless due no symbols inside because of zeroed in-code macros
     silk/dec_API.c
     silk/decode_core.c
     silk/decode_frame.c
@@ -676,7 +688,11 @@ endif()
 bool_to_yesno(FLOAT_POINT   SUMMARY_FLOAT)
 bool_to_yesno(ENABLE_FLOAT_APPROX   SUMMARY_FLOAT_APPROX)
 bool_to_yesno(ENABLE_FIXED_POINT_DEBUG   SUMMARY_FIXED_POINT_DEBUG)
-string (REPLACE ";" " " SUMMARY_INTRUISTIC "${SUMMARY_INTRUISTIC}")
+if(MSVC)
+    set(SUMMARY_INTRUISTIC "<Will be detected by C preprocessor>")
+else()
+    string (REPLACE ";" " " SUMMARY_INTRUISTIC "${SUMMARY_INTRUISTIC}")
+endif()
 string (REPLACE ";" " " SUMMARY_RTCD "${SUMMARY_RTCD}")
 bool_to_yesno(ENABLE_CUSTOM_MODES   SUMMARY_CUSTOM_MODES)
 bool_to_yesno(ENABLE_ASSERTIONS     SUMMARY_ASSERTIONS)

@@ -9,6 +9,10 @@ add_definitions(
 
 add_definitions(-DFLOAT_LOOKUP -DINT_LOOKUP)
 
+if(MSVC)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4244 /wd4267 /wd4305")
+endif()
+
 add_library(vorbis STATIC
     lib/analysis.c
     lib/bitrate.c
