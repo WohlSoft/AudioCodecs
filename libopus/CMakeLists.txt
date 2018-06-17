@@ -107,6 +107,9 @@ if(NOT DISABLE_RTCD)
     set(OPUS_HAVE_RTCD 1)
 endif()
 
+# TODO: By unknown reason, it's not linkable, fix this, and then change default to OFF
+option(DISABLE_SSE_BUILD "Disable SSE on x86 architecture" ON)
+
 check_include_files(alloca.h HAVE_ALLOCA_H)
 if(HAVE_ALLOCA_H)
     add_definitions(-DUSE_ALLOCA=1)
@@ -237,7 +240,7 @@ if(OPUS_X86_ARCHITECTURE)
     set(SUMMARY_INTRUISTIC "")
     list(APPEND SUMMARY_INTRUISTIC "x86")
 
-    if(NOT MSVC) #Do CPU tests on non-MSVC compilers
+    if(NOT MSVC AND NOT DISABLE_SSE_BUILD) #Do CPU tests on non-MSVC compilers
         # === Detect SSE ===
         try_compile(HAVE_X86_SSE
             ${CMAKE_BINARY_DIR}/compile_tests
