@@ -4,7 +4,10 @@ project (libOPUS C)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
 if(NOT MSVC)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wstrict-prototypes -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-incompatible-pointer-types")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wstrict-prototypes -Wno-unused-variable -Wno-unused-parameter -Wno-incompatible-pointer-types")
+    if(NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-but-set-variable")
+    endif()
 endif()
 
 if(MSVC)
