@@ -62,7 +62,7 @@
 */
 
 /* With GCC, when SSE is available, the fastest conversion is cvtss2si. */
-#if defined(__GNUC__) && defined(__SSE__)
+#if defined(__GNUC__) && defined(__SSE__) && !defined(__APPLE__)
 
 #include <xmmintrin.h>
 static OPUS_INLINE opus_int32 float2int(float x) {return _mm_cvt_ss2si(_mm_set_ss(x));}
