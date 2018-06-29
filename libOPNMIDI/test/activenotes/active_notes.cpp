@@ -21,7 +21,7 @@ TEST_CASE( "MIDI Channel manipulating", "[OPNMIDIplay::MIDIchannel]" )
                     midi_ch.activenotes_erase(i);
             }
 
-            const opnInstMeta2 &ains = OPN2::emptyInstrument;
+            const opnInstMeta2 &ains = OPN2::m_emptyInstrument;
 
             OPNMIDIplay::MIDIchannel::NoteInfo::Phys voices[OPNMIDIplay::MIDIchannel::NoteInfo::MaxNumPhysChans] = {
                 {0, ains.opn[0], /*false*/},
@@ -31,8 +31,10 @@ TEST_CASE( "MIDI Channel manipulating", "[OPNMIDIplay::MIDIchannel]" )
             std::pair<OPNMIDIplay::MIDIchannel::activenoteiterator, bool>
             ir = midi_ch.activenotes_insert(note);
             ir.first->vol     = rand() % 127;
-            ir.first->tone    = rand() % 127;
+            ir.first->noteTone    = rand() % 127;
             ir.first->midiins = rand() % 127;
+            ir.first->currentTone = (double)(rand() % 127);
+            ir.first->glideRate = (double)(rand() % 127);
             ir.first->ains = &ains;
             ir.first->chip_channels_count = 0;
 

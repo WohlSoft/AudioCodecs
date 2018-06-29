@@ -18,12 +18,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-/*
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
-*/
-
 #include <vlc_common.h>
 #include <vlc_plugin.h>
 #include <vlc_codec.h>
@@ -43,32 +37,74 @@
 #include <opnmidi.h>
 #include "gm_opn_bank.h"
 
-#define SOUNDFONT_TEXT N_("Custom bank file")
-#define SOUNDFONT_LONGTEXT N_( \
-    "Custom bank file to use for software synthesis." )
+#define FMBANK_TEXT N_("Custom bank file")
+#define FMBANK_LONGTEXT N_( \
+    "Custom bank file (in WOPN format) to use for software synthesis." )
 
-/*#define CHORUS_TEXT N_("Chorus")*/
+#if 0 /* Old code */
+#define CHORUS_TEXT N_("Chorus")
 
-/*#define GAIN_TEXT N_("Synthesis gain")*/
-/*
+#define GAIN_TEXT N_("Synthesis gain")
 #define GAIN_LONGTEXT N_("This gain is applied to synthesis output. " \
     "High values may cause saturation when many notes are played at a time." )
-*/
 
-/*#define POLYPHONY_TEXT N_("Polyphony")*/
-/*
+#define POLYPHONY_TEXT N_("Polyphony")
 #define POLYPHONY_LONGTEXT N_( \
     "The polyphony defines how many voices can be played at a time. " \
     "Larger values require more processing power.")
-*/
 
-/*#define REVERB_TEXT N_("Reverb")*/
+#define REVERB_TEXT N_("Reverb")
+#endif
 
 #define SAMPLE_RATE_TEXT N_("Sample rate")
+
 #define EMULATED_CHIPS_TEXT N_("Count of emulated chips")
+#define EMULATED_CHIPS_LONGTEXT N_( \
+    "How many emulated chips will be processed to expand channels limit of a single chip." )
+
+#define EMBEDDED_BANK_ID_TEXT N_("Embedded bank")
+#define EMBEDDED_BANK_ID_LONGTEXT N_( \
+    "Use one of embedded banks.")
+
+#define VOLUME_MODEL_TEXT N_("Volume scaling model")
+#define VOLUME_MODEL_LONGTEXT N_( \
+    "Declares volume scaling model which will affect volume levels.")
+
+#define FULL_RANGE_CC74_TEXT N_("Full-range of brightness")
+#define FULL_RANGE_CC74_LONGTEXT N_( \
+    "Scale range of CC-74 \"Brightness\" with full 0~127 range. By default is only 0~64 affects the sounding.")
+
+static const int volume_models_values[] = { 0, 1, 2, 3, 4, 5 };
+static const char * const volume_models_descriptions[] =
+{
+    N_("Auto (defined by bank)"),
+    N_("Generic"),
+    N_("OPN2 Native"),
+    N_("DMX"),
+    N_("Apogee Sound System"),
+    N_("Win9x OPL driver"),
+    NULL
+};
+
+#define EMULATOR_TYPE_TEXT N_("OPN2 Emulation core")
+#define EMULATOR_TYPE_LINGTEXT N_( \
+    "OPN2 Emulator that will be used to generate final sound.")
+
+/*TODO: Turn on fourth emulator when complete experiments with it */
+static const int emulator_type_values[] = { 0, 1, 2 /*, 3*/ };
+static const char * const emulator_type_descriptions[] =
+{
+    N_("MAME YM2612"),
+    N_("Nuked OPN2"),
+    N_("Gens 2.10"),
+    /* N_("Genesis Plus GX [Experimental]"), */
+    NULL
+};
 
 static int  Open  (vlc_object_t *);
 static void Close (vlc_object_t *);
+
+#define CONFIG_PREFIX "opnmidi-"
 
 vlc_module_begin ()
     set_description (N_("OPNMIDI YM2612 Synth MIDI synthesizer"))
@@ -81,20 +117,24 @@ vlc_module_begin ()
     set_category (CAT_INPUT)
     set_subcategory (SUBCAT_INPUT_ACODEC)
     set_callbacks (Open, Close)
-    add_loadfile ("opnmidi-custombank", "",
-                  SOUNDFONT_TEXT, SOUNDFONT_LONGTEXT, false)
-    /*
-    add_bool ("synth-chorus", true, CHORUS_TEXT, CHORUS_TEXT, false)
-    add_float ("synth-gain", .5, GAIN_TEXT, GAIN_LONGTEXT, false)
-        change_float_range (0., 10.)
-    add_integer ("synth-polyphony", 256, POLYPHONY_TEXT, POLYPHONY_LONGTEXT, false)
-        change_integer_range (1, 65535)
-    add_bool ("synth-reverb", true, REVERB_TEXT, REVERB_TEXT, true)
-    */
-    add_integer ("opnmidi-sample-rate", 44100, SAMPLE_RATE_TEXT, SAMPLE_RATE_TEXT, true)
-        change_integer_range (22050, 96000)
-    add_integer ("opnmidi-emulated-chips", 6, EMULATED_CHIPS_TEXT, EMULATED_CHIPS_TEXT, true)
+
+    add_loadfile (CONFIG_PREFIX "custombank", "",
+                  FMBANK_TEXT, FMBANK_LONGTEXT, false)
+
+    add_integer (CONFIG_PREFIX "volume-model", 0, VOLUME_MODEL_TEXT, VOLUME_MODEL_LONGTEXT, false )
+        change_integer_list( volume_models_values, volume_models_descriptions )
+
+    add_integer (CONFIG_PREFIX "emulator-type", 0, EMULATOR_TYPE_TEXT, EMULATOR_TYPE_LINGTEXT, true)
+        change_integer_list( emulator_type_values, emulator_type_descriptions )
+
+    add_integer (CONFIG_PREFIX "emulated-chips", 6, EMULATED_CHIPS_TEXT, EMULATED_CHIPS_TEXT, true)
         change_integer_range (1, 100)
+
+    add_integer (CONFIG_PREFIX "sample-rate", 44100, SAMPLE_RATE_TEXT, SAMPLE_RATE_TEXT, true)
+        change_integer_range (22050, 96000)
+
+    add_bool( CONFIG_PREFIX "full-range-brightness", false, FULL_RANGE_CC74_TEXT,
+              FULL_RANGE_CC74_LONGTEXT, false )
 vlc_module_end ()
 
 
@@ -131,12 +171,18 @@ static int Open (vlc_object_t *p_this)
     if (unlikely(p_sys == NULL))
         return VLC_ENOMEM;
 
-    p_sys->sample_rate = var_InheritInteger (p_this, "opnmidi-sample-rate");
+    p_sys->sample_rate = var_InheritInteger (p_this, CONFIG_PREFIX "sample-rate");
     p_sys->synth = opn2_init( p_sys->sample_rate );
 
-    opn2_setNumChips(p_sys->synth, (int)var_InheritInteger (p_this, "opnmidi-emulated-chips") );
+    opn2_switchEmulator(p_sys->synth, var_InheritInteger(p_this, CONFIG_PREFIX "emulator-type"));
 
-    char *font_path = var_InheritString (p_this, "opnmidi-custombank");
+    opn2_setNumChips(p_sys->synth, (int)var_InheritInteger (p_this, CONFIG_PREFIX "emulated-chips") );
+
+    opn2_setVolumeRangeModel(p_sys->synth, var_InheritInteger(p_this, CONFIG_PREFIX "volume-model"));
+
+    opn2_setFullRangeBrightness(p_sys->synth, var_InheritBool(p_this, CONFIG_PREFIX "full-range-brightness"));
+
+    char *font_path = var_InheritString (p_this, CONFIG_PREFIX "custombank");
     if (font_path != NULL)
     {
         msg_Dbg (p_this, "loading custom bank file %s", font_path);
@@ -156,7 +202,7 @@ static int Open (vlc_object_t *p_this)
                 _("A bank file (.WOPN) is required for MIDI synthesis.\n"
                   "Please install a custom bank and configure it "
                   "from the VLC preferences "
-                  "(Input / Codecs > Audio codecs > FluidSynth).\n"));
+                  "(Input / Codecs > Audio codecs > OPNMIDI).\n"));
             opn2_close (p_sys->synth);
             free (p_sys);
             return VLC_EGENERIC;
@@ -205,6 +251,7 @@ static void Flush (decoder_t *p_dec)
     opn2_panic(p_sys->synth);
 }
 
+
 #if (LIBVLC_VERSION_MAJOR >= 3)
 static int DecodeBlock (decoder_t *p_dec, block_t *p_block)
 {
@@ -221,6 +268,7 @@ static block_t *DecodeBlock (decoder_t *p_dec, block_t **pp_block)
         return NULL;
     p_block = *pp_block;
 #endif
+
     if (p_block == NULL)
     {
 #if (LIBVLC_VERSION_MAJOR >= 3)
@@ -236,13 +284,15 @@ static block_t *DecodeBlock (decoder_t *p_dec, block_t **pp_block)
 
     if (p_block->i_flags & (BLOCK_FLAG_DISCONTINUITY|BLOCK_FLAG_CORRUPTED))
     {
-        Flush (p_dec);
 #if (LIBVLC_VERSION_MAJOR >= 3)
+        Flush (p_dec);
         if (p_block->i_flags & BLOCK_FLAG_CORRUPTED)
         {
             block_Release(p_block);
             return VLCDEC_SUCCESS;
         }
+#else
+        Flush (p_dec);
 #endif
     }
 
@@ -273,8 +323,9 @@ static block_t *DecodeBlock (decoder_t *p_dec, block_t **pp_block)
                     msg_Warn (p_dec, "fragmented SysEx not implemented");
                     goto drop;
                 }
-                //fluid_synth_sysex (p_sys->synth, (char *)p_block->p_buffer + 1,
-                //                   p_block->i_buffer - 2, NULL, NULL, NULL, 0);
+                opn2_rt_systemExclusive(p_sys->synth,
+                                        (const OPN2_UInt8 *)p_block->p_buffer,
+                                        p_block->i_buffer);
                 break;
             case 0xF:
                 opn2_rt_resetState(p_sys->synth);
@@ -292,7 +343,9 @@ static block_t *DecodeBlock (decoder_t *p_dec, block_t **pp_block)
         case 0x90:
             opn2_rt_noteOn(p_sys->synth, channel, p1, p2);
             break;
-        /*case 0xA0: note aftertouch not implemented */
+        case 0xA0:
+            opn2_rt_noteAfterTouch(p_sys->synth, channel, p1, p2);
+            break;
         case 0xB0:
             opn2_rt_controllerChange(p_sys->synth, channel, p1, p2);
             break;
