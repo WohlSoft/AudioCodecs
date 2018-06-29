@@ -4,7 +4,10 @@ project (libOPUS C)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
 if(NOT MSVC)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wstrict-prototypes -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-incompatible-pointer-types")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wstrict-prototypes -Wno-unused-variable -Wno-unused-parameter -Wno-incompatible-pointer-types")
+    if(NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-but-set-variable")
+    endif()
 endif()
 
 if(MSVC)
@@ -106,6 +109,9 @@ option(DISABLE_RTCD "Disable run-time CPU capabilities detection" OFF)
 if(NOT DISABLE_RTCD)
     set(OPUS_HAVE_RTCD 1)
 endif()
+
+# TODO: By unknown reason, it's not linkable, fix this, and then change default to OFF
+option(DISABLE_SSE_BUILD "Disable SSE on x86 architecture" ON)
 
 check_include_files(alloca.h HAVE_ALLOCA_H)
 if(HAVE_ALLOCA_H)
@@ -237,7 +243,7 @@ if(OPUS_X86_ARCHITECTURE)
     set(SUMMARY_INTRUISTIC "")
     list(APPEND SUMMARY_INTRUISTIC "x86")
 
-    if(NOT MSVC) #Do CPU tests on non-MSVC compilers
+    if(NOT MSVC AND NOT DISABLE_SSE_BUILD) #Do CPU tests on non-MSVC compilers
         # === Detect SSE ===
         try_compile(HAVE_X86_SSE
             ${CMAKE_BINARY_DIR}/compile_tests
