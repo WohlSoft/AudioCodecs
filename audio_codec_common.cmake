@@ -59,3 +59,8 @@ IF(NOT WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 ENDIF()
 
+# Prevent shared libraries has "lib" prefix on Windows DLL files
+if(WIN32)
+    set(CMAKE_SHARED_LIBRARY_PREFIX "")
+endif()
+
