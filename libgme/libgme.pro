@@ -136,5 +136,6 @@ SOURCES += \
     src/Spc_Filter.cpp \
     src/Vgm_Emu.cpp \
     src/Vgm_Emu_Impl.cpp \
+    src/Ym2413_Emu.cpp \
     src/Ym2612_MAME.cpp
 
