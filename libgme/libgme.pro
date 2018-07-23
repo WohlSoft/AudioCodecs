@@ -27,7 +27,8 @@ DEFINES += \
     SPC_MORE_ACCURACY \
     _REENTRANT \
     _USE_MATH_DEFINES \
-    HAVE_ZLIB_H
+    HAVE_ZLIB_H \
+    VGM_YM2612_MAME
 
 LIBS += -lzlib
 
@@ -87,7 +88,8 @@ HEADERS += \
     src/Vgm_Emu.h \
     src/Vgm_Emu_Impl.h \
     src/Ym2413_Emu.h \
-    src/Ym2612_Emu.h
+    src/Ym2612_Emu.h \
+    src/Ym2612_MAME.h
 
 SOURCES += \
     src/Ay_Apu.cpp \
@@ -135,5 +137,5 @@ SOURCES += \
     src/Vgm_Emu.cpp \
     src/Vgm_Emu_Impl.cpp \
     src/Ym2413_Emu.cpp \
-    src/Ym2612_Emu.cpp
+    src/Ym2612_MAME.cpp
 

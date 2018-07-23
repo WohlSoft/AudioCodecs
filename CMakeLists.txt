@@ -1,9 +1,13 @@
 cmake_minimum_required (VERSION 2.8.11)
-project (AudioCodecs)
+project(AudioCodecs)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+if(POLICY CMP0058) # Dependencies
+    cmake_policy(SET CMP0058 NEW)
+endif()
 
 option(DOWNLOAD_SDL2_DEPENDENCY "Downloads and compiles SDL2 from official Mercurial directly" OFF)
 set(SDL2_REPO_PATH "" CACHE PATH "Path to the SDL2")
@@ -73,7 +77,12 @@ option(BUILD_GME "Enable building of GME" ON)
 if(BUILD_GME)
     add_subdirectory(zlib)
     add_subdirectory(libgme)
-    add_dependencies(gme zlib)
+    if(BUILD_GME_STATIC)
+        add_dependencies(gme_static zlib)
+    endif()
+    if(BUILD_GME_SHARED)
+        add_dependencies(gme_shared zlib)
+    endif()
 endif()
 
 option(BUILD_TIMIDITY "Enable building of Timidity" ON)

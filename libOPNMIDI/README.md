@@ -5,7 +5,8 @@ OPNMIDI Library: Copyright (c) 2017-2018 Vitaly Novichkov <admin@wohlnet.ru>
 
 Library is based on core of the [libADLMIDI](https://github.com/Wohlstand/libADLMIDI), a MIDI playing library with OPL3 emulation.
 
-[![Build Status](https://semaphoreci.com/api/v1/wohlstand/libopnmidi/branches/master/badge.svg)](https://semaphoreci.com/wohlstand/libopnmidi)
+* Semaphore-CI: [![Build Status](https://semaphoreci.com/api/v1/wohlstand/libopnmidi/branches/master/badge.svg)](https://semaphoreci.com/wohlstand/libopnmidi)
+* AppVeyor CI: [![Build status](https://ci.appveyor.com/api/projects/status/98m4ltr1swyg7s5y?svg=true)](https://ci.appveyor.com/project/Wohlstand/libopnmidi)
 
 # Tested on platforms
 * Linux GCC 4.8, 4.9, 5.4 / CLang
@@ -17,18 +18,22 @@ Library is based on core of the [libADLMIDI](https://github.com/Wohlstand/libADL
 * OPN2 emulation
 * Customizable bank of FM patches (You have to use the [bank editor](https://github.com/Wohlstand/OPN2BankEditor) to create own sound bank)
 * Stereo sound
-* Number of simulated chips can be specified as 1-100 (maximum channels 600!)
+* Number of simulated OPN2 chips can be specified as 1-100 (maximum channels 600!)
 * Pan (binary panning, i.e. left/right side on/off)
 * Pitch-bender with adjustable range
 * Vibrato that responds to RPN/NRPN parameters
-* Sustain enable/disable
+* Sustain (a.k.a. Pedal hold) and Sostenuto enable/disable
+* MIDI and RMI file support
+* Real-Time MIDI API suppor
 * MIDI and RMI file support
 * loopStart / loopEnd tag support (Final Fantasy VII)
 * 111-th controller based loop start (RPG-Maker)
 * Use automatic arpeggio with chords to relieve channel pressure
 * Support for multiple concurrent MIDI synthesizers (per-track device/port select FF 09 message), can be used to overcome 16 channel limit
-* Partial support for XG standard (having more instruments than in one 128:128 GM set and ability to use multiple channels for percussion purposes)
-* CC74 affects a modulator scale
+* Partial support for GS and XG standards (having more instruments than in one 128:128 GM set and ability to use multiple channels for percussion purposes, and a support for some GS/XG exclusive controllers)
+* CC74 "Brightness" affects a modulator scale (to simulate frequency cut-off on WT synths)
+* Portamento support (CC5, CC37, and CC65)
+* SysEx support that supports some generic, GS, and XG features
 
 # How to build
 To build libOPNMIDI you need to use CMake:
@@ -40,6 +45,16 @@ cmake -DCMAKE_BUILD_TYPE=Release ..
 make
 sudo make install
 ```
+
+# License
+The library is licensed under in it's parts LGPL 2.1+, GPL v2+, GPL v3+, and MIT.
+* Nuked OPN2 emulator is licensed under LGPL v2.1+.
+* GENS 2.10 emulator is licensed under LGPL v2.1+.
+* MAME YM2612 emulator is licensed under GPL v2+.
+* Genesis Plus GX emulator is licensed under GPL v2+.
+* Chip interfaces are licensed under LGPL v2.1+.
+* File Reader class and MIDI Sequencer is licensed under MIT.
+* Other parts of library are licensed under GPLv3+.
 
 ## Available CMake options
 * **CMAKE_PREFIX_PATH** - destinition folder where libOPNMIDI will be installed. On Linux it is /usr/local/ by default.
@@ -63,8 +78,8 @@ You need to make in the any IDE a library project and put into it next files
 (or include those files into subfolder of your exist project instead if you want to use it statically):
 
 ### Useful macros
-* `OPNMIDI_DISABLE_XMI_SUPPORT` - Disables XMI to MIDI converter
-* `OPNMIDI_DISABLE_MUS_SUPPORT` - Disables MUS to MIDI converter
+* `BWMIDI_DISABLE_XMI_SUPPORT` - Disables XMI to MIDI converter
+* `BWMIDI_DISABLE_MUS_SUPPORT` - Disables MUS to MIDI converter
 * `OPNMIDI_DISABLE_MIDI_SEQUENCER` - Completely disables built-in MIDI sequencer.
 * `OPNMIDI_USE_LEGACY_EMULATOR` - Enables Gens 2.10 YM2612 emulator to be used. Nuked OPN2 is used by default if macro is not defined.
 
@@ -72,7 +87,6 @@ You need to make in the any IDE a library project and put into it next files
 * opnmidi.h    - Library API, use it to control library
 
 ### Internal code (src)
-* fraction.hpp  - Fraction number handling
 * opnbank.h    - bank structures definition
 * opnmidi_private.hpp - header of internal private APIs
 
@@ -84,7 +98,7 @@ You need to make in the any IDE a library project and put into it next files
 * opnmidi_private.cpp	- some internal functions sources
 
 * `chips/opn_chip_base.h`   - Header of base class over all emulation cores
-* `chips/opn_chip_base.cpp` - Code of base class over all emulation cores
+* `chips/opn_chip_base.tcc` - Code of base class over all emulation cores
 
 * chips/gens_opn2.h  - Header of emulator frontent over Gens 2.10 emulator
 * chips/gens_opn2.cpp  - Code of emulator frontent over Gens 2.10 emulator
@@ -101,15 +115,15 @@ You need to make in the any IDE a library project and put into it next files
 * chips/nuked/ym3438.h  - Nuked OPN2 Emulation header
 * chips/nuked/ym3438.cpp   - Code of Nuked OPN2 emulator by Stéphane Dallongeville, improved by Shay Green
 
-#### MUS2MIDI converter
-To remove MUS support, define `OPNMIDI_DISABLE_MUS_SUPPORT` macro and remove those files:
-* opnmidi_mus2mid.h - MUS2MID converter header
-* opnmidi_mus2mid.c	- MUS2MID converter source
-
-#### XMI2MIDI converter
-To remove XMI support, define `OPNMIDI_DISABLE_XMI_SUPPORT` macro and remove those files:
-* opnmidi_xmi2mid.h - XMI2MID converter header
-* opnmidi_xmi2mid.c	- XMI2MID converter source
+#### MIDI Sequencer
+To remove MIDI Sequecer, define `OPNMIDI_DISABLE_MIDI_SEQUENCER` macro and remove all those files
+* adlmidi_sequencer.cpp	- MIDI Sequencer related source
+* cvt_mus2mid.hpp - MUS2MID converter source (define `BWMIDI_DISABLE_MUS_SUPPORT` macro to remove MUS support)
+* cvt_xmi2mid.hpp - XMI2MID converter source (define `BWMIDI_DISABLE_XMI_SUPPORT` macro to remove XMI support)
+* fraction.hpp  - Fraction number handling (Used by Sequencer only)
+* midi_sequencer.h	- MIDI Sequencer C bindings
+* midi_sequencer.hpp	- MIDI Sequencer C++ declaration
+* midi_sequencer_impl.hpp	- MIDI Sequencer C++ implementation (must be once included into one of CPP together with interfaces initializations)
 
 **Important**: Please use GENS emulator for on mobile or any non-power devices because it requires very small CPU power. Nuked OPN2 emulator is very accurate (compared to real OPN2 chip), however, it requires a VERY POWERFUL device even for a single chip emulation and is a high probability that your device will lag and playback will be dirty and choppy.
 
@@ -119,7 +133,16 @@ To remove XMI support, define `OPNMIDI_DISABLE_XMI_SUPPORT` macro and remove tho
 * [OPNMIDI Player for Android](https://github.com/Wohlstand/OPNMIDI-Player-Java/) - a little MIDI-player for Android which uses libOPNMIDI to play MIDI files and provides flexible GUI with ability to change bank, flags, number of emulated chips, etc.
 
 # Changelog
-## 1.3.0   dev
+## 1.4.0   <dev>
+ * Implemented a full support for Portamento! (Thanks to [Jean Pierre Cimalando](https://github.com/jpcima) for a work!)
+ * Added support for SysEx event handling! (Thanks to [Jean Pierre Cimalando](https://github.com/jpcima) for a work!)
+ * Added support for GS way of custom drum channels (through SysEx events)
+ * Ignore some NRPN events and lsb bank number when using GS standard (after catching of GS Reset SysEx call)
+ * Added support for CC66-Sostenuto controller (Pedal hold of currently-pressed notes only while CC64 holds also all next notes)
+ * Added support for CC67-SoftPedal controller (SoftPedal lowers the volume of notes played)
+ * Resolved a trouble which sometimes makes a junk noise sound and unnecessary overuse of chip channels
+
+## 1.3.0   2018-06-19
  * Optimizing the MIDI banks management system for MultiBanks (Thanks to [Jean Pierre Cimalando](https://github.com/jpcima) for a work!)
  * Fixed incorrect initial MIDI tempo when MIDI file doesn't includes the tempo event
  * Fixed an incorrect processing of auto-flags
