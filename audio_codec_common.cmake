@@ -38,7 +38,7 @@ string(TOLOWER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_LOWER)
 
 if(CMAKE_BUILD_TYPE_LOWER STREQUAL "release")
     add_definitions(-DNDEBUG)
-ENDIF()
+endif()
 
 if(MSVC)
     # Force to always compile with W4
