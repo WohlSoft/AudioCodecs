@@ -335,7 +335,7 @@ static void free_midi_list(MidiSong *song)
       free(meep);
       meep=next;
     }
-  song->evlist=0;
+  song->evlist=NULL;
 }
 
 /* Allocate an array of MidiEvents and fill it from the linked list of
@@ -505,30 +505,27 @@ MidiEvent *read_midi_file(MidiSong *song, Sint32 *count, Sint32 *sp)
   song->at=0;
   song->evlist=0;
 
-  if (SDL_RWread(song->rw, tmp, 1, 4) != 4)
+  if (SDL_RWread(song->rw, tmp, 1, 4) != 4 || SDL_RWread(song->rw, &len, 4, 1) != 1)
     {
       SNDDBG(("Not a MIDI file!\n"));
-      return 0;
+      return NULL;
     }
-  if (memcmp(tmp, "RIFF", 4) == 0)
-    {
-      SDL_RWseek(song->rw, 16, RW_SEEK_CUR);
-      if (SDL_RWread(song->rw, tmp, 1, 4) != 4)
-        {
-          SNDDBG(("Not a MIDI file!\n"));
-          return 0;
-        }
-    }
-  if (SDL_RWread(song->rw, &len, 4, 1) != 1)
-    {
-      SNDDBG(("Not a MIDI file!\n"));
-      return 0;
-    }
+  if (memcmp(tmp, "RIFF", 4) == 0) { /* RMID ?? */
+    if (SDL_RWread(song->rw, tmp, 1, 4) != 4 || memcmp(tmp, "RMID", 4) != 0 ||
+	SDL_RWread(song->rw, tmp, 1, 4) != 4 || memcmp(tmp, "data", 4) != 0 ||
+	SDL_RWread(song->rw, tmp, 1, 4) != 4 ||
+	/* SMF must begin from here onwards: */
+	SDL_RWread(song->rw, tmp, 1, 4) != 4 || SDL_RWread(song->rw, &len, 4, 1) != 1)
+      {
+	SNDDBG(("Not an RMID file!\n"));
+	return NULL;
+      }
+  }
   len=(Sint32)SDL_SwapBE32((Uint32)len);
   if (memcmp(tmp, "MThd", 4) || len < 6)
     {
       SNDDBG(("Not a MIDI file!\n"));
-      return 0;
+      return NULL;
     }
 
   SDL_RWread(song->rw, &format, 2, 1);
@@ -554,17 +551,17 @@ MidiEvent *read_midi_file(MidiSong *song, Sint32 *count, Sint32 *sp)
   if (format<0 || format >2)
     {
       SNDDBG(("Unknown MIDI file format %d\n", format));
-      return 0;
+      return NULL;
     }
   if (tracks<1)
     {
       SNDDBG(("Bad number of tracks %d\n", tracks));
-      return 0;
+      return NULL;
     }
   if (format==0 && tracks!=1)
     {
       SNDDBG(("%d tracks with Type-0 MIDI (must be 1.)\n", tracks));
-      return 0;
+      return NULL;
     }
   SNDDBG(("Format: %d  Tracks: %d  Divisions: %d\n",
 	  format, tracks, divisions));
@@ -580,7 +577,7 @@ MidiEvent *read_midi_file(MidiSong *song, Sint32 *count, Sint32 *sp)
       if (read_track(song, 0))
 	{
 	  free_midi_list(song);
-	  return 0;
+	  return NULL;
 	}
       break;
 
@@ -589,7 +586,7 @@ MidiEvent *read_midi_file(MidiSong *song, Sint32 *count, Sint32 *sp)
 	if (read_track(song, 0))
 	  {
 	    free_midi_list(song);
-	    return 0;
+	    return NULL;
 	  }
       break;
 
@@ -598,7 +595,7 @@ MidiEvent *read_midi_file(MidiSong *song, Sint32 *count, Sint32 *sp)
 	if (read_track(song, 1))
 	  {
 	    free_midi_list(song);
-	    return 0;
+	    return NULL;
 	  }
       break;
     }
