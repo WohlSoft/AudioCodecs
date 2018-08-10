@@ -90,7 +90,7 @@ OPNMIDIplay::OPNMIDIplay(unsigned long sampleRate) :
 {
     m_midiDevices.clear();
 
-    m_setup.emulator = OPNMIDI_EMU_MAME;
+    m_setup.emulator = opn2_getLowestEmulator();
     m_setup.runAtPcmRate = false;
 
     m_setup.PCM_RATE = sampleRate;
@@ -142,6 +142,16 @@ void OPNMIDIplay::applySetup()
 
     // Reset the arpeggio counter
     m_arpeggioCounter = 0;
+}
+
+void OPNMIDIplay::partialReset()
+{
+    realTime_panic();
+    m_setup.tick_skip_samples_delay = 0;
+    m_synth.m_runAtPcmRate = m_setup.runAtPcmRate;
+    m_synth.reset(m_setup.emulator, m_setup.PCM_RATE, this);
+    m_chipChannels.clear();
+    m_chipChannels.resize(m_synth.m_numChannels);
 }
 
 void OPNMIDIplay::resetMIDI()
@@ -1093,6 +1103,8 @@ void OPNMIDIplay::noteUpdate(size_t midCh,
                 volume = 2 * (m_midiChannels[midCh].volume * m_midiChannels[midCh].expression * m_masterVolume / 16129) + 1;
                 //volume = 2 * (Ch[MidCh].volume) + 1;
                 volume = (DMX_volume_mapping_table[(vol < 128) ? vol : 127] * volume) >> 9;
+                if(volume > 0)
+                    volume += 64;//OPN has 0~127 range. As 0...63 is almost full silence, but at 64 to 127 is very closed to OPL3, just add 64.
             }
             break;
 
@@ -1101,7 +1113,8 @@ void OPNMIDIplay::noteUpdate(size_t midCh,
                 volume = (m_midiChannels[midCh].volume * m_midiChannels[midCh].expression * m_masterVolume / 16129);
                 volume = ((64 * (vol + 0x80)) * volume) >> 15;
                 //volume = ((63 * (vol + 0x80)) * Ch[MidCh].volume) >> 15;
-                volume *= 2;//OPN has 0~127 range
+                if(volume > 0)
+                    volume += 64;//OPN has 0~127 range. As 0...63 is almost full silence, but at 64 to 127 is very closed to OPL3, just add 64.
             }
             break;
 
@@ -1110,7 +1123,8 @@ void OPNMIDIplay::noteUpdate(size_t midCh,
                 //volume = 63 - W9X_volume_mapping_table[(((vol * Ch[MidCh].volume /** Ch[MidCh].expression*/) * 127 / 16129 /*2048383*/) >> 2)];
                 volume = 63 - W9X_volume_mapping_table[((vol * m_midiChannels[midCh].volume * m_midiChannels[midCh].expression * m_masterVolume / 2048383) >> 2)];
                 //volume = W9X_volume_mapping_table[vol >> 2] + volume;
-                volume *= 2;//OPN has 0~127 range
+                if(volume > 0)
+                    volume += 64;//OPN has 0~127 range. As 0...63 is almost full silence, but at 64 to 127 is very closed to OPL3, just add 64.
             }
             break;
             }
@@ -1628,25 +1642,30 @@ void OPNMIDIplay::describeChannels(char *str, char *attr, size_t size)
     uint32_t numChannels = synth.m_numChannels;
 
     uint32_t index = 0;
-    for(uint32_t i = 0; index < numChannels && index < size - 1; ++i)
+    while(index < numChannels && index < size - 1)
     {
-        const OpnChannel &adlChannel = m_chipChannels[i];
+        const OpnChannel &adlChannel = m_chipChannels[index];
 
         OpnChannel::LocationData *loc = adlChannel.users_first;
         if(!loc)  // off
         {
-            str[index++] = '-';
+            str[index] = '-';
         }
         else if(loc->next)  // arpeggio
         {
-            str[index++] = '@';
+            str[index] = '@';
         }
         else  // on
         {
-            str[index++] = '+';
+            str[index] = '+';
         }
 
-        attr[index] = '\0';  // TODO
+        uint8_t attribute = 0;
+        if (loc)  // 4-bit color index of MIDI channel
+            attribute |= (uint8_t)(loc->loc.MidCh & 0xF);
+
+        attr[index] = (char)attribute;
+        ++index;
     }
 
     str[index] = 0;
