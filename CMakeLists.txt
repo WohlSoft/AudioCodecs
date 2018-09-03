@@ -9,7 +9,7 @@ if(POLICY CMP0058) # Dependencies
     cmake_policy(SET CMP0058 NEW)
 endif()
 
-option(DOWNLOAD_SDL2_DEPENDENCY "Downloads and compiles SDL2 from official Mercurial directly" OFF)
+option(DOWNLOAD_SDL2_DEPENDENCY "Download, compile, and install SDL2's master branch" OFF)
 set(SDL2_REPO_PATH "" CACHE PATH "Path to the SDL2")
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
