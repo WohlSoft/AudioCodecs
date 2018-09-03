@@ -27,7 +27,8 @@ endif()
 ExternalProject_Add(
     SDL2HG
     PREFIX ${CMAKE_BINARY_DIR}/external/SDL2
-    GIT_REPOSITORY https://github.com/spurious/SDL-mirror.git
+    URL https://hg.libsdl.org/SDL/archive/default.tar.bz2
+    # GIT_REPOSITORY https://github.com/spurious/SDL-mirror.git
     CMAKE_ARGS
         "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
         "-DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}"
