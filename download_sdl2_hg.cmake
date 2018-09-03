@@ -26,7 +26,7 @@ endif()
 ExternalProject_Add(
     SDL2HG
     PREFIX ${CMAKE_BINARY_DIR}/external/SDL2
-    URL https://hg.libsdl.org/SDL/archive/default.tar.bz2
+    URL https://www.libsdl.org/release/SDL2-2.0.8.tar.gz
     CMAKE_ARGS
         "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
         "-DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}"
