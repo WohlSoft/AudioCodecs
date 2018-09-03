@@ -31,7 +31,7 @@ ExternalProject_Add(
         "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
         "-DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}"
         -DSNDIO=OFF
-        -DSDL_SHARED=OFF
+        -DSDL_SHARED=${SHARED}
         -DCMAKE_DEBUG_POSTFIX=${CMAKE_DEBUG_POSTFIX}
         ${SDL2_CMAKE_FPIC_FLAG}
         ${SDL2_NOWASAPI} # WASAPI, No way!
@@ -43,6 +43,6 @@ install(
     CODE "file( INSTALL \${builtSdl2Heads} DESTINATION \"${CMAKE_INSTALL_PREFIX}/include/SDL2\" )"
     CODE "file( GLOB builtSdlLibs \"${CMAKE_BINARY_DIR}/lib/*SDL2*\" )"
     CODE "file( INSTALL \${builtSdlLibs} DESTINATION \"${CMAKE_INSTALL_PREFIX}/lib\" )"
-    CODE "file( GLOB builtSdlBins \"${CMAKE_BINARY_DIR}/bin/*SDL2*\" )"
+    CODE "file( GLOB builtSdlBins \"${CMAKE_BINARY_DIR}/bin/*\" )"
     CODE "file( INSTALL \${builtSdlBins} DESTINATION \"${CMAKE_INSTALL_PREFIX}/bin\" )"
 )
