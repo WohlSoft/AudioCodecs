@@ -5,8 +5,9 @@
 # SDL2_INSTALL_DIR			    The install directory
 # SDL2_REPOSITORY_PATH  		The reposotory directory
 
-# Require ExternalProject!
+# Require ExternalProject and GIT!
 include(ExternalProject)
+find_package(Git REQUIRED)
 
 # Posttible Input Vars:
 # <None>
@@ -26,7 +27,7 @@ endif()
 ExternalProject_Add(
     SDL2HG
     PREFIX ${CMAKE_BINARY_DIR}/external/SDL2
-    URL https://www.libsdl.org/release/SDL2-2.0.8.tar.gz
+    GIT_REPOSITORY https://github.com/spurious/SDL-mirror.git
     CMAKE_ARGS
         "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
         "-DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}"
