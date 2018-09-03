@@ -29,8 +29,9 @@ ExternalProject_Add(
     PREFIX ${CMAKE_BINARY_DIR}/external/SDL2
     # URL https://hg.libsdl.org/SDL/archive/default.tar.bz2
     # Re-enable when the tarball is symlink-free for better Windows compatibility.
-    # Use git in the meantime until the tarball is fixed:
-    DOWNLOAD_COMMAND git clone --depth=1 https://github.com/spurious/SDL-mirror.git SDL2HG
+    # In the meantime, use the auto-tracking SDL2 Git repo:
+    GIT_SHALLOW 1
+    GIT_REPOSITORY https://github.com/spurious/SDL-mirror.git
     CMAKE_ARGS
         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
         -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}
