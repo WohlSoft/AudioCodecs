@@ -24,19 +24,27 @@ else()
     set(SDL2_NOWASAPI "-DWASAPI=OFF")
 endif()
 
+# Remove this workaround when the tarball is symlink-free for better Windows compatibility.
+# In the meantime, use the auto-tracking SDL2 Git repo:
+if(WIN32)
+    set(SDL_SOURCE_PATH_GIT "https://github.com/spurious/SDL-mirror.git")
+    message("== SDL2 will be downloaded as unofficial GIT repository")
+else()
+    set(SDL_SOURCE_PATH_URL "https://hg.libsdl.org/SDL/archive/default.tar.bz2")
+    message("== SDL2 will be downloaded from official Mercirual as TAR-BZ2 archive")
+endif()
+
 ExternalProject_Add(
     SDL2HG
     PREFIX ${CMAKE_BINARY_DIR}/external/SDL2
-    # URL https://hg.libsdl.org/SDL/archive/default.tar.bz2
-    # Re-enable when the tarball is symlink-free for better Windows compatibility.
-    # In the meantime, use the auto-tracking SDL2 Git repo:
-    GIT_SHALLOW 1
-    GIT_REPOSITORY https://github.com/spurious/SDL-mirror.git
+    GIT_REPOSITORY ${SDL_SOURCE_PATH_GIT}
+    URL ${SDL_SOURCE_PATH_URL}
     CMAKE_ARGS
-        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-        -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}
+        "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+        "-DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}"
         -DSNDIO=OFF
-        -DSDL_SHARED=${SHARED}
+        -DSDL_SHARED=${BUILD_SDL2_SHARED}
+        -DSDL_STATIC=${BUILD_SDL2_STATIC}
         -DCMAKE_DEBUG_POSTFIX=${CMAKE_DEBUG_POSTFIX}
         ${SDL2_CMAKE_FPIC_FLAG}
         ${SDL2_NOWASAPI} # WASAPI, No way!
@@ -48,6 +56,6 @@ install(
     CODE "file( INSTALL \${builtSdl2Heads} DESTINATION \"${CMAKE_INSTALL_PREFIX}/include/SDL2\" )"
     CODE "file( GLOB builtSdlLibs \"${CMAKE_BINARY_DIR}/lib/*SDL2*\" )"
     CODE "file( INSTALL \${builtSdlLibs} DESTINATION \"${CMAKE_INSTALL_PREFIX}/lib\" )"
-    CODE "file( GLOB builtSdlBins \"${CMAKE_BINARY_DIR}/bin/*\" )"
+    CODE "file( GLOB builtSdlBins \"${CMAKE_BINARY_DIR}/bin/*SDL2*\" )"
     CODE "file( INSTALL \${builtSdlBins} DESTINATION \"${CMAKE_INSTALL_PREFIX}/bin\" )"
 )

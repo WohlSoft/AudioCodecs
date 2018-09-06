@@ -20,6 +20,8 @@ endif()
 if(NOT SDL2_REPO_PATH)
     # Try to resolve sqlite dependency
     if(DOWNLOAD_SDL2_DEPENDENCY)
+        option(BUILD_SDL2_SHARED "Enable shared build of SDL2" ON)
+        option(BUILD_SDL2_STATIC "Enable static build of SDL2" ON)
         # Download and configure SDL2 dependency
         include(download_sdl2_hg.cmake)
         set(SDL2_REPO_PATH ${SDL2_INSTALL_DIR})
