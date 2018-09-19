@@ -82,6 +82,7 @@ typedef int32_t ssize_t;
 //#else
 #include <map>
 #include <set>
+#include <new> // nothrow
 //#endif
 #include <cstdlib>
 #include <cstring>
@@ -447,6 +448,11 @@ public:
      * @param volumeModel Type of volume scale model scale
      */
     void setVolumeScaleModel(ADLMIDI_VolumeModels volumeModel);
+
+    /**
+     * @brief Get the volume scaling model
+     */
+    ADLMIDI_VolumeModels getVolumeScaleModel();
 
     #ifndef ADLMIDI_HW_OPL
     /**

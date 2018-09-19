@@ -71,7 +71,7 @@ function(set_visibility_hidden destTarget)
         else()
             target_compile_options(${destTarget} PRIVATE -fvisibility=hidden)
         endif()
-        target_compile_definitions(${destTarget} PRIVATE -DLIBADLMIDI_VISIBILITY)
+        target_compile_definitions(${destTarget} PRIVATE -DLIBOPNMIDI_VISIBILITY)
     endif()
 endfunction()
 #===========================================================================================
@@ -112,6 +112,7 @@ list(APPEND libOPNMIDI_SOURCES
     ${libOPNMIDI_SOURCE_DIR}/src/opnmidi_midiplay.cpp
     ${libOPNMIDI_SOURCE_DIR}/src/opnmidi_opn2.cpp
     ${libOPNMIDI_SOURCE_DIR}/src/opnmidi_private.cpp
+    ${libOPNMIDI_SOURCE_DIR}/src/wopn/wopn_file.c
 )
 
 if(WITH_MIDI_SEQUENCER)
@@ -198,6 +199,9 @@ if(libOPNMIDI_SHARED)
     set_legacy_standard(OPNMIDI_shared)
     set_visibility_hidden(OPNMIDI_shared)
     list(APPEND libOPNMIDI_INSTALLS OPNMIDI_shared)
+    if(WIN32)
+        target_compile_definitions(OPNMIDI_shared PRIVATE "-DOPNMIDI_BUILD_DLL")
+    endif()
 endif()
 
 if(NOT libOPNMIDI_STATIC AND NOT libOPNMIDI_SHARED)
