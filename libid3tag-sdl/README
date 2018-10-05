@@ -6,6 +6,11 @@
 
 ===============================================================================
 
+  This is a modified version of original libID3Tag which introduces support
+  for SDL_RWops to allow better integration with SDL apps.
+
+===============================================================================
+
 INTRODUCTION
 
   libid3tag is a library for reading and (eventually) writing ID3 tags, both
