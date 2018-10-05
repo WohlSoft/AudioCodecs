@@ -87,9 +87,9 @@ if(BUILD_GME)
     endif()
 endif()
 
-option(BUILD_TIMIDITY "Enable building of Timidity" ON)
-if(BUILD_TIMIDITY)
-    add_subdirectory(libtimidity)
+option(BUILD_TIMIDITYSDL "Enable building of Timidity-SDL" ON)
+if(BUILD_TIMIDITYSDL)
+    add_subdirectory(libtimidity-sdl)
 endif()
 
 option(BUILD_MODPLUG "Enable building of libModPlug" ON)
