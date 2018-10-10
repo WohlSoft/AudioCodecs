@@ -67,7 +67,7 @@ if(BUILD_MP3_MAD)
     add_subdirectory(libmad)
 endif()
 
-option(BUILD_MP3_SMPEG "Enable building of libSMPEG" ON)
+option(BUILD_MP3_SMPEG "Enable building of libSMPEG" OFF)
 if(BUILD_MP3_SMPEG)
     add_subdirectory(smpeg)
     if(DOWNLOAD_SDL2_DEPENDENCY)
