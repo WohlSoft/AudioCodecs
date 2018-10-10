@@ -136,7 +136,7 @@ rem Tip: instead of "release" you can have "debug" to build debug versions. Inst
 * **libFLAC:** Multiple: BSD 3-clause "New" or "Revised" License (libFLAC, libFLAC++), GNU GPL (extra plugins and tools)
 * **libFluidLite:** GNU LGPLv2.1+
 * **libGME:** GNU LGPLv2.1+
-* **libID3Tag:** GNU GPLv2+ (a.k.a. v2 or any later version)
+* **libID3Tag-SDL:** GNU GPLv2+ (a.k.a. v2 or any later version)
 * **libMAD:** GNU GPLv2+ (a.k.a. v2 or any later version)
 * **libMikMod:** GNU LGPLv2+
 * **libModPlug:** Public Domain
@@ -144,7 +144,7 @@ rem Tip: instead of "release" you can have "debug" to build debug versions. Inst
 * **libOPNMIDI:** GNU LGPLv3+ or GNU GPLv3+
 * **libOpenMPT:** BSD
 * **libSMPEG:** GNU LGPLv2+
-* **libTimidity:** The "Artistic License"
+* **libTimidity-SDL:** The "Artistic License"
 * **libVorbis:** BSD 3-clause "New" or "Revised" License
 * **libZlib:** ZLib license
 
@@ -156,7 +156,7 @@ rem Tip: instead of "release" you can have "debug" to build debug versions. Inst
 * libModPlug
 * libOGG
 * libOpenMPT
-* libTimidity
+* libTimidity-SDL
 * libVorbis
 * libZlib
 
