@@ -472,6 +472,8 @@ MidiSong *Timidity_LoadSong(SDL_RWops *rw, SDL_AudioSpec *audio)
 
   /* Allocate memory for the song */
   song = (MidiSong *)safe_malloc(sizeof(*song));
+  if (song == NULL)
+      return NULL;
   memset(song, 0, sizeof(*song));
 
   for (i = 0; i < MAXBANK; i++)
@@ -508,6 +510,7 @@ MidiSong *Timidity_LoadSong(SDL_RWops *rw, SDL_AudioSpec *audio)
       song->encoding |= PE_MONO;
   else if (audio->channels > 2) {
       SDL_SetError("Surround sound not supported");
+      free(song);
       return NULL;
   }
   switch (audio->format) {
@@ -540,6 +543,7 @@ MidiSong *Timidity_LoadSong(SDL_RWops *rw, SDL_AudioSpec *audio)
 	  break;
   default:
 	  SDL_SetError("Unsupported audio format");
+	  free(song);
       return NULL;
   }
 
