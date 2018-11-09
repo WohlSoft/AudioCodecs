@@ -7,6 +7,8 @@
 #include "stdafx.h"
 #include "sndfile.h"
 
+#ifndef NO_WAVFORMAT
+
 #ifndef WAVE_FORMAT_EXTENSIBLE
 #define WAVE_FORMAT_EXTENSIBLE	0xFFFE
 #endif
@@ -24,7 +26,7 @@ BOOL CSoundFile::ReadWav(const BYTE *lpStream, DWORD dwMemLength)
 	if ((phdr->id_RIFF != IFFID_RIFF) || (phdr->id_WAVE != IFFID_WAVE)
 	 || (pfmt->id_fmt != IFFID_fmt)) return FALSE;
 	dwMemPos = sizeof(WAVEFILEHEADER) + 8 + pfmt->hdrlen;
-	if ((dwMemPos + 8 >= dwMemLength)
+	if ((dwMemPos >= dwMemLength - 8)
 	 || ((pfmt->format != WAVE_FORMAT_PCM) && (pfmt->format != WAVE_FORMAT_EXTENSIBLE))
 	 || (pfmt->channels > 4)
 	 || (!pfmt->channels)
@@ -38,7 +40,7 @@ BOOL CSoundFile::ReadWav(const BYTE *lpStream, DWORD dwMemLength)
 		pdata = (WAVEDATAHEADER *)(lpStream + dwMemPos);
 		if (pdata->id_data == IFFID_data) break;
 		dwMemPos += pdata->length + 8;
-		if (dwMemPos + 8 >= dwMemLength) return FALSE;
+		if (dwMemPos >= dwMemLength - 8) return FALSE;
 	}
 	m_nType = MOD_TYPE_WAV;
 	m_nSamples = 0;
@@ -154,7 +156,7 @@ typedef struct IMAADPCMBLOCK
 
 #pragma pack()
 
-static const int gIMAUnpackTable[90] = 
+static const int gIMAUnpackTable[90] =
 {
   7,     8,     9,    10,    11,    12,    13,    14,
   16,    17,    19,    21,    23,    25,    28,    31,
@@ -169,7 +171,6 @@ static const int gIMAUnpackTable[90] =
   15289, 16818, 18500, 20350, 22385, 24623, 27086, 29794,
   32767, 0
 };
-
 
 BOOL IMAADPCMUnpack16(signed short *pdest, UINT nLen, LPBYTE psrc, DWORD dwBytes, UINT pkBlkAlign)
 //------------------------------------------------------------------------------------------------
@@ -215,6 +216,4 @@ BOOL IMAADPCMUnpack16(signed short *pdest, UINT nLen, LPBYTE psrc, DWORD dwBytes
 	}
 	return TRUE;
 }
-
-
-
+#endif // NO_WAVFORMAT

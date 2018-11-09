@@ -14,7 +14,9 @@ if(MSVC)
 endif()
 
 add_definitions(
-    -DMODPLUG_NO_FILESAVE
+    #-DMODPLUG_NO_FILESAVE
+    #-DNO_MIDIFORMATS
+    #-DNO_WAVFORMAT
     -DHAVE_CONFIG_H
     -DHAVE_CMAKE_CONFIG_H
     -DMODPLUG_STATIC
@@ -48,7 +50,7 @@ add_library(modplug STATIC
     # src/load_j2b.cpp
     src/load_mdl.cpp
     src/load_med.cpp
-    src/load_mid.cpp
+    #src/load_mid.cpp
     src/load_mod.cpp
     src/load_mt2.cpp
     src/load_mtm.cpp
@@ -60,7 +62,7 @@ add_library(modplug STATIC
     src/load_stm.cpp
     src/load_ult.cpp
     src/load_umx.cpp
-    src/load_wav.cpp
+    #src/load_wav.cpp
     src/load_xm.cpp
     src/mmcmp.cpp
     src/modplug.cpp
@@ -76,7 +78,11 @@ add_library(modplug STATIC
 # include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libogg/include)
 
 target_include_directories(modplug PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_include_directories(modplug PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/libmodplug)
+target_include_directories(modplug PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/libmodplug
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/libmodplug
+)
 
 install(TARGETS modplug
         LIBRARY DESTINATION "lib"

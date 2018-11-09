@@ -4,8 +4,8 @@
  * Authors: Olivier Lapicque <olivierl@jps.net>
 */
 
-#include "stdafx.h"
-#include "sndfile.h"
+#include "libmodplug/stdafx.h"
+#include "libmodplug/sndfile.h"
 #include "tables.h"
 
 #ifdef MODPLUG_TRACKER
@@ -60,7 +60,7 @@ UINT gnReverbSend;
 
 // Log tables for pre-amp
 // We don't want the tracker to get too loud
-const UINT PreAmpTable[16] =
+static const UINT PreAmpTable[16] =
 {
 	0x60, 0x60, 0x60, 0x70,	// 0-7
 	0x80, 0x88, 0x90, 0x98,	// 8-15
@@ -68,7 +68,7 @@ const UINT PreAmpTable[16] =
 	0xB4, 0xB8, 0xBC, 0xC0,	// 24-31
 };
 
-const UINT PreAmpAGCTable[16] =
+static const UINT PreAmpAGCTable[16] =
 {
 	0x60, 0x60, 0x60, 0x60,
 	0x68, 0x70, 0x78, 0x80,
@@ -412,14 +412,16 @@ BOOL CSoundFile::ProcessRow()
 			m_nNextPattern = m_nCurrentPattern;
 		}
 		// Weird stuff?
-		if ((m_nPattern >= MAX_PATTERNS) || (!Patterns[m_nPattern])) return FALSE;
+		if ((m_nPattern >= MAX_PATTERNS) || (!Patterns[m_nPattern]) ||
+			PatternSize[m_nPattern] == 0) return FALSE;
 		// Should never happen
 		if (m_nRow >= PatternSize[m_nPattern]) m_nRow = 0;
 		m_nNextRow = m_nRow + 1;
 		if (m_nNextRow >= PatternSize[m_nPattern])
 		{
 			if (!(m_dwSongFlags & SONG_PATTERNLOOP)) m_nNextPattern = m_nCurrentPattern + 1;
-			m_nNextRow = 0;
+			m_nNextRow = m_nNextStartRow;
+			m_nNextStartRow = 0;
 		}
 		// Reset channel values
 		MODCHANNEL *pChn = Chn;
@@ -1233,5 +1235,3 @@ BOOL CSoundFile::ReadNote()
 	}
 	return TRUE;
 }
-
-

@@ -17,7 +17,7 @@
 typedef struct tagFILEHEADER669
 {
 	WORD sig;				// 'if' or 'JN'
-        signed char songmessage[108];	// Song Message
+	signed char songmessage[108];	// Song Message
 	BYTE samples;			// number of samples (1-64)
 	BYTE patterns;			// number of patterns (1-128)
 	BYTE restartpos;
@@ -35,7 +35,7 @@ typedef struct tagSAMPLE669
 	BYTE loopend[4];
 } SAMPLE669;
 
-DWORD lengthArrayToDWORD(const BYTE length[4]) {
+static DWORD lengthArrayToDWORD(const BYTE length[4]) {
 	DWORD len = (length[3] << 24) +
 		(length[2] << 16) +
 		(length[1] << 8) +
@@ -155,9 +155,9 @@ BOOL CSoundFile::Read669(const BYTE *lpStream, DWORD dwMemLength)
 					case 0x03:	command = CMD_MODCMDEX; param |= 0x50; break;
 					case 0x04:	command = CMD_VIBRATO; param |= 0x40; break;
 					case 0x05:	if (param) command = CMD_SPEED; else command = 0; param += 2; break;
-                    case 0x06:	if (param == 0) { command = CMD_PANNINGSLIDE; param = 0xFE; }
-                                else if (param == 1) { command = CMD_PANNINGSLIDE; param = 0xEF; }
-                                else command = 0;
+					case 0x06:	if (param == 0) { command = CMD_PANNINGSLIDE; param = 0xFE; }
+								else if (param == 1) { command = CMD_PANNINGSLIDE; param = 0xEF; }
+								else command = 0;
 								break;
 					default:	command = 0;
 					}
@@ -191,5 +191,3 @@ BOOL CSoundFile::Read669(const BYTE *lpStream, DWORD dwMemLength)
 	}
 	return TRUE;
 }
-
-

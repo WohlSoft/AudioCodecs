@@ -19,9 +19,8 @@ extern "C" {
 # else
 #   define MODPLUG_EXPORT __declspec(dllimport)			/* using libmodplug dll for windows */
 # endif
-/* FIXME: USE VISIBILITY ATTRIBUTES HERE */
-#elif defined(MODPLUG_BUILD)
-#define MODPLUG_EXPORT
+#elif defined(MODPLUG_BUILD) && defined(SYM_VISIBILITY)
+#   define MODPLUG_EXPORT __attribute__((visibility("default")))
 #else
 #define MODPLUG_EXPORT
 #endif
@@ -68,16 +67,6 @@ MODPLUG_EXPORT int ModPlug_GetLength(ModPlugFile* file);
  * ModPlug_GetLength() does not report the full length. */
 MODPLUG_EXPORT void ModPlug_Seek(ModPlugFile* file, int millisecond);
 
-/* Get the absulote playing position in the song, in milliseconds. */
-MODPLUG_EXPORT int  ModPlug_Tell(ModPlugFile* file);
-/* As this function wasn't officially implemented,
- * to be able use same code with both official and with this function,
- * you must check for this macro and disable code
- * which can't use ModPlug_Tell function as it wasn't implemented in offical public versions */
-#ifndef MODPLUG_HAS_TELL
-#define MODPLUG_HAS_TELL
-#endif
-
 enum _ModPlug_Flags
 {
 	MODPLUG_ENABLE_OVERSAMPLING     = 1 << 0,  /* Enable oversampling (*highly* recommended) */
@@ -98,7 +87,7 @@ enum _ModPlug_ResamplingMode
 typedef struct _ModPlug_Settings
 {
 	int mFlags;  /* One or more of the MODPLUG_ENABLE_* flags above, bitwise-OR'ed */
-	
+
 	/* Note that ModPlug always decodes sound at 44100kHz, 32 bit, stereo and then
 	 * down-mixes to the settings you choose. */
 	int mChannels;       /* Number of channels - 1 for mono or 2 for stereo */
@@ -108,7 +97,7 @@ typedef struct _ModPlug_Settings
 
 	int mStereoSeparation; /* Stereo separation, 1 - 256 */
 	int mMaxMixChannels; /* Maximum number of mixing channels (polyphony), 32 - 256 */
-	
+
 	int mReverbDepth;    /* Reverb level 0(quiet)-100(loud)      */
 	int mReverbDelay;    /* Reverb delay in ms, usually 40-200ms */
 	int mBassAmount;     /* XBass level 0(quiet)-100(loud)       */
@@ -116,7 +105,7 @@ typedef struct _ModPlug_Settings
 	int mSurroundDepth;  /* Surround level 0(quiet)-100(heavy)   */
 	int mSurroundDelay;  /* Surround delay in ms, usually 5-40ms */
 	int mLoopCount;      /* Number of times to loop.  Zero prevents looping.
-	                        -1 loops forever. */
+			      * -1 loops forever. */
 } ModPlug_Settings;
 
 /* Get and set the mod decoder settings.  All options, except for channels, bits-per-sample,
@@ -141,7 +130,7 @@ MODPLUG_EXPORT void ModPlug_SeekOrder(ModPlugFile* file,int order);
 MODPLUG_EXPORT int ModPlug_GetModuleType(ModPlugFile* file);
 MODPLUG_EXPORT char* ModPlug_GetMessage(ModPlugFile* file);
 
-
+#define MODPLUG_NO_FILESAVE /* experimental yet.  must match stdafx.h. */
 #ifndef MODPLUG_NO_FILESAVE
 /*
  * EXPERIMENTAL Export Functions
@@ -177,7 +166,7 @@ MODPLUG_EXPORT ModPlugNote* ModPlug_GetPattern(ModPlugFile* file, int pattern, u
  * =================
  *
  * Use this callback if you want to 'modify' the mixed data of LibModPlug.
- * 
+ *
  * void proc(int* buffer,unsigned long channels,unsigned long nsamples) ;
  *
  * 'buffer': A buffer of mixed samples
@@ -186,8 +175,8 @@ MODPLUG_EXPORT ModPlugNote* ModPlug_GetPattern(ModPlugFile* file, int pattern, u
  *
  * (Samples are signed 32-bit integers)
  */
-MODPLUG_EXPORT void ModPlug_InitMixerCallback(ModPlugFile* file,ModPlugMixerProc proc);
-MODPLUG_EXPORT void ModPlug_UnloadMixerCallback(ModPlugFile* file);
+MODPLUG_EXPORT void ModPlug_InitMixerCallback(ModPlugFile* file,ModPlugMixerProc proc) ;
+MODPLUG_EXPORT void ModPlug_UnloadMixerCallback(ModPlugFile* file) ;
 
 #ifdef __cplusplus
 } /* extern "C" */
