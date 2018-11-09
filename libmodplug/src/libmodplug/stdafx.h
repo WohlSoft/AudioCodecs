@@ -54,8 +54,13 @@ inline void ProcessPlugins(int n) {}
 
 #undef strcasecmp
 #undef strncasecmp
+#if defined _MSC_VER || defined __MINGW32__
 #define strcasecmp(a,b)     _stricmp(a,b)
 #define strncasecmp(a,b,c)  _strnicmp(a,b,c)
+#else
+#define strcasecmp(a,b)     stricmp(a,b)
+#define strncasecmp(a,b,c)  strnicmp(a,b,c)
+#endif
 
 #define HAVE_SINF 1
 
