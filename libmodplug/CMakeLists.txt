@@ -2,6 +2,7 @@ cmake_minimum_required (VERSION 2.8.11)
 project (libModPlug CXX)
 
 include(CheckFunctionExists)
+include(CheckIncludeFile)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
@@ -32,6 +33,10 @@ foreach(_FN
     set(_HAVEVAR "HAVE_${_UPPER}")
     CHECK_FUNCTION_EXISTS("${_FN}" ${_HAVEVAR})
 endforeach()
+
+CHECK_INCLUDE_FILE("malloc.h" HAVE_MALLOC_H)
+CHECK_INCLUDE_FILE("memory.h" HAVE_MEMORY_H)
+CHECK_INCLUDE_FILE("inttypes.h" HAVE_INTTYPES_H)
 
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/src/cmake_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config/cmake_config.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/config/)
