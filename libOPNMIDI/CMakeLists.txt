@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 3.2)
-project(libOPNMIDI C CXX)
+project(libOPNMIDI VERSION 1.4.0 LANGUAGES C CXX)
 
 include(GNUInstallDirs)
 
@@ -358,12 +358,27 @@ install(FILES
         #include/opnmidi.hpp # WIP
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 
+if(NOT ANDROID)
+    configure_file(libOPNMIDI.pc.in libOPNMIDI.pc @ONLY)
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libOPNMIDI.pc"
+                  DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+endif()
+
 option(WITH_UNIT_TESTS   "Enable unit testing" OFF)
 if(WITH_UNIT_TESTS)
     enable_testing ()
     add_subdirectory(test)
 endif()
 
+# === Version check ====
+set(VERSION_CHECK_SOURCE "
+    #include \"opnmidi.h\"
+    #if !(OPNMIDI_VERSION_MAJOR == ${PROJECT_VERSION_MAJOR} && OPNMIDI_VERSION_MINOR == ${PROJECT_VERSION_MINOR} && OPNMIDI_VERSION_PATCHLEVEL == ${PROJECT_VERSION_PATCH})
+    #error Project and source code version do not match!
+    #endif")
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/version_check.c" "${VERSION_CHECK_SOURCE}")
+add_library(OPNMIDI_version_check OBJECT "${CMAKE_CURRENT_BINARY_DIR}/version_check.c")
+target_include_directories(OPNMIDI_version_check PRIVATE "include")
 
 message("==== libOPNMIDI options ====")
 message("libOPNMIDI_STATIC        = ${libOPNMIDI_STATIC}")

@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 3.2)
-project (libADLMIDI C CXX)
+project (libADLMIDI VERSION 1.4.0 LANGUAGES C CXX)
 
 include(GNUInstallDirs)
 
@@ -580,11 +580,27 @@ install(FILES
         include/adlmidi.hpp
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 
+if(NOT ANDROID)
+    configure_file(libADLMIDI.pc.in libADLMIDI.pc @ONLY)
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libADLMIDI.pc"
+            DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+endif()
+
 option(WITH_UNIT_TESTS "Enable unit testing" OFF)
 if(WITH_UNIT_TESTS)
     enable_testing()
     add_subdirectory(test)
 endif()
+
+# === Version check ====
+set(VERSION_CHECK_SOURCE "
+    #include \"adlmidi.h\"
+    #if !(ADLMIDI_VERSION_MAJOR == ${PROJECT_VERSION_MAJOR} && ADLMIDI_VERSION_MINOR == ${PROJECT_VERSION_MINOR} && ADLMIDI_VERSION_PATCHLEVEL == ${PROJECT_VERSION_PATCH})
+    #error Project and source code version do not match!
+    #endif")
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/version_check.c" "${VERSION_CHECK_SOURCE}")
+add_library(ADLMIDI_version_check OBJECT "${CMAKE_CURRENT_BINARY_DIR}/version_check.c")
+target_include_directories(ADLMIDI_version_check PRIVATE "include")
 
 message("==== libADLMIDI options ====")
 message("libADLMIDI_STATIC        = ${libADLMIDI_STATIC}")
