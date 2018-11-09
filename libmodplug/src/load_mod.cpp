@@ -39,7 +39,9 @@ void CSoundFile::ConvertModCommand(MODCOMMAND *m) const
 	case 0x0D:	command = CMD_PATTERNBREAK; param = ((param >> 4) * 10) + (param & 0x0F); break;
 	case 0x0E:	command = CMD_MODCMDEX; break;
 	case 0x0F:	command = (param <= (UINT)((m_nType & (MOD_TYPE_XM|MOD_TYPE_MT2)) ? 0x1F : 0x20)) ? CMD_SPEED : CMD_TEMPO;
-				if ((param == 0xFF) && (m_nSamples == 15)) command = 0; break;
+				if ((param == 0xFF) && (m_nSamples == 15))
+					command = 0;
+				break;
 	// Extension for XM extended effects
 	case 'G' - 55:	command = CMD_GLOBALVOLUME; break;
 	case 'H' - 55:	command = CMD_GLOBALVOLSLIDE; if (param & 0xF0) param &= 0xF0; break;
@@ -91,7 +93,7 @@ WORD CSoundFile::ModSaveCommand(const MODCOMMAND *m, BOOL bXM) const
 	case CMD_TONEPORTAVOL:		command = 0x05; break;
 	case CMD_VIBRATOVOL:		command = 0x06; break;
 	case CMD_TREMOLO:			command = 0x07; break;
-	case CMD_PANNING8:			
+	case CMD_PANNING8:
 		command = 0x08;
 		if (bXM)
 		{
@@ -329,7 +331,7 @@ BOOL CSoundFile::ReadMod(const BYTE *lpStream, DWORD dwMemLength)
 	}
 	if ((dwWowTest < 0x600) || (dwWowTest > dwMemLength)) nErr += 8;
 	if ((m_nSamples == 15) && (nErr >= 16)) return FALSE;
-	// Default settings	
+	// Default settings
 	m_nType = MOD_TYPE_MOD;
 	m_nDefaultSpeed = 6;
 	m_nDefaultTempo = 125;
