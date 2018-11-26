@@ -12,9 +12,6 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H @HAVE_UNISTD_H@
 
-/* Define to disable debugging assertions. */
-#cmakedefine NDEBUG
-
 /* Name of package */
 #cmakedefine PACKAGE
 
