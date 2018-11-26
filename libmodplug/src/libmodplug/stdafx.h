@@ -43,6 +43,7 @@
 #include <windowsx.h>
 #include <mmsystem.h>
 #include <stdio.h>
+#include <string.h>
 #include <malloc.h>
 #include <stdint.h>
 
@@ -52,15 +53,11 @@
 
 inline void ProcessPlugins(int n) {}
 
-#ifndef strncasecmp
-#define strncasecmp(a,b,c)  strncmp(a,b,c)
-#endif
-#ifndef strcasecmp
-#define strcasecmp(a,b) strcmp(a,b)
-#endif
-#ifndef strnicmp
-#define strnicmp(a,b,c)		strncasecmp(a,b,c)
-#endif
+#undef strcasecmp
+#undef strncasecmp
+#define strcasecmp(a,b)     _stricmp(a,b)
+#define strncasecmp(a,b,c)  _strnicmp(a,b,c)
+
 #define HAVE_SINF 1
 
 #ifndef isblank
