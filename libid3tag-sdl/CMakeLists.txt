@@ -38,7 +38,7 @@ add_definitions(-DHAVE_CONFIG_H)
 
 configure_file(src/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/id3tag_config/config.h)
 
-add_library(id3tag STATIC
+set(ID3TAG_SRC
     src/id3_file.c
     src/id3_compat.c
     src/id3_crc.c
@@ -55,6 +55,16 @@ add_library(id3tag STATIC
     src/id3_utf8.c
     src/id3_util.c
     src/id3_version.c
+)
+
+if(DEBUG)
+    list(APPEND ID3TAG_SRC
+        src/id3_debug.c
+    )
+endif()
+
+add_library(id3tag STATIC
+    ${ID3TAG_SRC}
 )
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../libSDL2/include/")
