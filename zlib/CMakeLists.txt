@@ -1,9 +1,7 @@
-cmake_minimum_required(VERSION 2.4.4)
+cmake_minimum_required(VERSION 3.2)
 set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS ON)
 
-project(zlib C)
-
-set(VERSION "1.2.11")
+project(zlib VERSION 1.2.11 LANGUAGES C)
 
 # ========= AudioCodecs =========
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
