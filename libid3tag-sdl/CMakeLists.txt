@@ -1,5 +1,20 @@
-cmake_minimum_required (VERSION 2.8.11)
-project (libID3TAG C)
+cmake_minimum_required (VERSION 3.2)
+project(libID3TAG VERSION 0.15.1 LANGUAGES C)
+
+include(CheckSymbolExists)
+include(CheckFunctionExists)
+include(CheckIncludeFile)
+include(CheckIncludeFiles)
+include(CheckLibraryExists)
+
+set(PACKAGE_NAME "ID3-Tag")
+set(PACKAGE_VERSION "${libID3TAG_VERSION}b")
+
+set(PACKAGE_STRING "\"${PACKAGE_NAME} v.${PACKAGE_VERSION}\"")
+set(PACKAGE_NAME "\"${PACKAGE_NAME}\"")
+set(PACKAGE_VERSION "\"${PACKAGE_VERSION}\"")
+set(PACKAGE_BUGREPORT "...")
+set(PACKAGE_TARNAME "...")
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
@@ -11,6 +26,20 @@ endif()
 if(MSVC)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4244 /wd4267 /wd4996")
 endif()
+
+check_function_exists(ftruncate HAVE_FTRUNCATE)
+check_include_file(assert.h HAVE_ASSERT_H)
+check_include_file(unistd.h HAVE_UNISTD_H)
+if(CMAKE_BUILD_TYPE_LOWER STREQUAL "release")
+    set(NDEBUG 1)
+endif()
+if(CMAKE_BUILD_TYPE_LOWER STREQUAL "debug")
+    set(DEBUG 1)
+endif()
+
+add_definitions(-DHAVE_CONFIG_H)
+
+configure_file(src/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/id3tag_config/config.h)
 
 add_library(id3tag STATIC
     src/id3_file.c
@@ -48,6 +77,7 @@ endif()
 target_link_libraries(id3tag SDL2)
 
 target_include_directories(id3tag PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(id3tag PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/id3tag_config)
 
 install(TARGETS id3tag
         LIBRARY DESTINATION "lib"

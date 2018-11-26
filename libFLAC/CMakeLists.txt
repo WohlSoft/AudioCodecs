@@ -1,5 +1,5 @@
-cmake_minimum_required (VERSION 2.8.11)
-project (libFLAC C)
+cmake_minimum_required(VERSION 3.2)
+project(libFLAC VERSION 1.3.2 LANGUAGES C)
 
 include(CheckIncludeFiles)
 include(CheckFunctionExists)
@@ -20,7 +20,7 @@ add_definitions(
     -DFLAC__NO_DLL
 )
 
-set(FLAC_VERSION "1.3.2")
+set(FLAC_VERSION "${libFLAC_VERSION}")
 
 CHECK_FUNCTION_EXISTS(fseeko HAVE_FSEEKO)
 if(HAVE_FSEEKO)

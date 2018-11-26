@@ -1,5 +1,5 @@
-cmake_minimum_required (VERSION 2.8.11)
-project (libOPUS C)
+cmake_minimum_required(VERSION 3.2)
+project(libOPUS VERSION 1.3 LANGUAGES C)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
@@ -124,7 +124,7 @@ check_include_file(stdint.h HAVE_STDINT_H)
 check_include_file(stdlib.h HAVE_STDLIB_H)
 check_include_file(string.h HAVE_STRING_H)
 check_include_file(strings.h HAVE_STRINGS_H)
-check_include_file(sys/stat.h HAVE_SYS_TYPES_H)
+check_include_file(sys/stat.h HAVE_SYS_STAT_H)
 check_include_file(sys/types.h HAVE_SYS_TYPES_H)
 check_include_file(unistd.h HAVE_UNISTD_H)
 check_include_files("stdlib.h;time.h;math.h;sys/stat.h;signal.h" HAVE_STDC_HEADERS)

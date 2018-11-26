@@ -1,5 +1,5 @@
-cmake_minimum_required (VERSION 2.8.11)
-project (libGME CXX)
+cmake_minimum_required(VERSION 3.2)
+project(libGME VERSION 0.6.2 LANGUAGES CXX)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 

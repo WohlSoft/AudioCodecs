@@ -31,10 +31,10 @@
 
 # ifdef HAVE_UNISTD_H
 #  include <unistd.h>
-#else
-int dup(int oldfd);
-int dup2(int oldfd, int newfd);
-int close(int);
+#  include <sys/types.h>
+FILE *fdopen(int fd, const char *mode);
+int ftruncate(int fd, off_t length);
+int fileno(FILE *stream);
 # endif
 
 # ifdef HAVE_ASSERT_H
@@ -46,10 +46,21 @@ int close(int);
 # include "tag.h"
 # include "field.h"
 
-#if !defined(__MINGW32__) && !defined(__MINGW64__) && !defined(_WIN32)
-extern char *strdup(const char *);
-extern FILE *fdopen(int, const char *);
-#endif
+char *id3_strdup(const char *src)
+{
+    char *str;
+    char *p;
+    size_t len = 0;
+
+    while(src[len])
+        len++;
+    str = malloc(len + 1);
+    p = str;
+    while (*src)
+        *p++ = *src++;
+    *p = '\0';
+    return str;
+}
 
 struct filetag
 {
@@ -504,7 +515,7 @@ struct id3_file *new_file_private(SDL_RWops *rwops_src,
     file->iofile  = iofile;
     file->iorwops = rwops_src;
     file->mode    = mode;
-    file->path    = path ? (char*)strdup(path) : nullP;
+    file->path    = path ? (char*)id3_strdup(path) : nullP;
 
     file->flags   = 0;
 
@@ -598,7 +609,7 @@ struct id3_file *id3_file_open(char const *path, enum id3_file_mode mode)
  */
 struct id3_file *id3_file_fdopen(int fd, enum id3_file_mode mode)
 {
-    # if 1 || defined(HAVE_UNISTD_H)
+    # ifdef HAVE_UNISTD_H
     FILE *iofile;
     struct id3_file *file;
 
@@ -623,6 +634,8 @@ struct id3_file *id3_file_fdopen(int fd, enum id3_file_mode mode)
 
     return file;
     # else
+    (void)fd;
+    (void)mode;
     return 0;
     # endif
 }

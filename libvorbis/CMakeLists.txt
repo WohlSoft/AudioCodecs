@@ -1,5 +1,5 @@
-cmake_minimum_required (VERSION 2.8.11)
-project (libVorbis C)
+cmake_minimum_required(VERSION 3.2)
+project(libVorbis VERSION 1.3.6 LANGUAGES C)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
