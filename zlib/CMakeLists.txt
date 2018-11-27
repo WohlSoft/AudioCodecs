@@ -98,9 +98,13 @@ configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/zlib/zlib.pc.cmakein
         ${ZLIB_PC} @ONLY)
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/zlib/zconf.h.cmakein
         ${CMAKE_CURRENT_BINARY_DIR}/zlib/zconf.h @ONLY)
-configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/zlib/zlib.h
-        ${CMAKE_CURRENT_BINARY_DIR}/zlib/zlib.h COPYONLY)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/zlib ${CMAKE_SOURCE_DIR})
+
+# Copy for shared usage
+configure_file( ${CMAKE_CURRENT_BINARY_DIR}/zlib/zconf.h
+        ${CMAKE_BINARY_DIR}/zlib-include/zconf.h COPYONLY)
+configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/zlib/zlib.h
+        ${CMAKE_BINARY_DIR}/zlib-include/zlib.h COPYONLY)
 
 
 #============================================================================

@@ -110,7 +110,7 @@ else()
 endif()
 
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/zlib)
+include_directories(${CMAKE_BINARY_DIR}/zlib-include)
 
 set(GME_INSTALL_TARGETS)
 
