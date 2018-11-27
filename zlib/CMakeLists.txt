@@ -3,21 +3,22 @@ set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS ON)
 
 project(zlib VERSION 1.2.11 LANGUAGES C)
 
-## ========= AudioCodecs =========
-#include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
-#
-#IF(NOT MSVC)
-#    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-implicit-function-declaration -Wno-implicit-fallthrough")
-#ELSE()
-#    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-#    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4100 /wd4244 /wd4005 /wd4013 /wd4047 /wd4996")
-#ENDIF()
-#
-#if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-#    # Turn on warnings and legacy C/C++ standards to support more compilers
-#    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-pedantic -std=c99")
-#endif()
-## ========= AudioCodecs END =========
+# ========= AudioCodecs =========
+include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
+
+IF(NOT MSVC)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-implicit-function-declaration -Wno-implicit-fallthrough")
+ELSE()
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4100 /wd4244 /wd4005 /wd4013 /wd4047 /wd4996")
+ENDIF()
+
+if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+    # Turn on warnings and legacy C/C++ standards to support more compilers
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-pedantic -std=c99")
+    add_definitions(-DSTDC) # WORKAROUND
+endif()
+# ========= AudioCodecs END =========
 
 option(ASM686 "Enable building i686 assembly implementation")
 option(AMD64 "Enable building amd64 assembly implementation")
@@ -95,8 +96,8 @@ endif()
 set(ZLIB_PC ${CMAKE_CURRENT_BINARY_DIR}/zlib.pc)
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/zlib/zlib.pc.cmakein
         ${ZLIB_PC} @ONLY)
-configure_file(	${CMAKE_CURRENT_SOURCE_DIR}/zlib/zconf.h.cmakein
-        ${CMAKE_CURRENT_BINARY_DIR}/zconf.h @ONLY)
+configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/zlib/zconf.h.cmakein
+        ${CMAKE_CURRENT_BINARY_DIR}/zlib/zconf.h @ONLY)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/zlib ${CMAKE_SOURCE_DIR})
 
 
