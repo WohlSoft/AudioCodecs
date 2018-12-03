@@ -20,8 +20,6 @@ set(SDL2_REPOSITORY_PATH ${SDL2_INSTALL_DIR})
 set(SDL2_CMAKE_FPIC_FLAG "")
 if(NOT WIN32)
     set(SDL2_CMAKE_FPIC_FLAG "-DSDL_STATIC_PIC=ON")
-else()
-    set(SDL2_NOWASAPI "-DWASAPI=OFF")
 endif()
 
 # Remove this workaround when the tarball is symlink-free for better Windows compatibility.
@@ -47,7 +45,6 @@ ExternalProject_Add(
         -DSDL_STATIC=${BUILD_SDL2_STATIC}
         -DCMAKE_DEBUG_POSTFIX=${CMAKE_DEBUG_POSTFIX}
         ${SDL2_CMAKE_FPIC_FLAG}
-        ${SDL2_NOWASAPI} # WASAPI, No way!
 )
 
 # Install built SDL's headers and libraries into actual installation directory
