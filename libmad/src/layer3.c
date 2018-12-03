@@ -541,13 +541,13 @@ enum mad_error III_sideinfo(struct mad_bitptr *ptr, unsigned int nch,
       *data_bitlen += channel->part2_3_length;
 
       if (channel->big_values > 288 && result == 0)
-	result = MAD_ERROR_BADBIGVALUES;
+        result = MAD_ERROR_BADBIGVALUES;
 
       channel->flags = 0;
 
       /* window_switching_flag */
       if (mad_bit_read(ptr, 1)) {
-	channel->block_type = mad_bit_read(ptr, 2);
+        channel->block_type = mad_bit_read(ptr, 2);
 
 	if (channel->block_type == 0 && result == 0)
 	  result = MAD_ERROR_BADBLOCKTYPE;
@@ -574,7 +574,7 @@ enum mad_error III_sideinfo(struct mad_bitptr *ptr, unsigned int nch,
 	  channel->subblock_gain[i] = mad_bit_read(ptr, 3);
       }
       else {
-	channel->block_type = 0;
+        channel->block_type = 0;
 
 	for (i = 0; i < 3; ++i)
 	  channel->table_select[i] = mad_bit_read(ptr, 5);
@@ -646,10 +646,10 @@ unsigned int III_scalefactors_lsf(struct mad_bitptr *ptr,
     n = 0;
     for (part = 0; part < 4; ++part) {
       for (i = 0; i < nsfb[part]; ++i) {
-	if (bits_left < slen[part])
-	  return MAD_ERROR_BADSCFSI;
-	channel->scalefac[n++] = mad_bit_read(ptr, slen[part]);
-	bits_left -= slen[part];
+        if (bits_left < slen[part])
+          return MAD_ERROR_BADSCFSI;
+        channel->scalefac[n++] = mad_bit_read(ptr, slen[part]);
+        bits_left -= slen[part];
       }
     }
 
@@ -695,10 +695,10 @@ unsigned int III_scalefactors_lsf(struct mad_bitptr *ptr,
       max = (1 << slen[part]) - 1;
 
       for (i = 0; i < nsfb[part]; ++i) {
-	if (bits_left < slen[part])
-	  return MAD_ERROR_BADSCFSI;
-	is_pos = mad_bit_read(ptr, slen[part]);
-	bits_left -= slen[part];
+        if (bits_left < slen[part])
+          return MAD_ERROR_BADSCFSI;
+        is_pos = mad_bit_read(ptr, slen[part]);
+        bits_left -= slen[part];
 
 	channel->scalefac[n] = is_pos;
 	gr1ch->scalefac[n++] = (is_pos == max);
@@ -740,7 +740,7 @@ unsigned int III_scalefactors(struct mad_bitptr *ptr, struct channel *channel,
     nsfb = (channel->flags & mixed_block_flag) ? 8 + 3 * 3 : 6 * 3;
     while (nsfb--) {
       if (bits_left < slen1)
-	return MAD_ERROR_BADSCFSI;
+        return MAD_ERROR_BADSCFSI;
       channel->scalefac[sfbi++] = mad_bit_read(ptr, slen1);
       bits_left -= slen1;
     }
@@ -748,7 +748,7 @@ unsigned int III_scalefactors(struct mad_bitptr *ptr, struct channel *channel,
     nsfb = 6 * 3;
     while (nsfb--) {
       if (bits_left < slen2)
-	return MAD_ERROR_BADSCFSI;
+        return MAD_ERROR_BADSCFSI;
       channel->scalefac[sfbi++] = mad_bit_read(ptr, slen2);
       bits_left -= slen2;
     }
@@ -760,53 +760,53 @@ unsigned int III_scalefactors(struct mad_bitptr *ptr, struct channel *channel,
   else {  /* channel->block_type != 2 */
     if (scfsi & 0x8) {
       for (sfbi = 0; sfbi < 6; ++sfbi)
-	channel->scalefac[sfbi] = gr0ch->scalefac[sfbi];
+        channel->scalefac[sfbi] = gr0ch->scalefac[sfbi];
     }
     else {
       for (sfbi = 0; sfbi < 6; ++sfbi) {
-	if (bits_left < slen1)
-	  return MAD_ERROR_BADSCFSI;
-	channel->scalefac[sfbi] = mad_bit_read(ptr, slen1);
-	bits_left -= slen1;
+        if (bits_left < slen1)
+          return MAD_ERROR_BADSCFSI;
+        channel->scalefac[sfbi] = mad_bit_read(ptr, slen1);
+        bits_left -= slen1;
       }
     }
 
     if (scfsi & 0x4) {
       for (sfbi = 6; sfbi < 11; ++sfbi)
-	channel->scalefac[sfbi] = gr0ch->scalefac[sfbi];
+        channel->scalefac[sfbi] = gr0ch->scalefac[sfbi];
     }
     else {
       for (sfbi = 6; sfbi < 11; ++sfbi) {
-	if (bits_left < slen1)
-	  return MAD_ERROR_BADSCFSI;
-	channel->scalefac[sfbi] = mad_bit_read(ptr, slen1);
-	bits_left -= slen1;
+        if (bits_left < slen1)
+          return MAD_ERROR_BADSCFSI;
+        channel->scalefac[sfbi] = mad_bit_read(ptr, slen1);
+        bits_left -= slen1;
       }
     }
 
     if (scfsi & 0x2) {
       for (sfbi = 11; sfbi < 16; ++sfbi)
-	channel->scalefac[sfbi] = gr0ch->scalefac[sfbi];
+        channel->scalefac[sfbi] = gr0ch->scalefac[sfbi];
     }
     else {
       for (sfbi = 11; sfbi < 16; ++sfbi) {
-	if (bits_left < slen2)
-	  return MAD_ERROR_BADSCFSI;
-	channel->scalefac[sfbi] = mad_bit_read(ptr, slen2);
-	bits_left -= slen2;
+        if (bits_left < slen2)
+          return MAD_ERROR_BADSCFSI;
+        channel->scalefac[sfbi] = mad_bit_read(ptr, slen2);
+        bits_left -= slen2;
       }
     }
 
     if (scfsi & 0x1) {
       for (sfbi = 16; sfbi < 21; ++sfbi)
-	channel->scalefac[sfbi] = gr0ch->scalefac[sfbi];
+        channel->scalefac[sfbi] = gr0ch->scalefac[sfbi];
     }
     else {
       for (sfbi = 16; sfbi < 21; ++sfbi) {
-	if (bits_left < slen2)
-	  return MAD_ERROR_BADSCFSI;
-	channel->scalefac[sfbi] = mad_bit_read(ptr, slen2);
-	bits_left -= slen2;
+        if (bits_left < slen2)
+          return MAD_ERROR_BADSCFSI;
+        channel->scalefac[sfbi] = mad_bit_read(ptr, slen2);
+        bits_left -= slen2;
       }
     }
 
@@ -845,7 +845,7 @@ unsigned int III_scalefactors(struct mad_bitptr *ptr, struct channel *channel,
  */
 static
 void III_exponents(struct channel const *channel,
-		   unsigned char const *sfbwidth, signed int exponents[39])
+                   unsigned char const *sfbwidth, signed int exponents[39])
 {
   signed int gain;
   unsigned int scalefac_multiplier, sfbi;
@@ -867,11 +867,11 @@ void III_exponents(struct channel const *channel,
       /* long block subbands 0-1 */
 
       while (l < 36) {
-	exponents[sfbi] = gain -
-	  (signed int) ((channel->scalefac[sfbi] + (pretab[sfbi] & premask)) <<
-			scalefac_multiplier);
+        exponents[sfbi] = gain -
+          (signed int) ((channel->scalefac[sfbi] + (pretab[sfbi] & premask)) <<
+                        scalefac_multiplier);
 
-	l += sfbwidth[sfbi++];
+        l += sfbwidth[sfbi++];
       }
     }
 
@@ -883,11 +883,11 @@ void III_exponents(struct channel const *channel,
 
     while (l < 576) {
       exponents[sfbi + 0] = gain0 -
-	(signed int) (channel->scalefac[sfbi + 0] << scalefac_multiplier);
+        (signed int) (channel->scalefac[sfbi + 0] << scalefac_multiplier);
       exponents[sfbi + 1] = gain1 -
-	(signed int) (channel->scalefac[sfbi + 1] << scalefac_multiplier);
+        (signed int) (channel->scalefac[sfbi + 1] << scalefac_multiplier);
       exponents[sfbi + 2] = gain2 -
-	(signed int) (channel->scalefac[sfbi + 2] << scalefac_multiplier);
+        (signed int) (channel->scalefac[sfbi + 2] << scalefac_multiplier);
 
       l    += 3 * sfbwidth[sfbi];
       sfbi += 3;
@@ -896,15 +896,15 @@ void III_exponents(struct channel const *channel,
   else {  /* channel->block_type != 2 */
     if (channel->flags & preflag) {
       for (sfbi = 0; sfbi < 22; ++sfbi) {
-	exponents[sfbi] = gain -
-	  (signed int) ((channel->scalefac[sfbi] + pretab[sfbi]) <<
-			scalefac_multiplier);
+        exponents[sfbi] = gain -
+          (signed int) ((channel->scalefac[sfbi] + pretab[sfbi]) <<
+                        scalefac_multiplier);
       }
     }
     else {
       for (sfbi = 0; sfbi < 22; ++sfbi) {
-	exponents[sfbi] = gain -
-	  (signed int) (channel->scalefac[sfbi] << scalefac_multiplier);
+        exponents[sfbi] = gain -
+          (signed int) (channel->scalefac[sfbi] << scalefac_multiplier);
       }
     }
   }
@@ -943,7 +943,7 @@ mad_fixed_t III_requantize(unsigned int value, signed int exp)
       /* overflow */
 # if defined(DEBUG)
       fprintf(stderr, "requantize overflow (%f * 2^%d)\n",
-	      mad_f_todouble(requantized), exp);
+              mad_f_todouble(requantized), exp);
 # endif
       requantized = MAD_F_MAX;
     }
@@ -1029,9 +1029,9 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, mad_fixed_t xr[576],
       register mad_fixed_t requantized;
 
       if (xrptr == sfbound) {
-	sfbound += *sfbwidth++;
+        sfbound += *sfbwidth++;
 
-	/* change table if region boundary */
+        /* change table if region boundary */
 
 	if (--rcount == 0) {
 	  if (region == 0)
@@ -1053,14 +1053,14 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, mad_fixed_t xr[576],
 	  reqhits = 0;
 	}
 
-	++expptr;
+        ++expptr;
       }
 
       if (cachesz < 21) {
-	unsigned int bits;
+        unsigned int bits;
 
 	bits       = ((32 - 1 - 21) + (21 - cachesz)) & ~7;
-	if (bits_left < bits) {
+	if (bits_left < (signed int)bits) {
 	  bits = bits_left;
 	}
 	bitcache   = (bitcache << bits) | mad_bit_read(&peek, bits);
@@ -1068,10 +1068,10 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, mad_fixed_t xr[576],
 	bits_left -= bits;
       }
       if (cachesz < 21) {
-	unsigned int bits = 21 - cachesz;
-	bitcache <<= bits;
-	cachesz += bits;
-	fakebits += bits;
+        unsigned int bits = 21 - cachesz;
+        bitcache <<= bits;
+        cachesz += bits;
+        fakebits += bits;
       }
 
       /* hcod (0..19) */
@@ -1080,7 +1080,7 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, mad_fixed_t xr[576],
       pair    = &table[MASK(bitcache, cachesz, clumpsz)];
 
       while (!pair->final) {
-	cachesz -= clumpsz;
+        cachesz -= clumpsz;
 
 	clumpsz = pair->ptr.bits;
 	pair    = &table[pair->ptr.offset + MASK(bitcache, cachesz, clumpsz)];
@@ -1088,29 +1088,29 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, mad_fixed_t xr[576],
 
       cachesz -= pair->value.hlen;
       if (cachesz < fakebits)
-	return MAD_ERROR_BADHUFFDATA;
+        return MAD_ERROR_BADHUFFDATA;
 
       if (linbits) {
-	/* x (0..14) */
+        /* x (0..14) */
 
-	value = pair->value.x;
+        value = pair->value.x;
 
 	switch (value) {
 	case 0:
 	  xrptr[0] = 0;
 	  break;
 
-	case 15:
+        case 15:
       if (cachesz < (signed int)(linbits + 2)) {
-	    unsigned int bits = 16;
-	    if (bits_left < 16)
-	      bits = bits_left;
-	    bitcache   = (bitcache << bits) | mad_bit_read(&peek, bits);
-	    cachesz   += bits;
-	    bits_left -= bits;
-	  }
-	  if (cachesz - fakebits < linbits)
-	    return MAD_ERROR_BADHUFFDATA;
+            unsigned int bits = 16;
+            if (bits_left < 16)
+              bits = bits_left;
+            bitcache   = (bitcache << bits) | mad_bit_read(&peek, bits);
+            cachesz   += bits;
+            bits_left -= bits;
+          }
+          if (cachesz - fakebits < (signed int)linbits)
+            return MAD_ERROR_BADHUFFDATA;
 
 	  value += MASK(bitcache, cachesz, linbits);
 	  cachesz -= linbits;
@@ -1142,17 +1142,17 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, mad_fixed_t xr[576],
 	  xrptr[1] = 0;
 	  break;
 
-	case 15:
+        case 15:
       if (cachesz < (signed int)(linbits + 1)) {
-	    unsigned int bits = 16;
-	    if (bits_left < 16)
-	      bits = bits_left;
-	    bitcache   = (bitcache << bits) | mad_bit_read(&peek, bits);
-	    cachesz   += bits;
-	    bits_left -= bits;
-	  }
-	  if (cachesz - fakebits < linbits)
-	    return MAD_ERROR_BADHUFFDATA;
+            unsigned int bits = 16;
+            if (bits_left < 16)
+              bits = bits_left;
+            bitcache   = (bitcache << bits) | mad_bit_read(&peek, bits);
+            cachesz   += bits;
+            bits_left -= bits;
+          }
+          if (cachesz - fakebits < (signed int)linbits)
+            return MAD_ERROR_BADHUFFDATA;
 
 	  value += MASK(bitcache, cachesz, linbits);
 	  cachesz -= linbits;
@@ -1176,9 +1176,9 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, mad_fixed_t xr[576],
 	}
       }
       else {
-	/* x (0..1) */
+        /* x (0..1) */
 
-	value = pair->value.x;
+        value = pair->value.x;
 
 	if (value == 0)
 	  xrptr[0] = 0;
@@ -1236,25 +1236,25 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, mad_fixed_t xr[576],
       /* hcod (1..6) */
 
       if (cachesz < 10) {
-	unsigned int bits = 16;
-	if (bits_left < 16)
-	  bits = bits_left;
-	bitcache   = (bitcache << bits) | mad_bit_read(&peek, bits);
-	cachesz   += bits;
-	bits_left -= bits;
+        unsigned int bits = 16;
+        if (bits_left < 16)
+          bits = bits_left;
+        bitcache   = (bitcache << bits) | mad_bit_read(&peek, bits);
+        cachesz   += bits;
+        bits_left -= bits;
       }
       if (cachesz < 10) {
-	unsigned int bits = 10 - cachesz;
-	bitcache <<= bits;
-	cachesz += bits;
-	fakebits += bits;
+        unsigned int bits = 10 - cachesz;
+        bitcache <<= bits;
+        cachesz += bits;
+        fakebits += bits;
       }
 
       quad = &table[MASK(bitcache, cachesz, 4)];
 
       /* quad tables guaranteed to have at most one extra lookup */
       if (!quad->final) {
-	cachesz -= 4;
+        cachesz -= 4;
 
 	quad = &table[quad->ptr.offset +
 		      MASK(bitcache, cachesz, quad->ptr.bits)];
@@ -1262,54 +1262,54 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, mad_fixed_t xr[576],
 
       if (cachesz - fakebits < quad->value.hlen + quad->value.v
         + quad->value.w + quad->value.x + quad->value.y)
-	/* We don't have enough bits to read one more entry, consider them
-	 * stuffing bits. */
-	break;
+        /* We don't have enough bits to read one more entry, consider them
+         * stuffing bits. */
+        break;
       cachesz -= quad->value.hlen;
 
       if (xrptr == sfbound) {
-	sfbound += *sfbwidth++;
+        sfbound += *sfbwidth++;
 
 	if (exp != *expptr) {
 	  exp = *expptr;
 	  requantized = III_requantize(1, exp);
 	}
 
-	++expptr;
+        ++expptr;
       }
 
       /* v (0..1) */
 
       xrptr[0] = quad->value.v ?
-	(MASK1BIT(bitcache, cachesz--) ? -requantized : requantized) : 0;
+        (MASK1BIT(bitcache, cachesz--) ? -requantized : requantized) : 0;
 
       /* w (0..1) */
 
       xrptr[1] = quad->value.w ?
-	(MASK1BIT(bitcache, cachesz--) ? -requantized : requantized) : 0;
+        (MASK1BIT(bitcache, cachesz--) ? -requantized : requantized) : 0;
 
       xrptr += 2;
 
       if (xrptr == sfbound) {
-	sfbound += *sfbwidth++;
+        sfbound += *sfbwidth++;
 
 	if (exp != *expptr) {
 	  exp = *expptr;
 	  requantized = III_requantize(1, exp);
 	}
 
-	++expptr;
+        ++expptr;
       }
 
       /* x (0..1) */
 
       xrptr[0] = quad->value.x ?
-	(MASK1BIT(bitcache, cachesz--) ? -requantized : requantized) : 0;
+        (MASK1BIT(bitcache, cachesz--) ? -requantized : requantized) : 0;
 
       /* y (0..1) */
 
       xrptr[1] = quad->value.y ?
-	(MASK1BIT(bitcache, cachesz--) ? -requantized : requantized) : 0;
+        (MASK1BIT(bitcache, cachesz--) ? -requantized : requantized) : 0;
 
       xrptr += 2;
     }
@@ -1342,7 +1342,7 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, mad_fixed_t xr[576],
  */
 static
 void III_reorder(mad_fixed_t xr[576], struct channel const *channel,
-		 unsigned char const sfbwidth[39])
+                 unsigned char const sfbwidth[39])
 {
   mad_fixed_t tmp[32][3][6];
   unsigned int sb, l, f, w, sbw[3], sw[3];
@@ -1424,8 +1424,8 @@ enum mad_error III_stereo(mad_fixed_t xr[2][576],
       sfbi = l = 0;
 
       if (right_ch->flags & mixed_block_flag) {
-	while (l < 36) {
-	  n = sfbwidth[sfbi++];
+        while (l < 36) {
+          n = sfbwidth[sfbi++];
 
 	  for (i = 0; i < n; ++i) {
 	    if (right_xr[i]) {
@@ -1438,12 +1438,12 @@ enum mad_error III_stereo(mad_fixed_t xr[2][576],
 	  l += n;
 	}
 
-	start = sfbi;
+        start = sfbi;
       }
 
       w = 0;
       while (l < 576) {
-	n = sfbwidth[sfbi++];
+        n = sfbwidth[sfbi++];
 
 	for (i = 0; i < n; ++i) {
 	  if (right_xr[i]) {
@@ -1458,21 +1458,21 @@ enum mad_error III_stereo(mad_fixed_t xr[2][576],
       }
 
       if (max)
-	lower = start;
+        lower = start;
 
       /* long blocks */
 
       for (i = 0; i < lower; ++i)
-	modes[i] = header->mode_extension & ~I_STEREO;
+        modes[i] = header->mode_extension & ~I_STEREO;
 
       /* short blocks */
 
       w = 0;
       for (i = start; i < max; ++i) {
-	if (i < bound[w])
-	  modes[i] = header->mode_extension & ~I_STEREO;
+        if (i < bound[w])
+          modes[i] = header->mode_extension & ~I_STEREO;
 
-	w = (w + 1) % 3;
+        w = (w + 1) % 3;
       }
     }
     else {  /* right_ch->block_type != 2 */
@@ -1480,7 +1480,7 @@ enum mad_error III_stereo(mad_fixed_t xr[2][576],
 
       bound = 0;
       for (sfbi = l = 0; l < 576; l += n) {
-	n = sfbwidth[sfbi++];
+        n = sfbwidth[sfbi++];
 
 	for (i = 0; i < n; ++i) {
 	  if (right_xr[i]) {
@@ -1489,11 +1489,11 @@ enum mad_error III_stereo(mad_fixed_t xr[2][576],
 	  }
 	}
 
-	right_xr += n;
+        right_xr += n;
       }
 
       for (i = 0; i < bound; ++i)
-	modes[i] = header->mode_extension & ~I_STEREO;
+        modes[i] = header->mode_extension & ~I_STEREO;
     }
 
     /* now do the actual processing */
@@ -1506,7 +1506,7 @@ enum mad_error III_stereo(mad_fixed_t xr[2][576],
       lsf_scale = is_lsf_table[right_ch->scalefac_compress & 0x1];
 
       for (sfbi = l = 0; l < 576; ++sfbi, l += n) {
-	n = sfbwidth[sfbi];
+        n = sfbwidth[sfbi];
 
 	if (!(modes[sfbi] & I_STEREO))
 	  continue;
@@ -1542,7 +1542,7 @@ enum mad_error III_stereo(mad_fixed_t xr[2][576],
     }
     else {  /* !(header->flags & MAD_FLAG_LSF_EXT) */
       for (sfbi = l = 0; l < 576; ++sfbi, l += n) {
-	n = sfbwidth[sfbi];
+        n = sfbwidth[sfbi];
 
 	if (!(modes[sfbi] & I_STEREO))
 	  continue;
@@ -1579,10 +1579,10 @@ enum mad_error III_stereo(mad_fixed_t xr[2][576],
       n = sfbwidth[sfbi];
 
       if (modes[sfbi] != MS_STEREO)
-	continue;
+        continue;
 
       for (i = 0; i < n; ++i) {
-	register mad_fixed_t m, s;
+        register mad_fixed_t m, s;
 
 	m = xr[0][l + i];
 	s = xr[1][l + i];
@@ -2123,7 +2123,7 @@ void imdct36(mad_fixed_t const X[18], mad_fixed_t x[36])
  */
 static
 void III_imdct_l(mad_fixed_t const X[18], mad_fixed_t z[36],
-		 unsigned int block_type)
+                 unsigned int block_type)
 {
   unsigned int i;
 
@@ -2143,10 +2143,10 @@ void III_imdct_l(mad_fixed_t const X[18], mad_fixed_t z[36],
       tmp2 = window_l[1];
 
       for (i = 0; i < 34; i += 2) {
-	z[i + 0] = mad_f_mul(z[i + 0], tmp1);
-	tmp1 = window_l[i + 2];
-	z[i + 1] = mad_f_mul(z[i + 1], tmp2);
-	tmp2 = window_l[i + 3];
+        z[i + 0] = mad_f_mul(z[i + 0], tmp1);
+        tmp1 = window_l[i + 2];
+        z[i + 1] = mad_f_mul(z[i + 1], tmp2);
+        tmp2 = window_l[i + 3];
       }
 
       z[34] = mad_f_mul(z[34], tmp1);
@@ -2160,9 +2160,9 @@ void III_imdct_l(mad_fixed_t const X[18], mad_fixed_t z[36],
       tmp2 = window_l[0];
 
       for (i = 0; i < 35; ++i) {
-	z[i] = mad_f_mul(tmp1, tmp2);
-	tmp1 = z[i + 1];
-	tmp2 = window_l[i + 1];
+        z[i] = mad_f_mul(tmp1, tmp2);
+        tmp1 = z[i + 1];
+        tmp2 = window_l[i + 1];
       }
 
       z[35] = mad_f_mul(tmp1, tmp2);
@@ -2289,7 +2289,7 @@ void III_imdct_s(mad_fixed_t const X[18], mad_fixed_t z[36])
  */
 static
 void III_overlap(mad_fixed_t const output[36], mad_fixed_t overlap[18],
-		 mad_fixed_t sample[18][32], unsigned int sb)
+                 mad_fixed_t sample[18][32], unsigned int sb)
 {
   unsigned int i;
 
@@ -2337,7 +2337,7 @@ void III_overlap(mad_fixed_t const output[36], mad_fixed_t overlap[18],
  */
 static inline
 void III_overlap_z(mad_fixed_t overlap[18],
-		   mad_fixed_t sample[18][32], unsigned int sb)
+                   mad_fixed_t sample[18][32], unsigned int sb)
 {
   unsigned int i;
 
@@ -2411,7 +2411,7 @@ void III_freqinver(mad_fixed_t sample[18][32], unsigned int sb)
  */
 static
 enum mad_error III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
-			  struct sideinfo *si, unsigned int nch, unsigned int md_len)
+                          struct sideinfo *si, unsigned int nch, unsigned int md_len)
 {
   struct mad_header *header = &frame->header;
   unsigned int sfreqi, ngr, gr;
@@ -2451,18 +2451,18 @@ enum mad_error III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
 
       sfbwidth[ch] = sfbwidth_table[sfreqi].l;
       if (channel->block_type == 2) {
-	sfbwidth[ch] = (channel->flags & mixed_block_flag) ?
-	  sfbwidth_table[sfreqi].m : sfbwidth_table[sfreqi].s;
+        sfbwidth[ch] = (channel->flags & mixed_block_flag) ?
+          sfbwidth_table[sfreqi].m : sfbwidth_table[sfreqi].s;
       }
 
       if (header->flags & MAD_FLAG_LSF_EXT) {
-	error = III_scalefactors_lsf(ptr, channel,
-					    ch == 0 ? 0 : &si->gr[1].ch[1],
-					    header->mode_extension, bits_left, &part2_length);
+        error = III_scalefactors_lsf(ptr, channel,
+                                            ch == 0 ? 0 : &si->gr[1].ch[1],
+                                            header->mode_extension, bits_left, &part2_length);
       }
       else {
-	error = III_scalefactors(ptr, channel, &si->gr[0].ch[ch],
-					gr == 0 ? 0 : si->scfsi[ch], bits_left, &part2_length);
+        error = III_scalefactors(ptr, channel, &si->gr[0].ch[ch],
+                                        gr == 0 ? 0 : si->scfsi[ch], bits_left, &part2_length);
       }
       if (error)
         return error;
@@ -2473,12 +2473,12 @@ enum mad_error III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
         return MAD_ERROR_BADPART3LEN;
 
       part3_length = channel->part2_3_length - part2_length;
-      if (part3_length > bits_left)
+      if ((signed int)part3_length > bits_left)
         return MAD_ERROR_BADPART3LEN;
 
       error = III_huffdecode(ptr, xr[ch], channel, sfbwidth[ch], part3_length);
       if (error)
-	return error;
+        return error;
       bits_left -= part3_length;
     }
 
@@ -2487,7 +2487,7 @@ enum mad_error III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
     if (header->mode == MAD_MODE_JOINT_STEREO && header->mode_extension) {
       error = III_stereo(xr, granule, header, sfbwidth[0]);
       if (error)
-	return error;
+        return error;
     }
 
     /* reordering, alias reduction, IMDCT, overlap-add, frequency inversion */
@@ -2499,7 +2499,7 @@ enum mad_error III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
       mad_fixed_t output[36];
 
       if (channel->block_type == 2) {
-	III_reorder(xr[ch], channel, sfbwidth[ch]);
+        III_reorder(xr[ch], channel, sfbwidth[ch]);
 
 # if !defined(OPT_STRICT)
 	/*
@@ -2514,14 +2514,14 @@ enum mad_error III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
 # endif
       }
       else
-	III_aliasreduce(xr[ch], 576);
+        III_aliasreduce(xr[ch], 576);
 
       l = 0;
 
       /* subbands 0-1 */
 
       if (channel->block_type != 2 || (channel->flags & mixed_block_flag)) {
-	unsigned int block_type;
+        unsigned int block_type;
 
 	block_type = channel->block_type;
 	if (channel->flags & mixed_block_flag)
@@ -2534,11 +2534,11 @@ enum mad_error III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
 	}
       }
       else {
-	/* short blocks */
-	for (sb = 0; sb < 2; ++sb, l += 18) {
-	  III_imdct_s(&xr[ch][l], output);
-	  III_overlap(output, (*frame->overlap)[ch][sb], sample, sb);
-	}
+        /* short blocks */
+        for (sb = 0; sb < 2; ++sb, l += 18) {
+          III_imdct_s(&xr[ch][l], output);
+          III_overlap(output, (*frame->overlap)[ch][sb], sample, sb);
+        }
       }
 
       III_freqinver(sample, 1);
@@ -2547,25 +2547,25 @@ enum mad_error III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
 
       i = 576;
       while (i > 36 && xr[ch][i - 1] == 0)
-	--i;
+        --i;
 
       sblimit = 32 - (576 - i) / 18;
 
       if (channel->block_type != 2) {
-	/* long blocks */
-	for (sb = 2; sb < sblimit; ++sb, l += 18) {
-	  III_imdct_l(&xr[ch][l], output, channel->block_type);
-	  III_overlap(output, (*frame->overlap)[ch][sb], sample, sb);
+        /* long blocks */
+        for (sb = 2; sb < sblimit; ++sb, l += 18) {
+          III_imdct_l(&xr[ch][l], output, channel->block_type);
+          III_overlap(output, (*frame->overlap)[ch][sb], sample, sb);
 
 	  if (sb & 1)
 	    III_freqinver(sample, sb);
 	}
       }
       else {
-	/* short blocks */
-	for (sb = 2; sb < sblimit; ++sb, l += 18) {
-	  III_imdct_s(&xr[ch][l], output);
-	  III_overlap(output, (*frame->overlap)[ch][sb], sample, sb);
+        /* short blocks */
+        for (sb = 2; sb < sblimit; ++sb, l += 18) {
+          III_imdct_s(&xr[ch][l], output);
+          III_overlap(output, (*frame->overlap)[ch][sb], sample, sb);
 
 	  if (sb & 1)
 	    III_freqinver(sample, sb);
@@ -2575,7 +2575,7 @@ enum mad_error III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
       /* remaining (zero) subbands */
 
       for (sb = sblimit; sb < 32; ++sb) {
-	III_overlap_z((*frame->overlap)[ch][sb], sample, sb);
+        III_overlap_z((*frame->overlap)[ch][sb], sample, sb);
 
 	if (sb & 1)
 	  III_freqinver(sample, sb);
@@ -2641,7 +2641,7 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame)
       mad_bit_crc(stream->ptr, si_len * CHAR_BIT, header->crc_check);
 
     if (header->crc_check != header->crc_target &&
-	!(frame->options & MAD_OPTION_IGNORECRC)) {
+        !(frame->options & MAD_OPTION_IGNORECRC)) {
       stream->error = MAD_ERROR_BADCRC;
       result = -1;
     }
@@ -2650,7 +2650,7 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame)
   /* decode frame side information */
 
   error = III_sideinfo(&stream->ptr, nch, header->flags & MAD_FLAG_LSF_EXT,
-		       &si, &data_bitlen, &priv_bitlen);
+                       &si, &data_bitlen, &priv_bitlen);
   if (error && result == 0) {
     stream->error = error;
     result = -1;
@@ -2670,9 +2670,9 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame)
       header = mad_bit_read(&peek, 32);
       if ((header & 0xffe60000L) /* syncword | layer */ == 0xffe20000L) {
         if (!(header & 0x00010000L))  /* protection_bit */
-	  mad_bit_skip(&peek, 16);  /* crc_check */
+          mad_bit_skip(&peek, 16);  /* crc_check */
 
-        next_md_begin =
+	next_md_begin =
 	  mad_bit_read(&peek, (header & 0x00080000L) /* ID */ ? 9 : 8);
       }
     }
@@ -2705,20 +2705,20 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame)
   else {
     if (si.main_data_begin > stream->md_len) {
       if (result == 0) {
-	stream->error = MAD_ERROR_BADDATAPTR;
-	result = -1;
+        stream->error = MAD_ERROR_BADDATAPTR;
+        result = -1;
       }
     }
     else {
       memmove(stream->main_data,
-	*stream->main_data + stream->md_len - si.main_data_begin,
-	si.main_data_begin);
+        *stream->main_data + stream->md_len - si.main_data_begin,
+        si.main_data_begin);
       stream->md_len = si.main_data_begin;
       mad_bit_init(&ptr, *stream->main_data);
 
       if (md_len > si.main_data_begin) {
-	assert(stream->md_len + md_len -
-	       si.main_data_begin <= MAD_BUFFER_MDLEN);
+        assert(stream->md_len + md_len -
+               si.main_data_begin <= MAD_BUFFER_MDLEN);
 
 	memcpy(*stream->main_data + stream->md_len,
 	       mad_bit_nextbyte(&stream->ptr),
@@ -2747,17 +2747,17 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame)
 
 # if 0 && defined(DEBUG)
   fprintf(stderr,
-	  "main_data_begin:%u, md_len:%u, frame_free:%u, "
-	  "data_bitlen:%u, anc_bitlen: %u\n",
-	  si.main_data_begin, md_len, frame_free,
-	  data_bitlen, stream->anc_bitlen);
+          "main_data_begin:%u, md_len:%u, frame_free:%u, "
+          "data_bitlen:%u, anc_bitlen: %u\n",
+          si.main_data_begin, md_len, frame_free,
+          data_bitlen, stream->anc_bitlen);
 # endif
 
   /* preload main_data buffer with up to 511 bytes for next frame(s) */
 
   if (frame_free >= next_md_begin) {
     memcpy(*stream->main_data,
-	   stream->next_frame - next_md_begin, next_md_begin);
+           stream->next_frame - next_md_begin, next_md_begin);
     stream->md_len = next_md_begin;
   }
   else {
@@ -2766,19 +2766,19 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame)
 
       extra = si.main_data_begin - md_len;
       if (extra + frame_free > next_md_begin)
-	extra = next_md_begin - frame_free;
+        extra = next_md_begin - frame_free;
 
       if (extra < stream->md_len) {
-	memmove(*stream->main_data,
-		*stream->main_data + stream->md_len - extra, extra);
-	stream->md_len = extra;
+        memmove(*stream->main_data,
+                *stream->main_data + stream->md_len - extra, extra);
+        stream->md_len = extra;
       }
     }
     else
       stream->md_len = 0;
 
     memcpy(*stream->main_data + stream->md_len,
-	   stream->next_frame - frame_free, frame_free);
+           stream->next_frame - frame_free, frame_free);
     stream->md_len += frame_free;
   }
 
