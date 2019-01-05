@@ -1,18 +1,21 @@
 # libOPNMIDI
-libOPNMIDI is a free MIDI to WAV conversion library with OPN2 (YM2612) emulation
+libOPNMIDI is a free Software MIDI synthesizer library with OPN2 (YM2612) emulation
 
-OPNMIDI Library: Copyright (c) 2017-2018 Vitaly Novichkov <admin@wohlnet.ru>
+OPNMIDI Library: Copyright (c) 2017-2019 Vitaly Novichkov <admin@wohlnet.ru>
 
 Library is based on core of the [libADLMIDI](https://github.com/Wohlstand/libADLMIDI), a MIDI playing library with OPL3 emulation.
 
 * Semaphore-CI: [![Build Status](https://semaphoreci.com/api/v1/wohlstand/libopnmidi/branches/master/badge.svg)](https://semaphoreci.com/wohlstand/libopnmidi)
 * AppVeyor CI: [![Build status](https://ci.appveyor.com/api/projects/status/98m4ltr1swyg7s5y?svg=true)](https://ci.appveyor.com/project/Wohlstand/libopnmidi)
+* Travis CI: [![Build Status](https://travis-ci.org/Wohlstand/libOPNMIDI.svg?branch=master)](https://travis-ci.org/Wohlstand/libOPNMIDI)
 
 # Tested on platforms
 * Linux GCC 4.8, 4.9, 5.4 / CLang
 * Mac OS X CLang (Xcode 7.x)
 * Windows MinGW 4.9.x, 5.2
 * Android NDK 12b/13
+* OpenBSD
+* Haiku
 
 # Key features
 * OPN2 emulation

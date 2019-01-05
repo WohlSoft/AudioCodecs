@@ -1,5 +1,5 @@
 # libADLMIDI
-libADLMIDI is a free MIDI to WAV conversion library with OPL3 emulation
+libADLMIDI is a free Software MIDI synthesizer library with OPL3 emulation
 
 Original ADLMIDI code: Copyright (c) 2010-2014 Joel Yliluoma <bisqwit@iki.fi>
 
@@ -7,10 +7,11 @@ ADLMIDI Library API:   Copyright (c) 2015-2018 Vitaly Novichkov <admin@wohlnet.r
 
 Library is based on the ADLMIDI, a MIDI player for Linux and Windows with OPL3 emulation:
 
-[http://iki.fi/bisqwit/source/adlmidi.html](http://iki.fi/bisqwit/source/adlmidi.html)
+[https://bisqwit.iki.fi/source/adlmidi.html](https://bisqwit.iki.fi/source/adlmidi.html)
 
 * Semaphore-CI: [![Build Status](https://semaphoreci.com/api/v1/wohlstand/libadlmidi/branches/master/shields_badge.svg)](https://semaphoreci.com/wohlstand/libadlmidi)
 * AppVeyor CI: [![Build status](https://ci.appveyor.com/api/projects/status/bfhwdsm13s17rn49?svg=true)](https://ci.appveyor.com/project/Wohlstand/libadlmidi)
+* Travis CI: [![Build Status](https://travis-ci.org/Wohlstand/libADLMIDI.svg?branch=master)](https://travis-ci.org/Wohlstand/libADLMIDI)
 
 # Differences with original tool
 * Reverb code has been removed.
@@ -23,6 +24,8 @@ Library is based on the ADLMIDI, a MIDI player for Linux and Windows with OPL3 e
 * Windows MinGW 4.9.x, 5.2
 * Android NDK 12b/13
 * DJGPP GCC 7.2 cross compiler from Linux to MS-DOS 32-bit
+* OpenBSD
+* Haiku
 
 # Key features
 * OPL3 emulation with four-operator mode support
@@ -161,8 +164,9 @@ To build that example you will need to have installed SDL2 library.
 
 # Working demos
 
-* [PGE MusPlay for Win32](http://wohlsoft.ru/docs/_laboratory/_Builds/win32/bin-w32/_packed/pge-musplay-dev-win32.zip) and [Win64](http://wohlsoft.ru/docs/_laboratory/_Builds/win32/bin-w64/_packed/pge-musplay-dev-win64.zip) (also available for other platforms as part of [PGE Project](https://github.com/WohlSoft/PGE-Project)) - a little music player which uses SDL Mixer X library (fork of the SDL Mixer 2.0) which has embedded libADLMIDI to play MIDI files independently from operating system's settings and drivers. <br>(source code of player can be find [here](https://github.com/WohlSoft/PGE-Project/tree/master/MusicPlayer) and source code of SDL Mixer X [here](https://github.com/WohlSoft/SDL-Mixer-X/))
+* [PGE MusPlay for Win32](http://wohlsoft.ru/docs/_laboratory/_Builds/win32/bin-w32/_packed/pge-musplay-master-win32.zip) and [Win64](http://wohlsoft.ru/docs/_laboratory/_Builds/win32/bin-w64/_packed/pge-musplay-master-win64.zip) (also available for other platforms as part of [PGE Project](https://github.com/WohlSoft/PGE-Project)) - a little music player which uses SDL Mixer X library (fork of the SDL Mixer 2.0) which has embedded libADLMIDI to play MIDI files independently from operating system's settings and drivers. <br>(source code of player can be find [here](https://github.com/WohlSoft/PGE-Project/tree/master/MusicPlayer) and source code of SDL Mixer X [here](https://github.com/WohlSoft/SDL-Mixer-X/))
 * [ADLMIDI Player for Android](https://github.com/Wohlstand/ADLMIDI-Player-Java/releases) - a little MIDI-player for Android which uses libADLMIDI to play MIDI files and provides flexible GUI with ability to change bank, flags, number of emulated chips, etc.
+* [ADLMIDI Player for DOS32](http://wohlsoft.ru/docs/_laboratory/_Builds/dos/adlmidi-dos32.zip) - a little MIDI-player built with DJGPP toolchain for DOS operating system for old computers to play music on the real OPL3 hardware. Archive contains two variants: `adlmidi.exe` is the main variant; `adlmidi2.exe` is the reincarnation of original ADLMIDI player by Joel Yliluoma made over modern libADLMIDI backend.
 
 # Todo
 * Check out for XG/GS standards to provide a support to use any channels as percussion and also check some of SysEx commands.

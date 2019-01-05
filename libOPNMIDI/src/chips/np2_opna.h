@@ -1,7 +1,7 @@
 /*
  * Interfaces over Yamaha OPN2 (YM2612) chip emulators
  *
- * Copyright (C) 2018 Vitaly Novichkov (Wohlstand)
+ * Copyright (c) 2018-2019 Vitaly Novichkov (Wohlstand)
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,9 +25,9 @@
 
 namespace FM { class OPN2; class OPNA; class OPNB; }
 template <class ChipType = FM::OPNA>
-class NP2OPNA final : public OPNChipBaseBufferedT<NP2OPNA<ChipType>>
+class NP2OPNA final : public OPNChipBaseBufferedT<NP2OPNA<ChipType > >
 {
-    typedef OPNChipBaseBufferedT<NP2OPNA<ChipType>> ChipBase;
+    typedef OPNChipBaseBufferedT<NP2OPNA<ChipType > > ChipBase;
     ChipType *chip;
 public:
     explicit NP2OPNA(OPNFamily f);
