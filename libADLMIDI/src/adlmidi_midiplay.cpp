@@ -26,6 +26,10 @@
 #include "adlmidi_private.hpp"
 #include "midi_sequencer.hpp"
 
+// Minimum life time of percussion notes
+static const double drum_note_min_time = 0.03;
+
+
 // Mapping from MIDI volume level to OPL level value.
 
 static const uint_fast32_t DMX_volume_mapping_table[128] =
@@ -74,27 +78,6 @@ static const uint_fast32_t W9X_volume_mapping_table[32] =
 //"DD??????????????"  // Prc 80-95
 //"????????????????"  // Prc 96-111
 //"????????????????"; // Prc 112-127
-
-static const uint8_t PercussionMap[256] =
-    "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"//GM
-    "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0" // 3 = bass drum
-    "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0" // 4 = snare
-    "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0" // 5 = tom
-    "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0" // 6 = cymbal
-    "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0" // 7 = hihat
-    "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-    "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-    "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"//GP0
-    "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"//GP16
-    //2 3 4 5 6 7 8 940 1 2 3 4 5 6 7
-    "\0\0\0\3\3\0\0\7\0\5\7\5\0\5\7\5"//GP32
-    //8 950 1 2 3 4 5 6 7 8 960 1 2 3
-    "\5\6\5\0\6\0\5\6\0\6\0\6\5\5\5\5"//GP48
-    //4 5 6 7 8 970 1 2 3 4 5 6 7 8 9
-    "\5\0\0\0\0\0\7\0\0\0\0\0\0\0\0\0"//GP64
-    "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-    "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-    "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 
 enum { MasterVolumeDefault = 127 };
 
@@ -195,9 +178,6 @@ void MIDIplay::applySetup()
     synth.m_deepVibratoMode     = m_setup.deepVibratoMode < 0 ?
                             synth.m_insBankSetup.deepVibrato :
                             (m_setup.deepVibratoMode != 0);
-    synth.m_rhythmMode   = m_setup.rhythmMode < 0 ?
-                            synth.m_insBankSetup.adLibPercussions :
-                            (m_setup.rhythmMode != 0);
     synth.m_scaleModulators     = m_setup.scaleModulators < 0 ?
                             synth.m_insBankSetup.scaleModulators :
                             (m_setup.scaleModulators != 0);
@@ -255,8 +235,41 @@ void MIDIplay::resetMIDI()
 void MIDIplay::TickIterators(double s)
 {
     Synth &synth = *m_synth;
-    for(uint16_t c = 0; c < synth.m_numChannels; ++c)
-        m_chipChannels[c].addAge(static_cast<int64_t>(s * 1e6));
+    for(uint32_t c = 0, n = synth.m_numChannels; c < n; ++c)
+    {
+        AdlChannel &ch = m_chipChannels[c];
+        ch.addAge(static_cast<int64_t>(s * 1e6));
+    }
+
+    // Resolve "hell of all times" of too short drum notes
+    for(size_t c = 0, n = m_midiChannels.size(); c < n; ++c)
+    {
+        MIDIchannel &ch = m_midiChannels[c];
+        if(ch.extended_note_count == 0)
+            continue;
+
+        for(MIDIchannel::notes_iterator inext = ch.activenotes.begin(); !inext.is_end();)
+        {
+            MIDIchannel::notes_iterator i(inext++);
+            MIDIchannel::NoteInfo &ni = i->value;
+
+            double ttl = ni.ttl;
+            if(ttl <= 0)
+                continue;
+
+            ni.ttl = ttl = ttl - s;
+            if(ttl <= 0)
+            {
+                --ch.extended_note_count;
+                if(ni.isOnExtendedLifeTime)
+                {
+                    noteUpdate(c, i, Upd_Off);
+                    ni.isOnExtendedLifeTime = false;
+                }
+            }
+        }
+    }
+
     updateVibrato(s);
     updateArpeggio(s);
 #if !defined(ADLMIDI_AUDIO_TICK_HANDLER)
@@ -308,7 +321,7 @@ bool MIDIplay::realTime_NoteOn(uint8_t channel, uint8_t note, uint8_t velocity)
 
     if(static_cast<size_t>(channel) > m_midiChannels.size())
         channel = channel % 16;
-    noteOff(channel, note);
+    noteOff(channel, note, velocity != 0);
     // On Note on, Keyoff the note first, just in case keyoff
     // was omitted; this fixes Dance of sugar-plum fairy
     // by Microsoft. Now that we've done a Keyoff,
@@ -455,8 +468,16 @@ bool MIDIplay::realTime_NoteOn(uint8_t channel, uint8_t note, uint8_t velocity)
     voices[1].pseudo4op = pseudo_4op;
 #endif /* __WATCOMC__ */
 
-    if((synth.m_rhythmMode == 1) && PercussionMap[midiins & 0xFF])
+    if(
+        (synth.m_rhythmMode == 1) &&
+        (
+            ((ains->flags & adlinsdata::Mask_RhythmMode) != 0) ||
+            (m_cmfPercussionMode && (channel >= 11))
+        )
+    )
+    {
         voices[1] = voices[0];//i[1] = i[0];
+    }
 
     bool isBlankNote = (ains->flags & adlinsdata::Flag_NoSound) != 0;
 
@@ -472,6 +493,8 @@ bool MIDIplay::realTime_NoteOn(uint8_t channel, uint8_t note, uint8_t velocity)
         MIDIchannel::notes_iterator i = midiChan.ensure_find_or_create_activenote(note);
         MIDIchannel::NoteInfo &dummy = i->value;
         dummy.isBlank = true;
+        dummy.isOnExtendedLifeTime = false;
+        dummy.ttl = 0;
         dummy.ains = NULL;
         dummy.chip_channels_count = 0;
         // Record the last note on MIDI channel as source of portamento
@@ -508,9 +531,24 @@ bool MIDIplay::realTime_NoteOn(uint8_t channel, uint8_t note, uint8_t velocity)
                 if(synth.m_rhythmMode)
                 {
                     if(m_cmfPercussionMode)
-                        expected_mode = channel  < 11 ? 0 : (3 + channel  - 11); // CMF
+                    {
+                        expected_mode = channel  < 11 ? OPL3::ChanCat_Regular : (OPL3::ChanCat_Rhythm_Bass + (channel  - 11)); // CMF
+                    }
                     else
-                        expected_mode = PercussionMap[midiins & 0xFF];
+                    {
+                        expected_mode = OPL3::ChanCat_Regular;
+                        uint32_t rm = (ains->flags & adlinsdata::Mask_RhythmMode);
+                        if(rm == adlinsdata::Flag_RM_BassDrum)
+                            expected_mode = OPL3::ChanCat_Rhythm_Bass;
+                        else if(rm == adlinsdata::Flag_RM_Snare)
+                            expected_mode = OPL3::ChanCat_Rhythm_Snare;
+                        else if(rm == adlinsdata::Flag_RM_TomTom)
+                            expected_mode = OPL3::ChanCat_Rhythm_Tom;
+                        else if(rm == adlinsdata::Flag_RM_Cymbal)
+                            expected_mode = OPL3::ChanCat_Rhythm_Cymbal;
+                        else if(rm == adlinsdata::Flag_RM_HiHat)
+                            expected_mode = OPL3::ChanCat_Rhythm_HiHat;
+                    }
                 }
 
                 if(synth.m_channelCategory[a] != expected_mode)
@@ -576,6 +614,8 @@ bool MIDIplay::realTime_NoteOn(uint8_t channel, uint8_t note, uint8_t velocity)
     ni.midiins = midiins;
     ni.isPercussion = isPercussion;
     ni.isBlank = isBlankNote;
+    ni.isOnExtendedLifeTime = false;
+    ni.ttl = 0;
     ni.ains = ains;
     ni.chip_channels_count = 0;
 
@@ -593,6 +633,13 @@ bool MIDIplay::realTime_NoteOn(uint8_t channel, uint8_t note, uint8_t velocity)
         ni.currentTone = currentPortamentoSource;
         ni.glideRate = currentPortamentoRate;
         ++midiChan.gliding_note_count;
+    }
+
+    // Enable life time extension on percussion note
+    if (isPercussion)
+    {
+        ni.ttl = drum_note_min_time;
+        ++midiChan.extended_note_count;
     }
 
     for(unsigned ccount = 0; ccount < MIDIchannel::NoteInfo::MaxNumPhysChans; ++ccount)
@@ -1325,9 +1372,8 @@ void MIDIplay::noteUpdate(size_t midCh,
                 if(vibrato && (d.is_end() || d->value.vibdelay_us >= chan.vibdelay_us))
                     bend += static_cast<double>(vibrato) * chan.vibdepth * std::sin(chan.vibpos);
 
-#define BEND_COEFFICIENT 172.4387
                 synth.noteOn(c, c_slave, BEND_COEFFICIENT * std::exp(0.057762265 * (currentTone + bend + phase)));
-#undef BEND_COEFFICIENT
+
                 if(hooks.onNote)
                     hooks.onNote(hooks.onNote_userData, c, noteTone, midiins, vol, midibend);
             }
@@ -1336,8 +1382,7 @@ void MIDIplay::noteUpdate(size_t midCh,
 
     if(info.chip_channels_count == 0)
     {
-        if(info.glideRate != HUGE_VAL)
-            --m_midiChannels[midCh].gliding_note_count;
+        m_midiChannels[midCh].cleanupNote(i);
         m_midiChannels[midCh].activenotes.erase(i);
     }
 }
@@ -1383,11 +1428,10 @@ int64_t MIDIplay::calculateChipChannelGoodness(size_t c, const MIDIchannel::Note
     for(AdlChannel::const_users_iterator j = chan.users.begin(); !j.is_end(); ++j)
     {
         const AdlChannel::LocationData &jd = j->value;
-        s -= 4000000;
 
         int64_t kon_ms = jd.kon_time_until_neglible_us / 1000;
         s -= (jd.sustained == AdlChannel::LocationData::Sustain_None) ?
-            kon_ms : (kon_ms / 2);
+            (4000000 + kon_ms) : (500000 + (kon_ms / 2));
 
         MIDIchannel::notes_iterator
         k = const_cast<MIDIchannel &>(m_midiChannels[jd.loc.MidCh]).find_activenote(jd.loc.note);
@@ -1521,6 +1565,10 @@ void MIDIplay::killOrEvacuate(size_t from_channel,
         AdlChannel &adlch = m_chipChannels[c];
         if(adlch.users.size() == adlch.users.capacity())
             continue;  // no room for more arpeggio on channel
+
+        if(!m_chipChannels[cs].find_user(jd.loc).is_end())
+            continue;  // channel already has this note playing (sustained)
+                       // avoid introducing a duplicate location.
 
         for(AdlChannel::users_iterator m = adlch.users.begin(); !m.is_end(); ++m)
         {
@@ -1686,12 +1734,19 @@ void MIDIplay::updatePortamento(size_t midCh)
 }
 
 
-void MIDIplay::noteOff(size_t midCh, uint8_t note)
+void MIDIplay::noteOff(size_t midCh, uint8_t note, bool forceNow)
 {
-    MIDIchannel::notes_iterator
-    i = m_midiChannels[midCh].find_activenote(note);
+    MIDIchannel &ch = m_midiChannels[midCh];
+    MIDIchannel::notes_iterator i = ch.find_activenote(note);
+
     if(!i.is_end())
-        noteUpdate(midCh, i, Upd_Off);
+    {
+        MIDIchannel::NoteInfo &ni = i->value;
+        if(forceNow || ni.ttl <= 0)
+            noteUpdate(midCh, i, Upd_Off);
+        else
+            ni.isOnExtendedLifeTime = true;
+    }
 }
 
 
@@ -1844,11 +1899,14 @@ void MIDIplay::describeChannels(char *str, char *attr, size_t size)
         const AdlChannel &adlChannel = m_chipChannels[index];
 
         AdlChannel::const_users_iterator loc = adlChannel.users.begin();
-        if(loc.is_end())  // off
+        AdlChannel::const_users_iterator locnext(loc);
+        if(!loc.is_end()) ++locnext;
+
+	if(loc.is_end())  // off
         {
             str[index] = '-';
         }
-        else if(loc->next)  // arpeggio
+        else if(!locnext.is_end())  // arpeggio
         {
             str[index] = '@';
         }

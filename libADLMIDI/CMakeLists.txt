@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 3.2)
-project (libADLMIDI VERSION 1.4.0 LANGUAGES C CXX)
+project (libADLMIDI VERSION 1.4.1 LANGUAGES C CXX)
 
 include(GNUInstallDirs)
 
@@ -22,9 +22,21 @@ endif()
 if(APPLE)
     set(LINK_FLAGS_RELEASE  "${LINK_FLAGS_RELEASE} -dead_strip")
 elseif(NOT MSVC AND NOT MSDOS AND NOT OPENBSD_LOCALBASE)
-    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Os -s -fdata-sections -ffunction-sections -Wl,--gc-sections -Wl,-s")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Os -s -fdata-sections -ffunction-sections -Wl,--gc-sections -Wl,-s")
-    set(LINK_FLAGS_RELEASE  "${LINK_FLAGS_RELEASE} -Wl,--gc-sections -Wl,-s")
+    string(REGEX REPLACE "-O3" ""
+            CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
+    string(REGEX REPLACE "-O3" ""
+            CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O2 -fdata-sections -ffunction-sections")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -fdata-sections -ffunction-sections")
+    if(ANDROID)
+        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -funwind-tables")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -funwind-tables")
+    endif()
+    if(NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s -Wl,--gc-sections -Wl,-s")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s -Wl,--gc-sections -Wl,-s")
+        set(LINK_FLAGS_RELEASE  "${LINK_FLAGS_RELEASE} -Wl,--gc-sections -Wl,-s")
+    endif()
 endif()
 
 if(NOT MSVC AND NOT MSDOS)
@@ -96,6 +108,8 @@ option(WITH_MUS_SUPPORT     "Build with support for DMX MUS files" ON)
 option(WITH_XMI_SUPPORT     "Build with support for AIL XMI files" ON)
 option(USE_DOSBOX_EMULATOR  "Use DosBox 0.74 OPL3 emulator (semi-accurate, suggested for slow or mobile platforms)" ON)
 option(USE_NUKED_EMULATOR   "Use Nuked OPL3 emulator (most accurate, powerful)" ON)
+option(USE_OPAL_EMULATOR    "Use Opal emulator (inaccurate)" ON)
+option(USE_JAVA_EMULATOR    "Use JavaOPL emulator" ON)
 
 option(WITH_GENADLDATA      "Build and run full rebuild of embedded banks cache" OFF)
 option(WITH_GENADLDATA_COMMENTS "Enable comments in generated ADLDATA cache file" OFF)
@@ -126,7 +140,7 @@ function(handle_options targetLib)
     if(NOT ADLMIDI_DOS)
         if(USE_DOSBOX_EMULATOR)
             set(HAS_EMULATOR TRUE)
-            target_sources(${targetLib} PRIVATE 
+            target_sources(${targetLib} PRIVATE
                 ${libADLMIDI_SOURCE_DIR}/src/chips/dosbox_opl3.cpp
                 ${libADLMIDI_SOURCE_DIR}/src/chips/dosbox/dbopl.cpp
             )
@@ -136,7 +150,7 @@ function(handle_options targetLib)
 
         if(USE_NUKED_EMULATOR)
             set(HAS_EMULATOR TRUE)
-            target_sources(${targetLib} PRIVATE 
+            target_sources(${targetLib} PRIVATE
                 ${libADLMIDI_SOURCE_DIR}/src/chips/nuked_opl3.cpp       # v 1.8
                 ${libADLMIDI_SOURCE_DIR}/src/chips/nuked/nukedopl3.c
                 ${libADLMIDI_SOURCE_DIR}/src/chips/nuked_opl3_v174.cpp  # v 1.7.4
@@ -144,6 +158,24 @@ function(handle_options targetLib)
             )
         else()
             target_compile_definitions(${targetLib} PUBLIC ADLMIDI_DISABLE_NUKED_EMULATOR)
+        endif()
+
+        if(USE_OPAL_EMULATOR)
+            set(HAS_EMULATOR TRUE)
+            target_sources(${targetLib} PRIVATE
+                ${libADLMIDI_SOURCE_DIR}/src/chips/opal_opl3.cpp
+            )
+        else()
+            target_compile_definitions(${targetLib} PUBLIC ADLMIDI_DISABLE_OPAL_EMULATOR)
+        endif()
+
+        if(USE_JAVA_EMULATOR)
+            set(HAS_EMULATOR TRUE)
+            target_sources(${targetLib} PRIVATE
+                ${libADLMIDI_SOURCE_DIR}/src/chips/java_opl3.cpp
+            )
+        else()
+            target_compile_definitions(${targetLib} PUBLIC ADLMIDI_DISABLE_JAVA_EMULATOR)
         endif()
 
         if(NOT HAS_EMULATOR)
@@ -164,11 +196,11 @@ function(handle_options targetLib)
     if(NOT WITH_CPP_EXTRAS)
         target_compile_definitions(${targetLib} PUBLIC ADLMIDI_DISABLE_CPP_EXTRAS)
     endif()
-    
+
     if(WITH_EMBEDDED_BANKS AND WITH_GENADLDATA AND NOT ADLMIDI_DOS)
         add_dependencies(${targetLib} gen-adldata-run)
     endif()
-    
+
     if(WITH_HQ_RESAMPLER AND NOT ADLMIDI_DOS)
         find_library(ZITA_RESAMPLER_LIBRARY "zita-resampler")
         if(NOT ZITA_RESAMPLER_LIBRARY)
@@ -232,6 +264,20 @@ if(libADLMIDI_SHARED)
 else()
     add_library(ADLMIDI ALIAS ADLMIDI_static)
 endif()
+
+function(libADLMIDI_find_SDL2)
+    if(NOT TARGET ADLMIDI_SDL2)
+        find_package(SDL2 REQUIRED)
+        add_library(ADLMIDI_SDL2 INTERFACE)
+        if(TARGET SDL2::SDL2)
+            target_link_libraries(ADLMIDI_SDL2 INTERFACE SDL2::SDL2)
+        else()
+            string(STRIP ${SDL2_LIBRARIES} SDL2_LIBRARIES)
+            target_include_directories(ADLMIDI_SDL2 INTERFACE ${SDL2_INCLUDE_DIRS})
+            target_link_libraries(ADLMIDI_SDL2 INTERFACE ${SDL2_LIBRARIES})
+        endif()
+    endif()
+endfunction()
 
 if(WITH_OLD_UTILS)
     # Old utility to dump AdLib bank files

@@ -236,7 +236,7 @@ int main(int argc, char **argv)
     {
         std::printf(
             "Usage: adlmidi <midifilename> [ <options> ] [ <bank> [ <numchips> [ <numfourops>] ] ]\n"
-            " -p Enables adlib percussion instrument mode\n"
+            // " -p Enables adlib percussion instrument mode\n"
             " -t Enables tremolo amplification mode\n"
             " -v Enables vibrato amplification mode\n"
             " -s Enables scaling of modulator volumes\n"
@@ -251,6 +251,8 @@ int main(int argc, char **argv)
             " --emu-nuked  Uses Nuked OPL3 v 1.8 emulator\n"
             " --emu-nuked7 Uses Nuked OPL3 v 1.7.4 emulator\n"
             " --emu-dosbox Uses DosBox 0.74 OPL3 emulator\n"
+            " --emu-opal   Uses Opal OPL3 emulator\n"
+            " --emu-java   Uses Java OPL3 emulator\n"
             #endif
             "\n"
             "Where <bank> - number of embeeded bank or filepath to custom WOPL bank file\n"
@@ -360,7 +362,7 @@ int main(int argc, char **argv)
         bool had_option = false;
 
         if(!std::strcmp("-p", argv[2]))
-            adl_setPercMode(myDevice, 1);//Turn on AdLib percussion mode
+            fprintf(stderr, "Warning: -p argument is deprecated and useless!\n"); //adl_setPercMode(myDevice, 1);//Turn on AdLib percussion mode
         else if(!std::strcmp("-v", argv[2]))
             adl_setHVibrato(myDevice, 1);//Force turn on deep vibrato
 
@@ -405,6 +407,10 @@ int main(int argc, char **argv)
             emulator = ADLMIDI_EMU_NUKED_174;
         else if(!std::strcmp("--emu-dosbox", argv[2]))
             emulator = ADLMIDI_EMU_DOSBOX;
+        else if(!std::strcmp("--emu-opal", argv[2]))
+            emulator = ADLMIDI_EMU_OPAL;
+        else if(!std::strcmp("--emu-java", argv[2]))
+            emulator = ADLMIDI_EMU_JAVA;
 #endif
         else if(!std::strcmp("-fp", argv[2]))
             adl_setSoftPanEnabled(myDevice, 1);
