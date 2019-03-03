@@ -142,6 +142,7 @@ class Opal {
             uint16_t        GetOctave() const {  return Octave;  }
             uint16_t        GetKeyScaleNumber() const {  return KeyScaleNumber;  }
             uint16_t        GetModulationType() const {  return ModulationType;  }
+            Channel *       GetChannelPair() const {  return ChannelPair;  } /* libADLMIDI */
 
             void            ComputeKeyScaleNumber();
 
@@ -328,6 +329,7 @@ void Opal::Init(int sample_rate) {
 
     Clock = 0;
     TremoloClock = 0;
+    TremoloLevel = 0;
     VibratoTick = 0;
     VibratoClock = 0;
     NoteSel = false;
@@ -370,8 +372,11 @@ void Opal::Init(int sample_rate) {
         Op[i].ComputeRates();
 
     // Initialise channel panning at center.
-    for (int i = 0; i < NumChannels; i++)
+    for (int i = 0; i < NumChannels; i++) {
         Chan[i].SetPan(64);
+        Chan[i].SetLeftEnable(true);
+        Chan[i].SetRightEnable(true);
+    }
 
     SetSampleRate(sample_rate);
 }
@@ -475,20 +480,28 @@ void Opal::Port(uint16_t reg_num, uint8_t val) {
 
         Channel &chan = Chan[chan_num];
 
+        /* libADLMIDI: registers Ax and Cx affect both channels */
+        Channel *chans[2] = {&chan, chan.GetChannelPair()};
+        unsigned numchans = chans[1] ? 2 : 1;
+
         // Do specific registers
         switch (reg_num & 0xF0) {
 
             // Frequency low
             case 0xA0: {
-                chan.SetFrequencyLow(val);
+                for (unsigned i = 0; i < numchans; ++i) { /* libADLMIDI */
+                    chans[i]->SetFrequencyLow(val);
+                }
                 break;
             }
 
             // Key-on / Octave / Frequency High
             case 0xB0: {
-                chan.SetKeyOn((val & 0x20) != 0);
-                chan.SetOctave(val >> 2 & 7);
-                chan.SetFrequencyHigh(val & 3);
+                for (unsigned i = 0; i < numchans; ++i) { /* libADLMIDI */
+                    chans[i]->SetKeyOn((val & 0x20) != 0);
+                    chans[i]->SetOctave(val >> 2 & 7);
+                    chans[i]->SetFrequencyHigh(val & 3);
+                }
                 break;
             }
 
@@ -953,11 +966,11 @@ int16_t Opal::Operator::Output(uint16_t /*keyscalenum*/, uint32_t phase_step, in
 
         // Attack stage
         case EnvAtt: {
-            if (AttackRate == 0)
-                break;
-            if (AttackMask && (Master->Clock & AttackMask))
-                break;
             uint16_t add = ((AttackAdd >> AttackTab[Master->Clock >> AttackShift & 7]) * ~EnvelopeLevel) >> 3;
+            if (AttackRate == 0)
+                add = 0;
+            if (AttackMask && (Master->Clock & AttackMask))
+                add = 0;
             EnvelopeLevel += add;
             if (EnvelopeLevel <= 0) {
                 EnvelopeLevel = 0;
@@ -968,11 +981,11 @@ int16_t Opal::Operator::Output(uint16_t /*keyscalenum*/, uint32_t phase_step, in
 
         // Decay stage
         case EnvDec: {
-            if (DecayRate == 0)
-                break;
-            if (DecayMask && (Master->Clock & DecayMask))
-                break;
             uint16_t add = DecayAdd >> DecayTab[Master->Clock >> DecayShift & 7];
+            if (DecayRate == 0)
+                add = 0;
+            if (DecayMask && (Master->Clock & DecayMask))
+                add = 0;
             EnvelopeLevel += add;
             if (EnvelopeLevel >= SustainLevel) {
                 EnvelopeLevel = SustainLevel;
@@ -991,11 +1004,11 @@ int16_t Opal::Operator::Output(uint16_t /*keyscalenum*/, uint32_t phase_step, in
 
         // Release stage
         case EnvRel: {
-            if (ReleaseRate == 0)
-                break;
-            if (ReleaseMask && (Master->Clock & ReleaseMask))
-                break;
             uint16_t add = ReleaseAdd >> ReleaseTab[Master->Clock >> ReleaseShift & 7];
+            if (ReleaseRate == 0)
+                add = 0;
+            if (ReleaseMask && (Master->Clock & ReleaseMask))
+                add = 0;
             EnvelopeLevel += add;
             if (EnvelopeLevel >= 0x1FF) {
                 EnvelopeLevel = 0x1FF;
@@ -1237,12 +1250,9 @@ void Opal::Operator::SetFrequencyMultiplier(uint16_t scale) {
 //==================================================================================================
 void Opal::Operator::SetKeyScale(uint16_t scale) {
 
-    if (scale > 0)
-        KeyScaleShift = 3 - scale;
-
-    // No scaling, ensure it has no effect
-    else
-        KeyScaleShift = 15;
+    /* libADLMIDI: KSL computation fix */
+    const unsigned KeyScaleShiftTable[4] = {8, 1, 2, 0};
+    KeyScaleShift = KeyScaleShiftTable[scale];
 
     ComputeKeyScaleLevel();
 }
