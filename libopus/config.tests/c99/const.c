@@ -1,5 +1,5 @@
-const int foo;
+const int foo = 0;
 int main()
 {
-    return 0;
+    return foo;
 }

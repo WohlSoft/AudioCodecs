@@ -200,8 +200,10 @@ try_compile(HAS_CONST_TYPE
     ${CMAKE_BINARY_DIR}/compile_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/c99/const.c
 )
-if(HAS_CONST_TYPE)
+if(NOT HAS_CONST_TYPE)
     set(const 1)
+else()
+    message("HAS const")
 endif()
 
 set(SUMMARY_RTCD "no")
