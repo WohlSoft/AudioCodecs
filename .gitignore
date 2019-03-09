@@ -8,7 +8,7 @@
 *.qbs.user
 *.qbs.user.*
 *.error
-CMakeLists.txt.user
+CMakeLists.txt.user*
 moc_*.cpp
 ui_*.h
 qrc_*.cpp
