@@ -9,7 +9,7 @@ set(CMAKE_C_STANDARD 99)
 include(CheckSymbolExists)
 
 if(CMAKE_BUILD_TYPE_LOWER STREQUAL "debug")
-    add_definitions(-DDEBUG)
+    add_definitions(-DDEBUG -D_DEBUG)
 endif()
 
 check_symbol_exists(round "math.h;tgmath.h" HAVE_ROUND_FUNCTION)
@@ -23,10 +23,10 @@ if(HAVE_POWF_FUNCTION)
 endif()
 
 
-#if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-#    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -pedantic -std=gnu99")
-#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-pedantic -std=gnu++98 -Wno-unused-but-set-variable -Wno-sequence-point")
-#endif()
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-shift-negative-value")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-shift-negative-value")
+endif()
 
 #if(MSVC)
 #    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4100 /wd4244 /wd4267 /wd4996 /wd4702 /wd4706 /wd4456")
@@ -194,9 +194,13 @@ endif()
 if(WIN32)
     list(APPEND LIBXMP_SRC
         src/win32.c
-        src/win32/debug.c
         src/win32/ptpopen.c
     )
+    if(CMAKE_BUILD_TYPE_LOWER STREQUAL "debug")
+        list(APPEND LIBXMP_SRC
+            src/win32/debug.c
+        )
+    endif()
 endif()
 
 add_library(xmp STATIC ${LIBXMP_SRC})

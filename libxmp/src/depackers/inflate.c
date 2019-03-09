@@ -693,7 +693,6 @@ int decompress(FILE *in, struct huffman_t *huffman, struct bitstream_t *bitstrea
   struct huffman_tree_t *curr_huffman_leaf;
   int window_ptr;
   int curr_leaf;
-  (void)curr_huffman_leaf;/* Warning fix */
 
 #ifdef DEBUG
   printf("decompress()\n");
@@ -994,7 +993,6 @@ int libxmp_inflate(FILE *in, FILE *out, uint32 *checksum, int is_zip)
   struct huffman_tree_t *huffman_tree_dist;
   struct inflate_data data;
   int res;
-  (void)DICT;/* Warning fix */
 
   memset(&huffman, 0, sizeof(struct huffman_t));
   huffman.checksum=0xffffffff;

@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2016 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -63,7 +63,6 @@ static int mgt_load(struct module_data *m, HIO_HANDLE *f, const int start)
 	int ver;
 	int sng_ptr, seq_ptr, ins_ptr, pat_ptr, trk_ptr, smp_ptr;
 	int sdata[64];
-	(void)smp_ptr;
 
 	LOAD_INIT();
 
@@ -216,7 +215,6 @@ static int mgt_load(struct module_data *m, HIO_HANDLE *f, const int start)
 		//printf("\n=== Track %d ===\n\n", i);
 		for (j = 0; j < rows; j++) {
 			uint8 note, f2p;
-			(void)f2p;
 
 			b = hio_read8(f);
 			j += b & 0x03;

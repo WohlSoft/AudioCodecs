@@ -39,7 +39,6 @@ static int depack_p4x(HIO_HANDLE *in, FILE *out)
 	int i, j, k, l, a, b, c;
 	struct smp ins;
 	uint32 id;
-	(void)npat;
 
 	memset(track_addr, 0, 128 * 4 * 2);
 	memset(tr, 0, 512 << 8);

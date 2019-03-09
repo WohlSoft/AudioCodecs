@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2016 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -181,7 +181,6 @@ static int med4_load(struct module_data *m, HIO_HANDLE *f, const int start)
 	int smp_idx;
 	int tempo;
 	struct temp_inst temp_inst[64];
-	(void)hexvol;
 	
 	LOAD_INIT();
 
@@ -589,7 +588,6 @@ static int med4_load(struct module_data *m, HIO_HANDLE *f, const int start)
 		if (type == -2) {			/* Hybrid */
 			int length, type;
 			int pos = hio_tell(f);
-			(void)type;
 			if (pos < 0) {
 				return -1;
 			}
@@ -807,7 +805,6 @@ static int med4_load(struct module_data *m, HIO_HANDLE *f, const int start)
 parse_iff:
 	while (!hio_eof(f)) {
 		int32 id, size, s2, pos, ver;
-		(void)ver;
 
 		if ((id = hio_read32b(f)) <= 0)
 			break;

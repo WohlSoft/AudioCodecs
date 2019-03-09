@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2016 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -254,7 +254,6 @@ static int sym_load(struct module_data *m, HIO_HANDLE *f, const int start)
 	uint8 *buf;
 	int size, ret;
 	uint8 allowed_effects[8];
-	(void)infolen;
 
 	LOAD_INIT();
 
@@ -347,14 +346,14 @@ static int sym_load(struct module_data *m, HIO_HANDLE *f, const int start)
 			int idx = 2 * (i * mod->chn + j);
 			int t = readptr16l(&buf[idx]);
 
-			/* Sanity check */
-			if (t >= mod->trk - 1) {
+			if (t == 0x1000) {
+				/* empty trk */
+				t = mod->trk - 1;
+			} else if (t >= mod->trk - 1) {
+				/* Sanity check */
 				free(buf);
 				return -1;
 			}
-	
-			if (t == 0x1000) /* empty trk */
-				t = mod->trk - 1;
 
 			mod->xxp[i]->index[j] = t;
 		}

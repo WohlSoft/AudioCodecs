@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2016 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -140,9 +140,6 @@ static int get_patt(struct module_data *m, int size, HIO_HANDLE *f, void *parm)
 	int i, len, chan;
 	int rows, r;
 	uint8 flag;
-	(void)len;
-	(void)size;
-	(void)parm;
 	
 	i = hio_read8(f);	/* pattern number */
 	len = hio_read32l(f);

@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2016 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -41,19 +41,22 @@ const struct format_loader libxmp_loader_it = {
 	it_load
 };
 
+#ifndef LIBXMP_CORE_PLAYER /* */
 #if defined(__WATCOMC__)
 #undef localtime_r
 #define localtime_r _localtime
 
 #elif !defined(HAVE_LOCALTIME_R) || defined(_WIN32)
 #undef localtime_r
-struct tm *localtime_r(const time_t * timep, struct tm *result)
+#define localtime_r libxmp_localtime_r
+static struct tm *libxmp_localtime_r(const time_t * timep, struct tm *result)
 {
 	/* Note: Win32 localtime() is thread-safe */
 	memcpy(result, localtime(timep), sizeof(struct tm));
 	return result;
 }
 #endif
+#endif /* ! LIBXMP_CORE_PLAYER */
 
 static int it_test(HIO_HANDLE * f, char *t, const int start)
 {
@@ -1132,7 +1135,6 @@ static int it_load(struct module_data *m, HIO_HANDLE *f, const int start)
 		}
 
 		if (ifh.chpan[i] & 0x80) {	/* Channel mute */
-			ifh.chvol[i] = 0;
 			xxc->flg |= XMP_CHANNEL_MUTE;
 		}
 

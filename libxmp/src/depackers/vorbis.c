@@ -2985,7 +2985,7 @@ static int vorbis_decode_packet_rest(vorb *f, int *len, Mode *m, int left_start,
    int zero_channel[256];
    int really_zero_channel[256];
    int window_center;
-   (void)window_center;
+
 // WINDOWING
 
    n = f->blocksize[m->blockflag];
@@ -3113,7 +3113,6 @@ static int vorbis_decode_packet_rest(vorb *f, int *len, Mode *m, int left_start,
       int r,t;
       uint8 do_not_decode[256];
       int ch = 0;
-      (void)t;
 
       memset(do_not_decode, 0, 256);
 

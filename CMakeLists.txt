@@ -98,6 +98,11 @@ if(BUILD_MODPLUG)
     add_subdirectory(libmodplug)
 endif()
 
+option(BUILD_LIBXMP "Enable building of libXMP" ON)
+if(BUILD_LIBXMP)
+    add_subdirectory(libxmp)
+endif()
+
 option(BUILD_OPUS "Enable building of OPUS" ON)
 if(BUILD_OPUS)
     if(NOT BUILD_OGG_VORBIS)

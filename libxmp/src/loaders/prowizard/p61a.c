@@ -41,8 +41,6 @@ static int depack_p61a(HIO_HANDLE *in, FILE *out)
     int saddr[31];
     int Unpacked_Sample_Data_Size;
     int x;
-    (void)PACK;
-    (void)Unpacked_Sample_Data_Size;
 
     memset(taddr, 0, 128 * 4 * 4);
     memset(tdata, 0, 512 << 8);

@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2016 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -540,9 +540,11 @@ void libxmp_process_fx(struct context_data *ctx, struct channel_data *xc, int ch
 
 #ifndef LIBXMP_CORE_DISABLE_IT
 	case FX_IT_BPM:		/* Set IT BPM */
-		if (MSN(fxp) == 0) {	/* T0x - Tempo slide down by x */
+		if (MSN(fxp) == 0) {
 			SET(TEMPO_SLIDE);
-			xc->tempo.slide = -LSN(fxp);
+			if (LSN(fxp))	/* T0x - Tempo slide down by x */
+				xc->tempo.slide = -LSN(fxp);
+			/* T00 - Repeat previous slide */
 		} else if (MSN(fxp) == 1) {	/* T1x - Tempo slide up by x */
 			SET(TEMPO_SLIDE);
 			xc->tempo.slide = LSN(fxp);
