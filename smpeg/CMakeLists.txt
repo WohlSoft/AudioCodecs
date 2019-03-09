@@ -1,5 +1,5 @@
-cmake_minimum_required (VERSION 2.8.11)
-project (libsmpeg CXX ASM)
+cmake_minimum_required(VERSION 3.2)
+project(libsmpeg VERSION 2.0.0 LANGUAGES CXX ASM)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 

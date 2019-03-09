@@ -1,5 +1,5 @@
-cmake_minimum_required (VERSION 2.8.11)
-project (libxmp C)
+cmake_minimum_required(VERSION 3.2)
+project(libxmp VERSION 4.5.0 LANGUAGES C CXX)
 
 include(CheckFunctionExists)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
@@ -28,9 +28,9 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-shift-negative-value")
 endif()
 
-#if(MSVC)
-#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4100 /wd4244 /wd4267 /wd4996 /wd4702 /wd4706 /wd4456")
-#endif()
+if(MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4273")
+endif()
 
 set(LIBXMP_SRC)
 
