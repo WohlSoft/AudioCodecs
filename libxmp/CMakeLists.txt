@@ -4,8 +4,6 @@ project(libxmp VERSION 4.5.0 LANGUAGES C CXX)
 include(CheckFunctionExists)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
-set(CMAKE_C_STANDARD 99)
-
 include(CheckSymbolExists)
 
 if(CMAKE_BUILD_TYPE_LOWER STREQUAL "debug")
@@ -22,6 +20,8 @@ if(HAVE_POWF_FUNCTION)
     add_definitions(-DHAVE_POWF=1)
 endif()
 
+set(LIBXMP_CORE_PLAYER OFF)
+# add_definitions(-DLIBXMP_CORE_PLAYER)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-shift-negative-value")
@@ -29,44 +29,27 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 endif()
 
 if(MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4273")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4244 /wd4018 /wd4996 /wd4048 /wd4267")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4244")
+    # set(CMAKE_LINK_LIBRARY_FLAG "${CMAKE_LINK_LIBRARY_FLAG} /wd4273")
+else()
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-but-set-variable")
+    string(REGEX REPLACE "-pedantic" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 endif()
+
+set(CMAKE_C_STANDARD 99)
 
 set(LIBXMP_SRC)
 
 list(APPEND LIBXMP_SRC
     src/control.c
     src/dataio.c
-    src/depackers/arcfs.c
-    src/depackers/bunzip2.c
-    src/depackers/crc32.c
-    src/depackers/gunzip.c
-    src/depackers/inflate.c
-    src/depackers/mmcmp.c
-    src/depackers/muse.c
-    src/depackers/oxm.c
-    src/depackers/ppdepack.c
-    src/depackers/readlzw.c
-    src/depackers/readrle.c
-    src/depackers/s404_dec.c
-    src/depackers/unarc.c
-    src/depackers/uncompress.c
-    src/depackers/unlha.c
-    src/depackers/unlzx.c
-    src/depackers/unsqsh.c
-    src/depackers/unxz.c
-    src/depackers/unzip.c
-    src/depackers/vorbis.c
-    src/depackers/xz_dec_lzma2.c
-    src/depackers/xz_dec_stream.c
     src/effects.c
-    src/extras.c
     src/filter.c
     src/fmopl.c
     src/fnmatch.c
     src/format.c
     src/hio.c
-    src/hmn_extras.c
     src/lfo.c
     src/load.c
     src/loaders/669_load.c
@@ -169,7 +152,6 @@ list(APPEND LIBXMP_SRC
     src/load_helpers.c
     src/lutgen.c
     src/md5.c
-    src/med_extras.c
     src/memio.c
     src/mix_all.c
     src/mixer.c
@@ -183,6 +165,36 @@ list(APPEND LIBXMP_SRC
     src/tempfile.c
     src/virtual.c
 )
+
+if(NOT LIBXMP_CORE_PLAYER)
+    list(APPEND LIBXMP_SRC
+        src/depackers/arcfs.c
+        src/depackers/bunzip2.c
+        src/depackers/crc32.c
+        src/depackers/gunzip.c
+        src/depackers/inflate.c
+        src/depackers/mmcmp.c
+        src/depackers/muse.c
+        src/depackers/oxm.c
+        src/depackers/ppdepack.c
+        src/depackers/readlzw.c
+        src/depackers/readrle.c
+        src/depackers/s404_dec.c
+        src/depackers/unarc.c
+        src/depackers/uncompress.c
+        src/depackers/unlha.c
+        src/depackers/unlzx.c
+        src/depackers/unsqsh.c
+        src/depackers/unxz.c
+        src/depackers/unzip.c
+        src/depackers/vorbis.c
+        src/depackers/xz_dec_lzma2.c
+        src/depackers/xz_dec_stream.c
+        src/extras.c
+        src/hmn_extras.c
+        src/med_extras.c
+    )
+endif()
 
 if(AMIGA)
     list(APPEND LIBXMP_SRC
@@ -198,18 +210,30 @@ if(WIN32)
     )
     if(CMAKE_BUILD_TYPE_LOWER STREQUAL "debug")
         list(APPEND LIBXMP_SRC
-            src/win32/debug.c
+            src_win32/debug.c
         )
     endif()
 endif()
 
 add_library(xmp STATIC ${LIBXMP_SRC})
+target_compile_definitions(xmp PRIVATE -DBUILDING_STATIC)
+if(MSVC)
+    target_compile_definitions(xmp PRIVATE -DPATH_MAX=260 -DCLIB_DECL=__stdcall)
+endif()
 
 add_library(XMP_IF INTERFACE)
-target_link_libraries(XMP_IF INTERFACE xmp m)
+if(NOT MSVC)
+    target_link_libraries(XMP_IF INTERFACE xmp m)
+else()
+    target_link_libraries(XMP_IF INTERFACE xmp)
+endif()
 
 target_include_directories(xmp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(xmp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+if(MSVC) # WORKAROUND for MSVC
+    target_include_directories(xmp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include_msvc)
+endif()
 
 option(XMP_WITH_DEMO_PLAYER        "Build also demo player for XMP" OFF)
 
@@ -217,7 +241,21 @@ if(XMP_WITH_DEMO_PLAYER)
     add_executable(xmpsdl
         example/player-sdl2.c
     )
-    target_link_libraries(xmpsdl XMP_IF SDL2)
+    add_dependencies(xmpsdl xmp)
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set(DEBUG_SUFFIX "d")
+    else()
+        set(DEBUG_SUFFIX "")
+    endif()
+    set(XMPSDL_LIBS
+        XMP_IF SDL2${DEBUG_SUFFIX}
+    )
+    target_compile_definitions(xmpsdl PRIVATE -DBUILDING_STATIC)
+    if(WIN32)
+        list(APPEND XMPSDL_LIBS SDL2main${DEBUG_SUFFIX})
+        target_compile_definitions(xmpsdl PRIVATE -DSDL_MAIN_HANDLED)
+    endif()
+    target_link_libraries(xmpsdl ${XMPSDL_LIBS})
 endif()
 
 install(TARGETS xmp
