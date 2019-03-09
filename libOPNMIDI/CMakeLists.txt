@@ -26,7 +26,8 @@ elseif(NOT MSVC AND NOT MSDOS AND NOT OPENBSD_LOCALBASE)
     if(ANDROID)
         set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -funwind-tables")
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -funwind-tables")
-    else()
+    endif()
+    if(NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s -Wl,--gc-sections -Wl,-s")
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s -Wl,--gc-sections -Wl,-s")
         set(LINK_FLAGS_RELEASE  "${LINK_FLAGS_RELEASE} -Wl,--gc-sections -Wl,-s")
@@ -114,6 +115,7 @@ option(USE_NUKED_EMULATOR   "Use Nuked OPN2 emulator (most accurate, heavy)" ON)
 option(USE_GX_EMULATOR      "Use Genesis Plus GX emulator (experimental)" OFF)
 option(USE_NP2_EMULATOR     "Use Neko Project II emulator" ON)
 option(USE_MAME_2608_EMULATOR "Use MAME YM2608 emulator" ON)
+option(USE_PMDWIN_EMULATOR  "Use PMDWin emulator (experimental)" OFF)
 # WIP FEATURES
 # option(WITH_CPP_EXTRAS      "Build with support for C++ extras (features are can be found in 'adlmidi.hpp' header)" OFF)
 
@@ -218,6 +220,17 @@ if(USE_MAME_2608_EMULATOR)
     set(HAS_EMULATOR TRUE)
 else()
     add_definitions(-DOPNMIDI_DISABLE_MAME_2608_EMULATOR)
+endif()
+
+if(USE_PMDWIN_EMULATOR)
+    list(APPEND libOPNMIDI_SOURCES
+        ${libOPNMIDI_SOURCE_DIR}/src/chips/pmdwin_opna.cpp
+        ${libOPNMIDI_SOURCE_DIR}/src/chips/pmdwin/opna.c
+        ${libOPNMIDI_SOURCE_DIR}/src/chips/pmdwin/psg.c
+        ${libOPNMIDI_SOURCE_DIR}/src/chips/pmdwin/rhythmdata.c)
+    set(HAS_EMULATOR TRUE)
+else()
+    add_definitions(-DOPNMIDI_DISABLE_PMDWIN_EMULATOR)
 endif()
 
 if(NOT HAS_EMULATOR)
@@ -415,6 +428,7 @@ message("USE_NUKED_EMULATOR       = ${USE_NUKED_EMULATOR}")
 message("USE_GX_EMULATOR          = ${USE_GX_EMULATOR}")
 message("USE_NP2_EMULATOR         = ${USE_NP2_EMULATOR}")
 message("USE_MAME_2608_EMULATOR   = ${USE_MAME_2608_EMULATOR}")
+message("USE_PMDWIN_EMULATOR      = ${USE_PMDWIN_EMULATOR}")
 
 message("===== Utils and extras =====")
 message("WITH_MIDIPLAY            = ${WITH_MIDIPLAY}")
