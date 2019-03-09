@@ -146,9 +146,10 @@ rem Tip: instead of "release" you can have "debug" to build debug versions. Inst
 * **libSMPEG:** GNU LGPLv2+
 * **libTimidity-SDL:** The "Artistic License"
 * **libVorbis:** BSD 3-clause "New" or "Revised" License
+* **libXMP:** GNU LGPLv2+, partially MIT
 * **libZlib:** ZLib license
 
-# Libraries are can be freely used in commercial projects:
+# Libraries are can be freely used in non-free projects:
 
 ## Static linking
 (BSD, ZLib, and "Artistic" licenses are allows usage in closed-source projects)
@@ -172,5 +173,6 @@ rem Tip: instead of "release" you can have "debug" to build debug versions. Inst
 * libSMPEG
 * libTimidity
 * libVorbis
+* libXMP
 * libZlib
 
