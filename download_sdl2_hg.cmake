@@ -12,6 +12,11 @@ find_package(Git REQUIRED)
 # Posttible Input Vars:
 # <None>
 
+option(WITH_SDL2_WASAPI "Enable WASAPI audio output support for Windows build of SDL2" ON)
+if(WIN32)
+    set(SDL2_WASAPI_FLAG "-DWASAPI=${WITH_SDL2_WASAPI}")
+endif()
+
 # SET OUTPUT VARS
 # set(SDL2_INSTALL_DIR ${CMAKE_BINARY_DIR}/external/install)
 set(SDL2_INSTALL_DIR ${CMAKE_BINARY_DIR})
@@ -45,6 +50,7 @@ ExternalProject_Add(
         -DSDL_STATIC=${BUILD_SDL2_STATIC}
         -DCMAKE_DEBUG_POSTFIX=${CMAKE_DEBUG_POSTFIX}
         ${SDL2_CMAKE_FPIC_FLAG}
+        ${SDL2_WASAPI_FLAG}
 )
 
 # Install built SDL's headers and libraries into actual installation directory
