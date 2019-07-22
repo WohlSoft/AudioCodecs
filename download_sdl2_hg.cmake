@@ -27,8 +27,8 @@ if(NOT WIN32)
     set(SDL2_CMAKE_FPIC_FLAG "-DSDL_STATIC_PIC=ON")
 endif()
 
-set(SDL2_HG_BRANCH "default" CACHE PATH "HG branch for SDL2 (official Mercurial mainstream repo)")
-set(SDL2_GIT_BRANCH "origin/master" CACHE PATH "GIT branch for SDL2 (unofficial Git mirror)")
+set(SDL2_HG_BRANCH "default" CACHE STRING "HG branch for SDL2 (official Mercurial mainstream repo)")
+set(SDL2_GIT_BRANCH "origin/master" CACHE STRING "GIT branch for SDL2 (unofficial Git mirror)")
 
 # Remove this workaround when the tarball is symlink-free for better Windows compatibility.
 # In the meantime, use the auto-tracking SDL2 Git repo:
