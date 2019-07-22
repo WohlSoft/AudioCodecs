@@ -27,20 +27,26 @@ if(NOT WIN32)
     set(SDL2_CMAKE_FPIC_FLAG "-DSDL_STATIC_PIC=ON")
 endif()
 
+set(SDL2_HG_BRANCH "default" CACHE PATH "HG branch for SDL2 (official Mercurial mainstream repo)")
+set(SDL2_GIT_BRANCH "origin/master" CACHE PATH "GIT branch for SDL2 (unofficial Git mirror)")
+
 # Remove this workaround when the tarball is symlink-free for better Windows compatibility.
 # In the meantime, use the auto-tracking SDL2 Git repo:
+set(SDL2_PROJECT_BRANCH)
 if(WIN32)
     set(SDL_SOURCE_PATH_GIT "https://github.com/spurious/SDL-mirror.git")
-    message("== SDL2 will be downloaded as unofficial GIT repository")
+    message("== SDL2 will be downloaded as unofficial GIT repository from '${SDL2_GIT_BRANCH}' revision")
+    set(SDL2_PROJECT_BRANCH GIT_TAG "${SDL2_GIT_BRANCH}")
 else()
-    set(SDL_SOURCE_PATH_URL "https://hg.libsdl.org/SDL/archive/default.tar.bz2")
-    message("== SDL2 will be downloaded from official Mercirual as TAR-BZ2 archive")
+    set(SDL_SOURCE_PATH_URL "https://hg.libsdl.org/SDL/archive/${SDL2_HG_BRANCH}.tar.bz2")
+    message("== SDL2 will be downloaded from official Mercirual as TAR-BZ2 archive from '${SDL2_HG_BRANCH}' revision")
 endif()
 
 ExternalProject_Add(
     SDL2HG
     PREFIX ${CMAKE_BINARY_DIR}/external/SDL2
     GIT_REPOSITORY ${SDL_SOURCE_PATH_GIT}
+    ${SDL2_PROJECT_BRANCH}
     URL ${SDL_SOURCE_PATH_URL}
     CMAKE_ARGS
         "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
