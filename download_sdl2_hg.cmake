@@ -33,7 +33,7 @@ set(SDL2_GIT_BRANCH "origin/master" CACHE STRING "GIT branch for SDL2 (unofficia
 # Remove this workaround when the tarball is symlink-free for better Windows compatibility.
 # In the meantime, use the auto-tracking SDL2 Git repo:
 set(SDL2_PROJECT_BRANCH)
-if(WIN32)
+if(WIN32 AND MINGW)
     set(SDL_SOURCE_PATH_GIT "https://github.com/spurious/SDL-mirror.git")
     message("== SDL2 will be downloaded as unofficial GIT repository from '${SDL2_GIT_BRANCH}' revision")
     set(SDL2_PROJECT_BRANCH GIT_TAG "${SDL2_GIT_BRANCH}")
