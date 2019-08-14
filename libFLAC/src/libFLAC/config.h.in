@@ -9,6 +9,9 @@
 /* Target processor is little endian. */
 #undef CPU_IS_LITTLE_ENDIAN
 
+/* Set FLAC__BYTES_PER_WORD to 8 (4 is the default) */
+#undef ENABLE_64_BIT_WORDS
+
 /* define to align allocated memory on 32-byte boundaries */
 #undef FLAC__ALIGN_MALLOC_DATA
 
@@ -18,8 +21,8 @@
 /* define if building for PowerPC */
 #undef FLAC__CPU_PPC
 
-/* define if building for PowerPC with SPE ABI */
-#undef FLAC__CPU_PPC_SPE
+/* define if building for PowerPC64 */
+#undef FLAC__CPU_PPC64
 
 /* define if building for SPARC */
 #undef FLAC__CPU_SPARC
@@ -36,14 +39,17 @@
 /* define if you have the ogg library */
 #undef FLAC__HAS_OGG
 
+/* define if compiler has __attribute__((target("cpu=power8"))) support */
+#undef FLAC__HAS_TARGET_POWER8
+
+/* define if compiler has __attribute__((target("cpu=power9"))) support */
+#undef FLAC__HAS_TARGET_POWER9
+
 /* Set to 1 if <x86intrin.h> is available. */
 #undef FLAC__HAS_X86INTRIN
 
 /* define to disable use of assembly code */
 #undef FLAC__NO_ASM
-
-/* define if your operating system supports SSE instructions */
-#undef FLAC__SSE_OS
 
 /* define if building for Darwin / MacOS X */
 #undef FLAC__SYS_DARWIN
@@ -54,8 +60,11 @@
 /* define to enable use of Altivec instructions */
 #undef FLAC__USE_ALTIVEC
 
-/* Define to 1 if `TIOCGWINSZ' requires <sys/ioctl.h>. */
-#undef GWINSZ_IN_SYS_IOCTL
+/* define to enable use of AVX instructions */
+#undef FLAC__USE_AVX
+
+/* define to enable use of VSX instructions */
+#undef FLAC__USE_VSX
 
 /* Compiler has the __builtin_bswap16 intrinsic */
 #undef HAVE_BSWAP16
@@ -65,6 +74,9 @@
 
 /* Define to 1 if you have the <byteswap.h> header file. */
 #undef HAVE_BYTESWAP_H
+
+/* define if you have clock_gettime */
+#undef HAVE_CLOCK_GETTIME
 
 /* Define to 1 if you have the <cpuid.h> header file. */
 #undef HAVE_CPUID_H
@@ -114,6 +126,9 @@
 /* Define to 1 if you have the <string.h> header file. */
 #undef HAVE_STRING_H
 
+/* Define to 1 if you have the <sys/ioctl.h> header file. */
+#undef HAVE_SYS_IOCTL_H
+
 /* Define to 1 if you have the <sys/param.h> header file. */
 #undef HAVE_SYS_PARAM_H
 
@@ -138,9 +153,11 @@
 /* Define as const if the declaration of iconv() needs const. */
 #undef ICONV_CONST
 
-/* Define to the sub-directory in which libtool stores uninstalled libraries.
-   */
+/* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR
+
+/* Define if debugging is disabled */
+#undef NDEBUG
 
 /* Name of package */
 #undef PACKAGE
