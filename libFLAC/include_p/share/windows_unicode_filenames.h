@@ -43,7 +43,7 @@
 extern "C" {
 #endif
 
-#ifdef HAFE_WUTIME64
+#ifdef HAVE_WUTIME64
 #define FLAC_struct_utime __utimbuf64
 #define FLAC_utime _wutime64
 #else
