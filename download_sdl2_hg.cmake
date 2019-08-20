@@ -14,6 +14,7 @@ find_package(Git REQUIRED)
 
 option(WITH_SDL2_WASAPI "Enable WASAPI audio output support for Windows build of SDL2" ON)
 if(WIN32)
+    message("== AudioCodecs: WITH_SDL2_WASAPI = ${WITH_SDL2_WASAPI}")
     set(SDL2_WASAPI_FLAG "-DWASAPI=${WITH_SDL2_WASAPI}")
 endif()
 
