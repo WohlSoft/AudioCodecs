@@ -192,6 +192,7 @@ void Spc_Dsp::run( int clock_count )
 		return;
 	
 	uint8_t* const ram = m.ram;
+	uint8_t* const echo_ram = m.echo_ram;
 	uint8_t const* const dir = &ram [REG(dir) * 0x100];
 	int const slow_gaussian = (REG(pmon) >> 1) | REG(non);
 	int const noise_rate = REG(flg) & 0x1F;
@@ -548,7 +549,9 @@ skip_brr:
 		
 		// Echo position
 		int echo_offset = m.echo_offset;
-		uint8_t* const echo_ptr = &ram [(REG(esa) * 0x100 + echo_offset) & 0xFFFF];
+		//uint8_t* const echo_ptr = &ram [(REG(esa) * 0x100 + echo_offset) & 0xFFFF];
+		// And here, we win no awards for accuracy, but gain playback of dodgy Super Mario World mod SPCs
+		uint8_t* const echo_ptr = &echo_ram [(REG(esa) * 0x100 + echo_offset) & 0xFFFF];
 		if ( !echo_offset )
 			m.echo_length = (REG(edl) & 0x0F) * 0x800;
 		echo_offset += 4;
