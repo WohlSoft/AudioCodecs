@@ -1,0 +1,14 @@
+typedef int * int_ptr;
+static @INLINE_KEYWORD@ int kek(int_ptr ip, int * baz[])
+{
+    return ip[0];
+}
+
+int main()
+{
+    int s[1];
+    int * t = s;
+    t[0] = 0;
+    return kek(t, (void *)0);
+}
+

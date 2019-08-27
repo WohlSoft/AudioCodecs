@@ -1,0 +1,14 @@
+typedef int * int_ptr;
+int foo(int_ptr @RESTRICT_KEYWORD@ ip, int * @RESTRICT_KEYWORD@ baz[])
+{
+    return ip[0];
+}
+
+int main()
+{
+    int s[1];
+    int * @RESTRICT_KEYWORD@ t = s;
+    t[0] = 0;
+    return foo(t, (void *)0);
+}
+

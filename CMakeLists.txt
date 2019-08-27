@@ -67,6 +67,11 @@ if(BUILD_MP3_MAD)
     add_subdirectory(libmad)
 endif()
 
+option(BUILD_MP3_MPG123 "Enable building of libMPG123" ON)
+if(BUILD_MP3_MPG123)
+    add_subdirectory(libmpg123)
+endif()
+
 option(BUILD_MP3_SMPEG "Enable building of libSMPEG" OFF)
 if(BUILD_MP3_SMPEG)
     add_subdirectory(smpeg)
