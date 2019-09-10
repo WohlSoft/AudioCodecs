@@ -108,11 +108,25 @@ int Fir_Resampler<width>::read( sample_t* out_begin, blargg_long count )
 	int const step = this->step;
 	
 	count >>= 1;
-	
+
 	if ( end_pos - in >= width * stereo )
 	{
 		end_pos -= width * stereo;
-		do
+		if( int( ratio() * 1000000.0 ) == 1000000 )
+		{
+			do
+			{
+				count--;
+				if ( count < 0 )
+					break;
+				out [0] = (sample_t) in [0];
+				out [1] = (sample_t) in [1];
+				in += step;
+				out += 2;
+			}
+			while ( in <= end_pos );
+		}
+		else do
 		{
 			count--;
 			

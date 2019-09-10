@@ -34,6 +34,7 @@ option(BUILD_GME_SHARED "Build shared library of Game-Music-EMU" OFF)
 set(GME_YM2612_EMU "MAME" CACHE STRING "Which YM2612 emulator to use: \"Nuked\" (LGPLv2.1+), \"MAME\" (GPLv2+), or \"GENS\" (LGPLv2.1+)")
 
 add_definitions(
+    -DSPC_ISOLATED_ECHO_BUFFER
     -DSPC_MORE_ACCURACY
     -D_REENTRANT
     -D_USE_MATH_DEFINES
