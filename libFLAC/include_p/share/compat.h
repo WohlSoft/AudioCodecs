@@ -144,10 +144,12 @@
 #ifdef _WIN32
 /* All char* strings are in UTF-8 format. Added to support Unicode files on Windows */
 
+/*
 #include "share/win_utf8_io.h"
 #define flac_printf printf_utf8
 #define flac_fprintf fprintf_utf8
 #define flac_vfprintf vfprintf_utf8
+*/
 
 #include "share/windows_unicode_filenames.h"
 #define flac_fopen flac_internal_fopen_utf8
