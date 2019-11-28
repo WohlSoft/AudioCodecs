@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.2)
-project(libModPlug VERSION 0.8.9.0 LANGUAGES CXX)
+project(libModPlug VERSION 0.8.10.0 LANGUAGES CXX)
 
 include(CheckFunctionExists)
 include(CheckIncludeFile)
