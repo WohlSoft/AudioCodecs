@@ -21,19 +21,13 @@
 # include <stdint.h>
 #endif
 
-/*#define MMCMP_SUPPORT*/
-
 /* disable AGC and FILESAVE for all targets for uniformity. */
 #define NO_AGC
-#define MODPLUG_NO_FILESAVE
-/*#define NO_PACKING*/
 /*#define NO_FILTER */
-#define NO_MIDIFORMATS
-#define NO_WAVFORMAT
 
 #ifdef _WIN32
 
-#ifdef MSC_VER
+#ifdef _MSC_VER
 #pragma warning (disable:4201)
 #pragma warning (disable:4514)
 #endif
@@ -43,9 +37,17 @@
 #include <windowsx.h>
 #include <mmsystem.h>
 #include <stdio.h>
-#include <string.h>
 #include <malloc.h>
+#if defined(_MSC_VER) && (_MSC_VER < 1600)
+typedef signed char    int8_t;
+typedef signed short   int16_t;
+typedef signed int     int32_t;
+typedef unsigned char  uint8_t;
+typedef unsigned short uint16_t;
+typedef unsigned int   uint32_t;
+#else
 #include <stdint.h>
+#endif
 
 #define srandom(_seed)  srand(_seed)
 #define random()        rand()
@@ -64,7 +66,9 @@ inline void ProcessPlugins(int n) {}
 #define strncasecmp(a,b,c)  strnicmp(a,b,c)
 #endif
 
+#if defined(_MSC_VER) || defined(__MINGW32__)
 #define HAVE_SINF 1
+#endif
 
 #ifndef isblank
 #define isblank(c) ((c) == ' ' || (c) == '\t')
@@ -77,6 +81,11 @@ inline void ProcessPlugins(int n) {}
 #include <string.h>
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
+#endif
+
+#ifdef __WATCOMC__
+#define srandom(_seed)  srand(_seed)
+#define random()        rand()
 #endif
 
 typedef int8_t CHAR;
@@ -139,10 +148,22 @@ inline void ProcessPlugins(int n) {}
 # else
 #   define MODPLUG_EXPORT __declspec(dllimport)			/* using libmodplug dll for windows */
 # endif
+#elif defined(__OS2__) && defined(__WATCOMC__)
+# if defined(MODPLUG_BUILD) && defined(__SW_BD)		/* building libmodplug as a dll for os/2 */
+#   define MODPLUG_EXPORT __declspec(dllexport)
+# else
+#   define MODPLUG_EXPORT					/* using dll or static libmodplug for os/2 */
+# endif
 #elif defined(MODPLUG_BUILD) && defined(SYM_VISIBILITY)
 #   define MODPLUG_EXPORT __attribute__((visibility("default")))
 #else
 #define MODPLUG_EXPORT
+#endif
+
+#if !defined(NO_CXX_EXPORTS)
+#define MODPLUG_EXPORTPP	MODPLUG_EXPORT
+#else
+#define MODPLUG_EXPORTPP
 #endif
 
 #endif

@@ -466,7 +466,7 @@ BOOL CSoundFile::ReadDMF(const BYTE *lpStream, DWORD dwMemLength)
 		// "ENDE": end of file
 		case 0x45444e45:
 			goto dmfexit;
-
+		
 		// Unrecognized id, or "ENDE" field
 		default:
 			dwMemPos += 4;
@@ -577,7 +577,7 @@ int DMFUnpack(LPBYTE psample, LPBYTE ibuf, LPBYTE ibufmax, UINT maxlen)
 	DMF_HTREE tree;
 	UINT actnode;
 	BYTE value, sign, delta = 0;
-
+	
 	memset(&tree, 0, sizeof(tree));
 	tree.ibuf = ibuf;
 	tree.ibufmax = ibufmax;

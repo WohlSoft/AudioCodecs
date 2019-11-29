@@ -365,4 +365,3 @@ BOOL CSoundFile::ReadDBM(const BYTE *lpStream, DWORD dwMemLength)
 	}
 	return TRUE;
 }
-

@@ -58,7 +58,7 @@ add_library(modplug STATIC
     # src/load_j2b.cpp
     src/load_mdl.cpp
     src/load_med.cpp
-    #src/load_mid.cpp
+    src/load_mid.cpp
     src/load_mod.cpp
     src/load_mt2.cpp
     src/load_mtm.cpp
@@ -70,7 +70,7 @@ add_library(modplug STATIC
     src/load_stm.cpp
     src/load_ult.cpp
     src/load_umx.cpp
-    #src/load_wav.cpp
+    src/load_wav.cpp
     src/load_xm.cpp
     src/mmcmp.cpp
     src/modplug.cpp

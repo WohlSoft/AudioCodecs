@@ -26,7 +26,6 @@ typedef struct tagFILEHEADER669
 	BYTE breaks[128];
 } FILEHEADER669;
 
-
 typedef struct tagSAMPLE669
 {
 	BYTE filename[13];
