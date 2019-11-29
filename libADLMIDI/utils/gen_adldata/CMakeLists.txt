@@ -51,6 +51,8 @@ else()
     target_link_libraries(gen_adldata PRIVATE pthread m)
 endif()
 
+set_nopie(gen_adldata)
+
 if(WITH_GENADLDATA_COMMENTS)
     target_compile_options(gen_adldata PUBLIC "-DADLDATA_WITH_COMMENTS")
 endif()
