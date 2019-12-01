@@ -24,10 +24,8 @@ extern "C" {
 #if defined(_WIN32) || defined(__CYGWIN__)
 # if defined(MODPLUG_BUILD) && defined(DLL_EXPORT)	/* building libmodplug as a dll for windows */
 #   define MODPLUG_EXPORT __declspec(dllexport)
-# elif defined(MODPLUG_BUILD) || defined(MODPLUG_STATIC)	/* building or using static libmodplug for windows */
+# else /* using libmodplug dll or static for windows */
 #   define MODPLUG_EXPORT
-# else
-#   define MODPLUG_EXPORT __declspec(dllimport)			/* using libmodplug dll for windows */
 # endif
 #elif defined(__OS2__) && defined(__WATCOMC__)
 # if defined(MODPLUG_BUILD) && defined(__SW_BD)		/* building libmodplug as a dll for os/2 */
