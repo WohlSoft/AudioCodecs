@@ -1,10 +1,12 @@
 cmake_minimum_required(VERSION 3.2)
 project(Tremor VERSION 1.2.1 LANGUAGES C)
 
+include(CheckIncludeFiles)
 include(TestBigEndian)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
 # add_definitions(-DFLOAT_LOOKUP -DINT_LOOKUP)
+# add_definitions(-D_LOW_ACCURACY_)
 
 TEST_BIG_ENDIAN(WORDS_BIGENDIAN)
 if(WORDS_BIGENDIAN)
@@ -33,18 +35,21 @@ add_library(vorbisidec STATIC
 
 target_include_directories(vorbisidec PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/cmake
     ${CMAKE_CURRENT_SOURCE_DIR}/../libogg/include
 )
 
-target_compile_definitions(vorbisidec PRIVATE
-    -DHAVE_CONFIG_H=1
-    -DHAVE_MEMORY_H=1
-)
-if(WIN32)
-    target_compile_definitions(vorbisidec PRIVATE -DVAR_ARRAYS)
-else()
+check_include_files(alloca.h HAVE_ALLOCA_H)
+check_include_files(memory.h HAVE_MEMORY_H)
+
+if(HAVE_MEMORY_H)
+    target_compile_definitions(vorbisidec PRIVATE -DHAVE_MEMORY_H)
+endif()
+
+if(HAVE_ALLOCA_H OR MSVC)
     target_compile_definitions(vorbisidec PRIVATE -DHAVE_ALLOCA)
+    target_compile_definitions(vorbisidec PRIVATE -DHAVE_ALLOCA_H)
+else()
+    target_compile_definitions(vorbisidec PRIVATE -DVAR_ARRAYS)
 endif()
 
 install(TARGETS vorbisidec
