@@ -45,6 +45,9 @@ if(BUILD_OGG_VORBIS)
     add_dependencies(vorbis ogg)
     add_dependencies(vorbisfile vorbis ogg)
     add_dependencies(vorbisenc vorbis ogg)
+
+    add_subdirectory(tremor)
+    add_dependencies(vorbisidec ogg)
 endif()
 
 option(BUILD_FLAC "Enable building of FLAC" ON)
