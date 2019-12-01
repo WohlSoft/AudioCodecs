@@ -134,12 +134,15 @@ if(BUILD_GME_SHARED)
     message("== GME will be built as shared library ==")
 endif()
 
-install(TARGETS ${GME_INSTALL_TARGETS}
-        LIBRARY DESTINATION "lib"
-        ARCHIVE DESTINATION "lib"
-        INCLUDES DESTINATION "include")
+install(TARGETS
+    ${GME_INSTALL_TARGETS}
+    LIBRARY DESTINATION "lib"
+    ARCHIVE DESTINATION "lib"
+    INCLUDES DESTINATION "include"
+)
 
 install(FILES
-        include/gme.h
-        DESTINATION include/)
+    src/gme.h
+    DESTINATION include/
+)
 
