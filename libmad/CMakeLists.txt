@@ -1,7 +1,13 @@
 cmake_minimum_required (VERSION 3.2)
 project(libMAD VERSION 0.15.1 LANGUAGES C)
 
+include(TestBigEndian)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
+
+TEST_BIG_ENDIAN(WORDS_BIGENDIAN)
+if(WORDS_BIGENDIAN)
+    add_definitions(-DWORDS_BIGENDIAN=1)
+endif()
 
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     # Turn on warnings and legacy C/C++ standards to support more compilers

@@ -1,10 +1,15 @@
 cmake_minimum_required(VERSION 3.2)
 project(libxmp VERSION 4.5.0 LANGUAGES C CXX)
 
+include(CheckSymbolExists)
 include(CheckFunctionExists)
+include(TestBigEndian)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
-include(CheckSymbolExists)
+TEST_BIG_ENDIAN(WORDS_BIGENDIAN)
+if(WORDS_BIGENDIAN)
+    add_definitions(-DWORDS_BIGENDIAN=1)
+endif()
 
 if(CMAKE_BUILD_TYPE_LOWER STREQUAL "debug")
     add_definitions(-DDEBUG -D_DEBUG)

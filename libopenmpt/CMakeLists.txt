@@ -1,7 +1,13 @@
 cmake_minimum_required (VERSION 2.8.11)
 project (libOpenMPT)
 
+include(TestBigEndian)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
+
+TEST_BIG_ENDIAN(WORDS_BIGENDIAN)
+if(WORDS_BIGENDIAN)
+    add_definitions(-DWORDS_BIGENDIAN=1)
+endif()
 
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     # Turn on warnings and legacy C/C++ standards to support more compilers

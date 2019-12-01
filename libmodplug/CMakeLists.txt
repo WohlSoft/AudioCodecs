@@ -1,9 +1,15 @@
 cmake_minimum_required(VERSION 3.2)
 project(libModPlug VERSION 0.8.10.0 LANGUAGES CXX)
 
+include(TestBigEndian)
 include(CheckFunctionExists)
 include(CheckIncludeFile)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
+
+TEST_BIG_ENDIAN(WORDS_BIGENDIAN)
+if(WORDS_BIGENDIAN)
+    add_definitions(-DWORDS_BIGENDIAN=1)
+endif()
 
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -pedantic -std=gnu99")

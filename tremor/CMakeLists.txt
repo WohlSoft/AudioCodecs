@@ -1,9 +1,15 @@
 cmake_minimum_required(VERSION 3.2)
-project(libVorbis VERSION 1.3.6 LANGUAGES C)
+project(Tremor VERSION 1.2.1 LANGUAGES C)
 
+include(TestBigEndian)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
 # add_definitions(-DFLOAT_LOOKUP -DINT_LOOKUP)
+
+TEST_BIG_ENDIAN(WORDS_BIGENDIAN)
+if(WORDS_BIGENDIAN)
+    add_definitions(-DWORDS_BIGENDIAN=1)
+endif()
 
 if(MSVC)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4244 /wd4267 /wd4305")
@@ -37,6 +43,8 @@ target_compile_definitions(vorbisidec PRIVATE
 )
 if(WIN32)
     target_compile_definitions(vorbisidec PRIVATE -DVAR_ARRAYS)
+else()
+    target_compile_definitions(vorbisidec PRIVATE -DHAVE_ALLOCA)
 endif()
 
 install(TARGETS vorbisidec
