@@ -13,7 +13,9 @@ option(MODPLUG_MMCMP_SUPPORT "Enable mmcmp and pp20 decompression support" OFF)
 set(MODPLUG_DEFINITIONS)
 
 # CMP0075: The NEW behavior of this policy is to honor CMAKE_REQUIRED_LIBRARIES in the include file check macros.
-cmake_policy(SET CMP0075 NEW)
+if(NOT CMAKE_VERSION VERSION_LESS 3.12.0)
+    cmake_policy(SET CMP0075 NEW)
+endif()
 
 add_definitions(-DMODPLUG_BUILD)
 if(MIDIFMT_SUPPORT)
