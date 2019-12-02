@@ -118,6 +118,7 @@ set(GME_INSTALL_TARGETS)
 if(BUILD_GME_STATIC)
     add_library(gme_static STATIC ${libgme_SRCS})
     set_target_properties(gme_static PROPERTIES OUTPUT_NAME gme)
+    target_compile_definitions(gme_static PRIVATE -DBLARGG_BUILD_DLL)
     target_include_directories(gme_static PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
     target_include_directories(gme_static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
     list(APPEND GME_INSTALL_TARGETS gme_static)
@@ -127,6 +128,7 @@ endif()
 if(BUILD_GME_SHARED)
     add_library(gme_shared SHARED ${libgme_SRCS})
     set_target_properties(gme_shared PROPERTIES OUTPUT_NAME gme)
+    target_compile_definitions(gme_shared PRIVATE -DBLARGG_BUILD_DLL)
     target_link_libraries(gme_shared zlib)
     target_include_directories(gme_shared PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
     target_include_directories(gme_shared PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -143,6 +145,14 @@ install(TARGETS
 
 install(FILES
     src/gme.h
-    DESTINATION include/
+    src/blargg_source.h
+    DESTINATION include/gme
+)
+
+# TEMPORARELY FOR COMPATIBILITY: remove this after mergin of wip-build-polishing on MixerX into master branch
+install(FILES
+    src/gme.h
+    src/blargg_source.h
+    DESTINATION include
 )
 

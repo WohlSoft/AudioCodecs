@@ -39,8 +39,6 @@ function updateGME()
     echo "Copyng necessary files.."
     cp "../$2-tmp/gme/"*.cpp "../$2/src/"
     cp "../$2-tmp/gme/"*.h "../$2/src/"
-    echo "Moving the header into correct place..."
-    mv "../$2/src/gme.h" "../$2/include/"
 
     echo "Removing unnecessary $2-tmp folder..."
     rm -Rf "../$2-tmp"
