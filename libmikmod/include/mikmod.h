@@ -74,7 +74,7 @@ extern "C" {
 
 #define LIBMIKMOD_VERSION_MAJOR 3L
 #define LIBMIKMOD_VERSION_MINOR 3L
-#define LIBMIKMOD_REVISION     10L
+#define LIBMIKMOD_REVISION     11L
 
 #define LIBMIKMOD_VERSION \
     ((LIBMIKMOD_VERSION_MAJOR<<16)| \
@@ -134,10 +134,10 @@ typedef unsigned char      UBYTE;
 #endif
 
 /* 2 bytes, signed and unsigned: */
-#ifndef __LCC__
+#if !(defined __LCC__ && defined _WIN32)
 typedef signed short int   SWORD;
 #endif
-#if !(defined(__LCC__) || defined(_MIKMOD_AMIGA))
+#if !((defined __LCC__ && defined _WIN32) || defined(_MIKMOD_AMIGA))
 typedef unsigned short int UWORD;
 #endif
 

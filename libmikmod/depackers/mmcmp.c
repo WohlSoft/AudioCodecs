@@ -31,6 +31,8 @@
 #include "config.h"
 #endif
 
+#ifndef NO_DEPACKERS
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -139,7 +141,7 @@ static const ULONG MMCMP16BitFetch[16] =
 BOOL MMCMP_Unpack(MREADER* reader, void** out, long* outlen)
 {
 	ULONG srclen, destlen;
-	UBYTE *destbuf, *destptr;
+	UBYTE *destbuf, *destptr, *destend;
 	MMCMPHEADER mmh;
 	ULONG *pblk_table;
 	MMCMPSUBBLOCK *subblocks;
@@ -179,6 +181,7 @@ BOOL MMCMP_Unpack(MREADER* reader, void** out, long* outlen)
 	subblocks = (MMCMPSUBBLOCK*)MikMod_malloc(numsubs*sizeof(MMCMPSUBBLOCK));
 	if (!destbuf || !buf || !pblk_table || !subblocks)
 		goto err;
+	destend = destbuf + destlen;
 
 	_mm_fseek(reader,mmh.blktable,SEEK_SET);
 	for (blockidx = 0; blockidx < mmh.nblocks; blockidx++) {
@@ -229,7 +232,6 @@ BOOL MMCMP_Unpack(MREADER* reader, void** out, long* outlen)
 			subblocks[i].unpk_pos = _mm_read_I_ULONG(reader);
 			subblocks[i].unpk_size = _mm_read_I_ULONG(reader);
 			if (subblocks[i].unpk_pos >= destlen) goto err;
-			if (subblocks[i].unpk_size > destlen) goto err;
 			if (subblocks[i].unpk_size > destlen - subblocks[i].unpk_pos) goto err;
 		}
 
@@ -328,8 +330,10 @@ BOOL MMCMP_Unpack(MREADER* reader, void** out, long* outlen)
 					{
 						newval ^= 0x8000;
 					}
-					destptr[pos++] = (UBYTE) (((UWORD)newval) & 0xff);
-					destptr[pos++] = (UBYTE) (((UWORD)newval) >> 8);
+					if (destend - destptr < 2) goto err;
+					pos += 2;
+					*destptr++ = (UBYTE) (((UWORD)newval) & 0xff);
+					*destptr++ = (UBYTE) (((UWORD)newval) >> 8);
 				}
 				if (pos >= size)
 				{
@@ -431,3 +435,5 @@ BOOL MMCMP_Unpack(MREADER* reader, void** out, long* outlen)
 	MikMod_free(destbuf);
 	return 0;
 }
+
+#endif /* NO_DEPACKERS */

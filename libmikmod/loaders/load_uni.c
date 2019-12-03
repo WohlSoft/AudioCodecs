@@ -308,7 +308,7 @@ static BOOL loadinstr6(void)
 		i->rpanvar      = _mm_read_UBYTE(modreader);
 		i->volfade      = _mm_read_M_UWORD(modreader);
 
-#if defined __STDC__ || defined _MSC_VER || defined MPW_C
+#if defined __STDC__ || defined _MSC_VER || defined __WATCOMC__ || defined MPW_C
 #define UNI_LoadEnvelope6(name) 										\
 		i-> name##flg=_mm_read_UBYTE(modreader);						\
 		i-> name##pts=_mm_read_UBYTE(modreader);						\
@@ -373,7 +373,7 @@ static BOOL loadinstr5(void)
 		for(u=0;u<96;u++)
 			i->samplenumber[u]=of.numsmp+_mm_read_UBYTE(modreader);
 
-#if defined __STDC__ || defined _MSC_VER || defined MPW_C
+#if defined __STDC__ || defined _MSC_VER || defined __WATCOMC__ || defined MPW_C
 #define UNI_LoadEnvelope5(name) 									\
 		i-> name##flg=_mm_read_UBYTE(modreader);					\
 		i-> name##pts=_mm_read_UBYTE(modreader);					\
@@ -623,9 +623,14 @@ static BOOL UNI_Load(BOOL curious)
 		for(t=0;t<of.numchn;t++) of.panning[t]=mh.panning[t];
 	}
 	/* convert the ``end of song'' pattern code if necessary */
-	if(universion<0x106)
-		for(t=0;t<of.numpos;t++)
-			if(of.positions[t]==255) of.positions[t]=LAST_PATTERN;
+	for(t=0;t<of.numpos;t++) {
+		if(universion<0x106 && of.positions[t]==255) of.positions[t]=LAST_PATTERN;
+		else if (of.positions[t]>of.numpat) { /* SANITIY CHECK */
+		/*	fprintf(stderr,"position[%d]=%d > numpat=%d\n",t,of.positions[t],of.numpat);*/
+			_mm_errno = MMERR_LOADING_HEADER;
+			return 0;
+		}
+	}
 
 	/* instruments and samples */
 	if(universion>=6) {

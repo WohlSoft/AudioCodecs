@@ -29,7 +29,7 @@ LIST(APPEND CMAKE_MODULE_PATH "${libmikmod_SOURCE_DIR}/cmake")
 
 SET(LIBMIKMOD_MAJOR_VERSION 3)
 SET(LIBMIKMOD_MINOR_VERSION 3)
-SET(LIBMIKMOD_MICRO_VERSION 10)
+SET(LIBMIKMOD_MICRO_VERSION 11)
 
 SET(VERSION "${LIBMIKMOD_MAJOR_VERSION}.${LIBMIKMOD_MINOR_VERSION}.${LIBMIKMOD_MICRO_VERSION}")
 SET(LIBMIKMOD_VERSION "${LIBMIKMOD_MAJOR_VERSION}.${LIBMIKMOD_MINOR_VERSION}.${LIBMIKMOD_MICRO_VERSION}")
@@ -162,11 +162,12 @@ SET (ENABLE_DL 0)
 SET (ENABLE_THREADS 0) # windows builds have it using win32api already.
 ENDIF()
 
+SET (DISABLE_DEPACKERS 0 CACHE BOOL "Exclude support for module depackers")
 SET (DISABLE_HQMIXER 0 CACHE BOOL "Exclude support for high quality mixer")
 
-SET (ENABLE_SIMD 0 CACHE BOOL "Use SIMD (AltiVec or SSE2) optimizations (Unstable!)")
+SET (ENABLE_SIMD 0 CACHE BOOL "Use SIMD (AltiVec or SSE2) optimizations (UNSTABLE!!!)")
 SET (ENABLE_RPATH 1 CACHE BOOL "Whether to use an rpath when linking" )
-SET (ENABLE_STATIC 1 CACHE BOOL "Whether to build the static library (which takes more time)" )
+SET (ENABLE_STATIC 1 CACHE BOOL "Whether to build the static library" )
 
 ### This is to set the RPATH correctly, so when installed
 ### under a prefix the executables will find the libraries.
@@ -208,9 +209,12 @@ ADD_SUBDIRECTORY ("depackers")
 ADD_SUBDIRECTORY ("playercode")
 ADD_SUBDIRECTORY ("posix")
 
-SET(COMPILER_FLAGS_TO_CHECK
-    "-Wall" "-Werror=implicit-function-declaration"
-)
+IF (CMAKE_COMPILER_IS_GNUCC OR (CMAKE_C_COMPILER_ID MATCHES "Clang"))
+    ADD_DEFINITIONS("-Wall" "-Wwrite-strings" "-Wshadow" "-Wundef" "-Wcast-qual")
+ENDIF()
+
+SET(COMPILER_FLAGS_TO_CHECK "-Werror=implicit-function-declaration")
+#LIST(APPEND COMPILER_FLAGS_TO_CHECK "-ffast-math")
 
 IF (APPLE)
     LIST(APPEND COMPILER_FLAGS_TO_CHECK "-fno-common")
@@ -234,36 +238,8 @@ IF (ENABLE_SIMD)
     ELSEIF(CMAKE_SYSTEM_PROCESSOR MATCHES "^(powerpc|ppc)64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "^(powerpc|ppc)")
         LIST(APPEND COMPILER_FLAGS_TO_CHECK "-maltivec")
 
-    ENDIF(CMAKE_SYSTEM_PROCESSOR MATCHES "^i.86$")
-ENDIF(ENABLE_SIMD)
-
-IF ((CMAKE_BUILD_TYPE_LOWER STREQUAL debug) OR (CMAKE_BUILD_TYPE_LOWER STREQUAL relwithdebinfo))
-    IF (${CMAKE_COMPILER_IS_GNUCC})
-        ADD_DEFINITIONS(
-            "-Wold-style-declaration"
-            "-Wmissing-prototypes"
-            "-Wformat-nonliteral"
-            "-Wcast-align"
-            "-Wpointer-arith"
-            "-Wbad-function-cast"
-            "-Wstrict-prototypes"
-            "-Wmissing-declarations"
-            "-Wundef"
-            "-Wnested-externs"
-            "-Wcast-qual"
-            "-Wshadow"
-            "-Wwrite-strings"
-            "-Wunused"
-            "-Wfloat-equal"
-            "-Wold-style-definition"
-            "-Wdeclaration-after-statement"
-        )
     ENDIF()
-ENDIF()
-
-IF (CMAKE_BUILD_TYPE STREQUAL release)
-    LIST(APPEND COMPILER_FLAGS_TO_CHECK "-flto")
-ENDIF()
+ENDIF(ENABLE_SIMD)
 
 SET (IDX 1)
 FOREACH (CFLAG_TO_CHECK ${COMPILER_FLAGS_TO_CHECK})
@@ -272,8 +248,8 @@ FOREACH (CFLAG_TO_CHECK ${COMPILER_FLAGS_TO_CHECK})
     CHECK_C_COMPILER_FLAG("${CFLAG_TO_CHECK}" ${FLAG_EXISTS_VAR})
     IF (${FLAG_EXISTS_VAR})
         ADD_DEFINITIONS(${CFLAG_TO_CHECK})
-    ENDIF (${FLAG_EXISTS_VAR})
-ENDFOREACH(CFLAG_TO_CHECK)
+    ENDIF()
+ENDFOREACH()
 
 # check inline keyword
 CHECK_C_SOURCE_COMPILES("static inline int static_foo() {return 0;}
@@ -439,7 +415,7 @@ ENDIF (ENABLE_STATIC)
 
 SET_TARGET_PROPERTIES(mikmod
     PROPERTIES VERSION 3.3.0 SOVERSION 3
-    )
+)
 IF(WIN32)
     SET_TARGET_PROPERTIES(mikmod
         PROPERTIES DEFINE_SYMBOL DLL_EXPORT
@@ -450,6 +426,11 @@ IF(DISABLE_HQMIXER)
   SET(NO_HQMIXER 1)
 ELSE()
   SET(NO_HQMIXER)
+ENDIF()
+IF(DISABLE_DEPACKERS)
+  SET(NO_DEPACKERS 1)
+ELSE()
+  SET(NO_DEPACKERS)
 ENDIF()
 
 IF(ENABLE_PIPE)
@@ -853,12 +834,12 @@ IF (ENABLE_DL)
   ENDIF()
 ENDIF(ENABLE_DL)
 
-IF (UNIX)
-    SET(MATH_LIB "m")
-ELSE(UNIX)
-    SET(MATH_LIB )
-ENDIF(UNIX)
-LIST (APPEND EXTRA_LIBS ${MATH_LIB})
+IF(UNIX AND NOT APPLE)
+    FIND_LIBRARY(MATH_LIB m)
+    IF(MATH_LIB)
+        LIST(APPEND EXTRA_LIBS ${MATH_LIB})
+    ENDIF()
+ENDIF()
 
 CONFIGURE_FILE("${CMAKE_SOURCE_DIR}/config.h.cmake" "${CMAKE_BINARY_DIR}/config.h")
 

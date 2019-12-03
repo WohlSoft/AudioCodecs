@@ -444,10 +444,16 @@ static void FixEnvelope(ENVPT *cur, int pts)
 
 static BOOL LoadInstruments(void)
 {
-	int t,u, ck;
+	long filend,ck;
+	int t,u;
 	INSTRUMENT *d;
 	ULONG next=0;
 	UWORD wavcnt=0;
+
+	ck = _mm_ftell(modreader);
+	_mm_fseek(modreader,0,SEEK_END);
+	filend = _mm_ftell(modreader);
+	_mm_fseek(modreader,ck,SEEK_SET);
 
 	if(!AllocInstruments()) return 0;
 	d=of.instruments;
@@ -462,12 +468,9 @@ static BOOL LoadInstruments(void)
 		ih.size     = _mm_read_I_ULONG(modreader);
 		headend    += ih.size;
 		ck = _mm_ftell(modreader);
-		_mm_fseek(modreader,0,SEEK_END);
-		if ((headend<0) || (_mm_ftell(modreader)<headend) || (headend<ck)) {
-			_mm_fseek(modreader,ck,SEEK_SET);
+		if ((headend<0) || (filend<headend) || (headend<ck)) {
 			break;
 		}
-		_mm_fseek(modreader,ck,SEEK_SET);
 		_mm_read_string(ih.name, 22, modreader);
 		ih.type     = _mm_read_UBYTE(modreader);
 		ih.numsmp   = _mm_read_I_UWORD(modreader);
@@ -524,7 +527,7 @@ static BOOL LoadInstruments(void)
 					d->samplenumber[u]=pth.what[u]+of.numsmp;
 				d->volfade = pth.volfade;
 
-#if defined __STDC__ || defined _MSC_VER || defined MPW_C
+#if defined __STDC__ || defined _MSC_VER || defined __WATCOMC__ || defined MPW_C
 #define XM_ProcessEnvelope(name) 										\
 				for (u = 0; u < (XMENVCNT >> 1); u++) {					\
 					d-> name##env[u].pos = pth. name##env[u << 1];		\
@@ -582,6 +585,14 @@ static BOOL LoadInstruments(void)
 				   everything over */
 				if(mh->version>0x0103) next = 0;
 				for(u=0;u<ih.numsmp;u++,s++) {
+					/* XM sample header is 40 bytes: make sure we won't hit EOF */
+					/* Note: last instrument is at the end of file in version 0x0104 */
+					if(_mm_ftell(modreader)+40>filend) {
+						MikMod_free(nextwav);MikMod_free(wh);
+						nextwav=NULL;wh=NULL;
+						_mm_errno = MMERR_LOADING_SAMPLEINFO;
+						return 0;
+					}
 					/* Allocate more room for sample information if necessary */
 					if(of.numsmp+u==wavcnt) {
 						wavcnt+=XM_SMPINCR;
@@ -615,14 +626,6 @@ static BOOL LoadInstruments(void)
 
 					nextwav[of.numsmp+u]=next;
 					next+=s->length;
-
-					/* last instrument is at the end of file in version 0x0104 */
-					if(_mm_eof(modreader) && (mh->version<0x0104 || t<of.numins-1)) {
-						MikMod_free(nextwav);MikMod_free(wh);
-						nextwav=NULL;wh=NULL;
-						_mm_errno = MMERR_LOADING_SAMPLEINFO;
-						return 0;
-					}
 				}
 
 				if(mh->version>0x0103) {
@@ -634,12 +637,9 @@ static BOOL LoadInstruments(void)
 			} else {
 				/* read the remainder of the header */
 				ck = _mm_ftell(modreader);
-				_mm_fseek(modreader,0,SEEK_END);
-				if ((headend<0) || (_mm_ftell(modreader)<headend) || (headend<ck)) {
-					_mm_fseek(modreader,ck,SEEK_SET);
+				if ((headend<0) || (filend<headend) || (headend<ck)) {
 					break;
 				}
-				_mm_fseek(modreader,ck,SEEK_SET);
 				for(u=headend-_mm_ftell(modreader);u;u--) {
 					_mm_skip_BYTE(modreader);
 				}
@@ -679,10 +679,8 @@ static BOOL XM_Load(BOOL curious)
 	_mm_read_string(mh->songname,21,modreader);
 	_mm_read_string(mh->trackername,20,modreader);
 	mh->version     =_mm_read_I_UWORD(modreader);
-	if((mh->version<0x102)||(mh->version>0x104)) {
-		_mm_errno=MMERR_NOT_A_MODULE;
-		return 0;
-	}
+	if(mh->version < 0x102 || mh->version > 0x104)
+		goto bad_xm;
 	mh->headersize  =_mm_read_I_ULONG(modreader);
 	mh->songlength  =_mm_read_I_UWORD(modreader);
 	mh->restart     =_mm_read_I_UWORD(modreader);
@@ -692,18 +690,18 @@ static BOOL XM_Load(BOOL curious)
 	mh->flags       =_mm_read_I_UWORD(modreader);
 	mh->tempo       =_mm_read_I_UWORD(modreader);
 	mh->bpm         =_mm_read_I_UWORD(modreader);
-	if(!mh->bpm || mh->songlength > 256) {
-		_mm_errno=MMERR_NOT_A_MODULE;
-		return 0;
-	}
+	if(mh->numchn > 64) goto bad_xm;
+	if(mh->tempo > 32 || mh->bpm < 32 || mh->bpm > 255)
+		goto bad_xm;
+	if(mh->songlength > 256 || mh->headersize < 20 || mh->headersize > 20+256)
+		goto bad_xm;
+	if(mh->numpat > 256 || mh->numins > 255 || mh->restart > 255)
+		goto bad_xm;
 /*	_mm_read_UBYTES(mh->orders,256,modreader);*/
 /*	_mm_read_UBYTES(mh->orders,mh->headersize-20,modreader);*/
 	_mm_read_UBYTES(mh->orders,mh->songlength,modreader);
-	if(_mm_fseek(modreader, mh->headersize+60, SEEK_SET) ||
-	   _mm_eof(modreader)) {
-		_mm_errno = MMERR_LOADING_HEADER;
-		return 0;
-	}
+	if(_mm_fseek(modreader, mh->headersize+60, SEEK_SET) || _mm_eof(modreader))
+		goto bad_hdr;
 
 	/* set module variables */
 	of.initspeed = mh->tempo;
@@ -730,8 +728,7 @@ static BOOL XM_Load(BOOL curious)
 	of.numpos    = mh->songlength;               /* copy the songlength */
 	of.reppos    = mh->restart<mh->songlength?mh->restart:0;
 	of.numins    = mh->numins;
-	of.flags    |= UF_XMPERIODS | UF_INST | UF_NOWRAP | UF_FT2QUIRKS |
-				   UF_PANNING;
+	of.flags    |= UF_XMPERIODS | UF_INST | UF_NOWRAP | UF_FT2QUIRKS | UF_PANNING;
 	if(mh->flags&1) of.flags |= UF_LINEAR;
 	of.bpmlimit  = 32;
 
@@ -812,6 +809,9 @@ static BOOL XM_Load(BOOL curious)
 	MikMod_free(wh);MikMod_free(nextwav);
 	wh=NULL;nextwav=NULL;
 	return 1;
+
+bad_hdr: _mm_errno = MMERR_LOADING_HEADER;	return 0;
+bad_xm:  _mm_errno = MMERR_NOT_A_MODULE;	return 0;
 }
 
 static CHAR *XM_LoadTitle(void)
