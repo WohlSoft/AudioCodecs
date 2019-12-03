@@ -1499,8 +1499,13 @@ static int ParseCommandLine(char *cmdline, char **argv)
 }
 
 extern int main(int argc, char **argv);
+
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int sw)
 {
+    (void)hInst;
+    (void)hPrev;
+    (void)szCmdLine;
+    (void)sw;
     //extern int main(int, char **);
     char *cmdline = GetCommandLine();
     int argc = ParseCommandLine(cmdline, NULL);
@@ -1553,7 +1558,7 @@ static bool is_number(const std::string &s)
 
 int main(int argc, char **argv)
 {
-#ifndef HARDWARE_OPL3
+#if !defined(HARDWARE_OPL3) && !defined(_WIN32)
     // How long is SDL buffer, in seconds?
     // The smaller the value, the more often AdlAudioCallBack()
     // is called.

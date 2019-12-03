@@ -23,13 +23,13 @@
 #
 # (This copyright notice applies only to this file)
 
-PROJECT(libmikmod C)
+PROJECT(libMikMod C)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
-LIST(APPEND CMAKE_MODULE_PATH "${libmikmod_SOURCE_DIR}/cmake")
+LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 SET(LIBMIKMOD_MAJOR_VERSION 3)
 SET(LIBMIKMOD_MINOR_VERSION 3)
-SET(LIBMIKMOD_MICRO_VERSION 10)
+SET(LIBMIKMOD_MICRO_VERSION 11)
 
 SET(VERSION "${LIBMIKMOD_MAJOR_VERSION}.${LIBMIKMOD_MINOR_VERSION}.${LIBMIKMOD_MICRO_VERSION}")
 SET(LIBMIKMOD_VERSION "${LIBMIKMOD_MAJOR_VERSION}.${LIBMIKMOD_MINOR_VERSION}.${LIBMIKMOD_MICRO_VERSION}")
@@ -41,8 +41,8 @@ SET(CPACK_PACKAGE_VERSION_PATCH ${LIBMIKMOD_MICRO_VERSION})
 SET(CPACK_PACKAGE_NAME "libmikmod")
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "libmikmod - a module file playing and sound library")
 SET(CPACK_PACKAGE_VENDOR "Shlomi Fish")
-SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/README")
-SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/COPYING.LESSER")
+SET(CPACK_PACKAGE_DESCRIPTION_FILE "${libMikMod_SOURCE_DIR}/README")
+SET(CPACK_RESOURCE_FILE_LICENSE "${libMikMod_SOURCE_DIR}/COPYING.LESSER")
 
 SET(CPACK_PACKAGE_INSTALL_DIRECTORY "${CPACK_PACKAGE_DESCRIPTION_SUMMARY} ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
@@ -162,11 +162,13 @@ SET (ENABLE_DL 0)
 SET (ENABLE_THREADS 0) # windows builds have it using win32api already.
 ENDIF()
 
+SET (DISABLE_DEPACKERS 0 CACHE BOOL "Exclude support for module depackers")
 SET (DISABLE_HQMIXER 0 CACHE BOOL "Exclude support for high quality mixer")
 
-SET (ENABLE_SIMD 0 CACHE BOOL "Use SIMD (AltiVec or SSE2) optimizations (Unstable!)")
+SET (ENABLE_SIMD 0 CACHE BOOL "Use SIMD (AltiVec or SSE2) optimizations (UNSTABLE!!!)")
 SET (ENABLE_RPATH 1 CACHE BOOL "Whether to use an rpath when linking" )
-SET (ENABLE_STATIC 1 CACHE BOOL "Whether to build the static library (which takes more time)" )
+SET (ENABLE_STATIC 1 CACHE BOOL "Whether to build the static library" )
+SET (ENABLE_SHARED 1 CACHE BOOL "Whether to build the shared library" )
 
 ### This is to set the RPATH correctly, so when installed
 ### under a prefix the executables will find the libraries.
@@ -208,9 +210,12 @@ ADD_SUBDIRECTORY ("depackers")
 ADD_SUBDIRECTORY ("playercode")
 ADD_SUBDIRECTORY ("posix")
 
-SET(COMPILER_FLAGS_TO_CHECK
-    "-Wall" "-Werror=implicit-function-declaration"
-)
+IF (CMAKE_COMPILER_IS_GNUCC OR (CMAKE_C_COMPILER_ID MATCHES "Clang"))
+    ADD_DEFINITIONS("-Wall" "-Wwrite-strings" "-Wshadow" "-Wundef" "-Wcast-qual")
+ENDIF()
+
+SET(COMPILER_FLAGS_TO_CHECK "-Werror=implicit-function-declaration")
+#LIST(APPEND COMPILER_FLAGS_TO_CHECK "-ffast-math")
 
 IF (APPLE)
     LIST(APPEND COMPILER_FLAGS_TO_CHECK "-fno-common")
@@ -234,36 +239,8 @@ IF (ENABLE_SIMD)
     ELSEIF(CMAKE_SYSTEM_PROCESSOR MATCHES "^(powerpc|ppc)64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "^(powerpc|ppc)")
         LIST(APPEND COMPILER_FLAGS_TO_CHECK "-maltivec")
 
-    ENDIF(CMAKE_SYSTEM_PROCESSOR MATCHES "^i.86$")
-ENDIF(ENABLE_SIMD)
-
-IF ((CMAKE_BUILD_TYPE_LOWER STREQUAL debug) OR (CMAKE_BUILD_TYPE_LOWER STREQUAL relwithdebinfo))
-    IF (${CMAKE_COMPILER_IS_GNUCC})
-        ADD_DEFINITIONS(
-            "-Wold-style-declaration"
-            "-Wmissing-prototypes"
-            "-Wformat-nonliteral"
-            "-Wcast-align"
-            "-Wpointer-arith"
-            "-Wbad-function-cast"
-            "-Wstrict-prototypes"
-            "-Wmissing-declarations"
-            "-Wundef"
-            "-Wnested-externs"
-            "-Wcast-qual"
-            "-Wshadow"
-            "-Wwrite-strings"
-            "-Wunused"
-            "-Wfloat-equal"
-            "-Wold-style-definition"
-            "-Wdeclaration-after-statement"
-        )
     ENDIF()
-ENDIF()
-
-IF (CMAKE_BUILD_TYPE STREQUAL release)
-    LIST(APPEND COMPILER_FLAGS_TO_CHECK "-flto")
-ENDIF()
+ENDIF(ENABLE_SIMD)
 
 SET (IDX 1)
 FOREACH (CFLAG_TO_CHECK ${COMPILER_FLAGS_TO_CHECK})
@@ -272,8 +249,8 @@ FOREACH (CFLAG_TO_CHECK ${COMPILER_FLAGS_TO_CHECK})
     CHECK_C_COMPILER_FLAG("${CFLAG_TO_CHECK}" ${FLAG_EXISTS_VAR})
     IF (${FLAG_EXISTS_VAR})
         ADD_DEFINITIONS(${CFLAG_TO_CHECK})
-    ENDIF (${FLAG_EXISTS_VAR})
-ENDFOREACH(CFLAG_TO_CHECK)
+    ENDIF()
+ENDFOREACH()
 
 # check inline keyword
 CHECK_C_SOURCE_COMPILES("static inline int static_foo() {return 0;}
@@ -302,8 +279,8 @@ ENDIF()
 TEST_BIG_ENDIAN(WORDS_BIGENDIAN)
 
 # to find mikmod_internals.h:
-INCLUDE_DIRECTORIES(BEFORE ${CMAKE_SOURCE_DIR})
-INCLUDE_DIRECTORIES(BEFORE "${CMAKE_SOURCE_DIR}/include")
+INCLUDE_DIRECTORIES(BEFORE ${libMikMod_SOURCE_DIR})
+INCLUDE_DIRECTORIES(BEFORE "${libMikMod_SOURCE_DIR}/include")
 
 # to find config.h:
 INCLUDE_DIRECTORIES(BEFORE ${CMAKE_BINARY_DIR})
@@ -414,12 +391,24 @@ REPLACE_FUNCTIONS_FROMDIR(MIKMOD_LIB_MODULES
 
 SET (LIBMIKMOD_LIBS)
 
-ADD_LIBRARY (mikmod
-    SHARED
-    ${MIKMOD_LIB_MODULES}
-    )
+IF (ENABLE_SHARED)
+    ADD_LIBRARY (mikmod
+        SHARED
+        ${MIKMOD_LIB_MODULES}
+        )
 
-LIST (APPEND LIBMIKMOD_LIBS "mikmod")
+    LIST (APPEND LIBMIKMOD_LIBS "mikmod")
+
+    SET_TARGET_PROPERTIES(mikmod
+        PROPERTIES VERSION 3.3.0 SOVERSION 3
+    )
+    IF(WIN32)
+        SET_TARGET_PROPERTIES(mikmod
+            PROPERTIES DEFINE_SYMBOL DLL_EXPORT
+        )
+    ENDIF(WIN32)
+ENDIF (ENABLE_SHARED)
+
 IF (ENABLE_STATIC)
     ADD_LIBRARY (mikmod-static
         STATIC
@@ -437,19 +426,15 @@ IF (ENABLE_STATIC)
     )
 ENDIF (ENABLE_STATIC)
 
-SET_TARGET_PROPERTIES(mikmod
-    PROPERTIES VERSION 3.3.0 SOVERSION 3
-    )
-IF(WIN32)
-    SET_TARGET_PROPERTIES(mikmod
-        PROPERTIES DEFINE_SYMBOL DLL_EXPORT
-    )
-ENDIF(WIN32)
-
 IF(DISABLE_HQMIXER)
   SET(NO_HQMIXER 1)
 ELSE()
   SET(NO_HQMIXER)
+ENDIF()
+IF(DISABLE_DEPACKERS)
+  SET(NO_DEPACKERS 1)
+ELSE()
+  SET(NO_DEPACKERS)
 ENDIF()
 
 IF(ENABLE_PIPE)
@@ -853,21 +838,21 @@ IF (ENABLE_DL)
   ENDIF()
 ENDIF(ENABLE_DL)
 
-IF (UNIX)
-    SET(MATH_LIB "m")
-ELSE(UNIX)
-    SET(MATH_LIB )
-ENDIF(UNIX)
-LIST (APPEND EXTRA_LIBS ${MATH_LIB})
+IF(UNIX AND NOT APPLE)
+    FIND_LIBRARY(MATH_LIB m)
+    IF(MATH_LIB)
+        LIST(APPEND EXTRA_LIBS ${MATH_LIB})
+    ENDIF()
+ENDIF()
 
-CONFIGURE_FILE("${CMAKE_SOURCE_DIR}/config.h.cmake" "${CMAKE_BINARY_DIR}/config.h")
+CONFIGURE_FILE("${libMikMod_SOURCE_DIR}/config.h.cmake" "${CMAKE_BINARY_DIR}/config.h")
 
 SET(prefix ${CMAKE_INSTALL_PREFIX})
 SET(exec_prefix "\${prefix}")
 SET(libdir "\${exec_prefix}/lib${LIB_SUFFIX}")
 SET(includedir "\${prefix}/include")
-CONFIGURE_FILE("${CMAKE_SOURCE_DIR}/libmikmod-config.in" "${CMAKE_BINARY_DIR}/libmikmod-config" @ONLY)
-CONFIGURE_FILE("${CMAKE_SOURCE_DIR}/libmikmod.pc.in" "${CMAKE_BINARY_DIR}/libmikmod.pc" @ONLY)
+CONFIGURE_FILE("${libMikMod_SOURCE_DIR}/libmikmod-config.in" "${CMAKE_BINARY_DIR}/libmikmod-config" @ONLY)
+CONFIGURE_FILE("${libMikMod_SOURCE_DIR}/libmikmod.pc.in" "${CMAKE_BINARY_DIR}/libmikmod.pc" @ONLY)
 
 FOREACH (TGT ${LIBMIKMOD_LIBS})
     TARGET_LINK_LIBRARIES ("${TGT}"
@@ -889,7 +874,7 @@ INSTALL(
 
 INSTALL(
     FILES
-        "${CMAKE_SOURCE_DIR}/include/mikmod.h"
+        "${libMikMod_SOURCE_DIR}/include/mikmod.h"
     DESTINATION
         "include"
 )

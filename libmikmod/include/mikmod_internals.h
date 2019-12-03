@@ -37,15 +37,16 @@ extern "C" {
 #define inline __inline
 #endif
 
+#include "mikmod.h"
+
 #ifndef MIKMOD_UNIX
-#if (defined(unix) || defined(__unix__) || defined(__unix) || \
-        (defined(__APPLE__) && defined(__MACH__))) && \
-   !(defined(__DJGPP__) || defined(_WIN32) || defined(__OS2__) || defined(__EMX__))
+#if (defined(unix) || defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))) && \
+   !(defined(_MIKMOD_WIN32) || defined(_MIKMOD_OS2) || defined(_MIKMOD_DOS) || defined(_MIKMOD_AMIGA) || defined(macintosh))
 #define MIKMOD_UNIX 1
+#else
+#define MIKMOD_UNIX 0
 #endif
 #endif /* MIKMOD_UNIX */
-
-#include "mikmod.h"
 
 /*========== More type definitions */
 
@@ -209,6 +210,8 @@ extern void _mm_write_M_ULONGS(ULONG*,int,MWRITER*);
 extern void _mm_write_I_ULONGS(ULONG*,int,MWRITER*);
 
 /*========== Samples */
+
+#define MAX_SAMPLE_SIZE 0x10000000 /* a sane value guaranteed to not overflow an SLONG */
 
 /* This is a handle of sorts attached to any sample registered with
    SL_RegisterSample.  Generally, this only need be used or changed by the
@@ -657,7 +660,7 @@ extern UBYTE md_softchn;     /* number of software mixed voices */
 
 /* This is for use by the hardware drivers only.  It points to the registered
    tickhandler function. */
-extern void (*md_player)(void);
+extern MikMod_player_t md_player;
 
 extern SWORD  MD_SampleLoad(SAMPLOAD*,int);
 extern void   MD_SampleUnload(SWORD);

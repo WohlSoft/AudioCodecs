@@ -234,10 +234,11 @@ static BOOL IT_GetNumChannels(UWORD patrows)
 	int row=0,flag,ch;
 
 	do {
-		if((flag=_mm_read_UBYTE(modreader))==EOF) {
+		if(_mm_eof(modreader)) {
 			_mm_errno=MMERR_LOADING_PATTERN;
 			return 0;
 		}
+		flag=_mm_read_UBYTE(modreader);
 		if(!flag)
 			row++;
 		else {
@@ -330,16 +331,20 @@ static UBYTE* IT_ConvertTrack(ITNOTE* tr,UWORD numrows)
 
 static BOOL IT_ReadPattern(UWORD patrows)
 {
-	int row=0,flag,ch,blah;
+	int row=0,flag,ch;
+	unsigned int blah;
 	ITNOTE *itt=itpat,dummy,*n,*l;
+	ITNOTE *ite=&itpat[200*64 -1];
+	UBYTE *m;
 
 	memset(itt,255,200*64*sizeof(ITNOTE));
 
 	do {
-		if((flag=_mm_read_UBYTE(modreader))==EOF) {
+		if(_mm_eof(modreader)) {
 			_mm_errno = MMERR_LOADING_PATTERN;
 			return 0;
 		}
+		flag=_mm_read_UBYTE(modreader);
 		if(!flag) {
 			itt=&itt[of.numchn];
 			row++;
@@ -348,29 +353,38 @@ static BOOL IT_ReadPattern(UWORD patrows)
 			if(ch!=-1) {
 				n=&itt[ch];
 				l=&last[ch];
+				m=&mask[ch];
+				if(n > ite) { /* malformed file */
+					_mm_errno = MMERR_NOT_A_MODULE;
+					return 0;
+				}
 			} else
+			{
 				n=l=&dummy;
+				blah = 0;
+				m=(UBYTE*)&blah;
+			}
 
-			if(flag&128) mask[ch]=_mm_read_UBYTE(modreader);
-			if(mask[ch]&1)
+			if(flag&128) *m=_mm_read_UBYTE(modreader);
+			if(*m&1)
 				/* convert IT note off to internal note off */
 				if((l->note=n->note=_mm_read_UBYTE(modreader))==255)
 					l->note=n->note=253;
-			if(mask[ch]&2)
+			if(*m&2)
 				l->ins=n->ins=_mm_read_UBYTE(modreader);
-			if(mask[ch]&4)
+			if(*m&4)
 				l->volpan=n->volpan=_mm_read_UBYTE(modreader);
-			if(mask[ch]&8) {
+			if(*m&8) {
 				l->cmd=n->cmd=_mm_read_UBYTE(modreader);
 				l->inf=n->inf=_mm_read_UBYTE(modreader);
 			}
-			if(mask[ch]&16)
+			if(*m&16)
 				n->note=l->note;
-			if(mask[ch]&32)
+			if(*m&32)
 				n->ins=l->ins;
-			if(mask[ch]&64)
+			if(*m&64)
 				n->volpan=l->volpan;
-			if(mask[ch]&128) {
+			if(*m&128) {
 				n->cmd=l->cmd;
 				n->inf=l->inf;
 			}
@@ -389,6 +403,7 @@ static void LoadMidiString(MREADER* r,CHAR* dest)
 {
 	CHAR *curp,*lastp;
 
+	memset(dest,0,33*sizeof(CHAR));/* caller sends midiline[33] */
 	_mm_read_UBYTES(dest,32,r);
 	curp=lastp=dest;
 	/* remove blanks and uppercase all */
@@ -483,6 +498,10 @@ static BOOL IT_Load(BOOL curious)
 
 	if(_mm_eof(modreader)) {
 		_mm_errno=MMERR_LOADING_HEADER;
+		return 0;
+	}
+	if(mh->ordnum > 256 || mh->insnum > 255 || mh->smpnum > 255 || mh->patnum > 255) {
+		_mm_errno=MMERR_NOT_A_MODULE;
 		return 0;
 	}
 
@@ -745,7 +764,7 @@ static BOOL IT_Load(BOOL curious)
 				}
 			} else {
 				/* load IT 2xx volume, pan and pitch envelopes */
-#if defined __STDC__ || defined _MSC_VER || defined MPW_C
+#if defined __STDC__ || defined _MSC_VER || defined __WATCOMC__ || defined MPW_C
 #define IT_LoadEnvelope(name,type) 										\
 				ih. name##flg   =_mm_read_UBYTE(modreader);				\
 				ih. name##pts   =_mm_read_UBYTE(modreader);				\
@@ -837,7 +856,7 @@ static BOOL IT_Load(BOOL curious)
 					d->rpanvar = ih.rpanvar;
 				}
 
-#if defined __STDC__ || defined _MSC_VER || defined MPW_C
+#if defined __STDC__ || defined _MSC_VER || defined __WATCOMC__ || defined MPW_C
 #define IT_ProcessEnvelope(name) 										\
 				if(ih. name##flg&1) d-> name##flg|=EF_ON;				\
 				if(ih. name##flg&2) d-> name##flg|=EF_LOOP;				\

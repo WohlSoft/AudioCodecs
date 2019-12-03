@@ -468,7 +468,7 @@ _III_imdct_l:
 
     @----
 
-    add     r2, pc, #(imdct36_long_karray-.-8)  @ r2 = base address of Knn array (PIC safe ?)
+    adr     r2, imdct36_long_karray
 
 
 loop:

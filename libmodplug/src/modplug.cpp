@@ -81,6 +81,11 @@ namespace ModPlug
 	}
 }
 
+long ModPlug_GetVersion(void)
+{
+	return LIBMODPLUG_VERSION;
+}
+
 ModPlugFile* ModPlug_Load(const void* data, int size)
 {
 	ModPlugFile* result = new ModPlugFile;
@@ -187,28 +192,6 @@ char* ModPlug_GetMessage(ModPlugFile* file)
 	return file->mSoundFile.m_lpszSongComments;
 }
 
-#ifndef MODPLUG_NO_FILESAVE
-char ModPlug_ExportS3M(ModPlugFile* file,const char* filepath)
-{
-	return (char)file->mSoundFile.SaveS3M(filepath,0);
-}
-
-char ModPlug_ExportXM(ModPlugFile* file,const char* filepath)
-{
-	return (char)file->mSoundFile.SaveXM(filepath,0);
-}
-
-char ModPlug_ExportMOD(ModPlugFile* file,const char* filepath)
-{
-	return (char)file->mSoundFile.SaveMod(filepath,0);
-}
-
-char ModPlug_ExportIT(ModPlugFile* file,const char* filepath)
-{
-	return (char)file->mSoundFile.SaveIT(filepath,0);
-}
-#endif // MODPLUG_NO_FILESAVE
-
 unsigned int ModPlug_NumInstruments(ModPlugFile* file)
 {
 	return file->mSoundFile.m_nInstruments;
@@ -267,17 +250,17 @@ void ModPlug_Seek(ModPlugFile* file, int millisecond)
 
 int ModPlug_Tell(ModPlugFile *file)
 {
-    int currentPos = (int)file->mSoundFile.GetCurrentPos();
-    int maxpos;
-    int maxtime = (int)file->mSoundFile.GetSongTime() * 1000;
-    float postime;
-    maxpos = (int)file->mSoundFile.GetMaxPosition();
-    postime = 0.0f;
-    if (maxtime != 0.0f)
-        postime = (float)maxpos / (float)maxtime;
-    if(postime == 0.0f)
-        return 0;
-    return (int)((float)currentPos / postime);
+	int currentPos = (int)file->mSoundFile.GetCurrentPos();
+	int maxpos;
+	int maxtime = (int)file->mSoundFile.GetSongTime() * 1000;
+	float postime;
+	maxpos = (int)file->mSoundFile.GetMaxPosition();
+	postime = 0.0f;
+	if (maxtime != 0.0f)
+	    postime = (float)maxpos / (float)maxtime;
+	if (postime == 0.0f)
+	    return 0;
+	return (int) ((float)currentPos / postime);
 }
 
 void ModPlug_GetSettings(ModPlug_Settings* settings)

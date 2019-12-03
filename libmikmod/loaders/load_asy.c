@@ -144,7 +144,7 @@ static void ASY_Cleanup(void)
 	patbuf = NULL;
 }
 
-static void ConvertNote(MODNOTE *n)
+static int ConvertNote(MODNOTE *n)
 {
 	UBYTE instrument, effect, effdat, note;
 	UWORD period;
@@ -220,7 +220,15 @@ static void ConvertNote(MODNOTE *n)
 	if ((effect == 0xa) && (effdat & 0xf) && (effdat & 0xf0))
 		effdat &= 0xf0;
 
+	if (effect == 0x1b) {
+		return 0; /* UniEffect(UNI_S3MEFFECTQ,dat) ? */
+	}
+	if (effect > 0xf) {
+		return 0;		/* return -1 to fail? */
+	}
+
 	UniPTEffect(effect, effdat);
+	return 0;
 }
 
 static UBYTE *ConvertTrack(MODNOTE *n)
@@ -229,7 +237,8 @@ static UBYTE *ConvertTrack(MODNOTE *n)
 
 	UniReset();
 	for (t = 0; t < 64; t++) {
-		ConvertNote(n);
+		if (ConvertNote(n) < 0)
+			return NULL;
 		UniNewline();
 		n += of.numchn;
 	}
@@ -329,6 +338,11 @@ static BOOL ASY_Load(BOOL curious)
 		return 0;
 	for (t = 0; t < of.numpos; t++) {
 		of.positions[t] = mh->positions[t];
+		if (of.positions[t]>of.numpat) { /* SANITIY CHECK */
+		/*	fprintf(stderr,"positions[%d]=%d > numpat=%d\n",t,of.positions[t],of.numpat);*/
+			_mm_errno = MMERR_LOADING_HEADER;
+			return 0;
+		}
 	}
 
 	/* Finally, init the sampleinfo structures  */

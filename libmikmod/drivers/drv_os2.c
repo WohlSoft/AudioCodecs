@@ -27,10 +27,8 @@
 ==============================================================================*/
 
 /*
-
 	Written by Stefan Tibus <Stefan.Tibus@ThePentagon.com>
 	Improvements by Andrew Zabolotny <bit@eltech.ru>
-
 */
 
 #ifdef HAVE_CONFIG_H
@@ -42,10 +40,7 @@
 #define INCL_DOS
 #define INCL_OS2MM
 #include <os2.h>
-/* Prevent a warning: PPFN redefined */
-#define PPFN _PPFN
 #include <os2me.h>
-#undef PPFN
 
 #include <stdlib.h>
 #include <string.h>
@@ -61,7 +56,7 @@ static ULONG DeviceIndex = 0;
 static ULONG BufferSize = (ULONG)-1;
 static ULONG DeviceID = 0;
 static PVOID AudioBuffer = NULL;
-static TID ThreadID = NULLHANDLE;
+static int ThreadID = -1;
 static BOOL FinishPlayback;		/* flag for update thread to die */
 static HEV Play = NULLHANDLE;	/* posted on PlayStart event */
 static HEV Update = NULLHANDLE;	/* timer event semaphore */
@@ -113,7 +108,7 @@ void OS2_UpdateBufferThread(void *dummy)
 		}
 	}
 	/* Tell main thread we're done */
-	ThreadID = 0;
+	ThreadID = -1;
 }
 
 static void OS2_CommandLine(const CHAR *cmdline)
@@ -166,8 +161,8 @@ static int OS2_Init(void)
 	if (VC_Init())
 		return 1;
 
+	ThreadID = -1;
 	DeviceID = 0;
-	ThreadID = 0;
 	Timer = NULLHANDLE;
 	Update = NULLHANDLE;
 	Play = NULLHANDLE;
@@ -218,7 +213,7 @@ static int OS2_Init(void)
 	memset(&mciOpenParms, 0, sizeof(mciOpenParms));
 	mciOpenParms.pszDeviceType = (PSZ) MAKEULONG(MCI_DEVTYPE_WAVEFORM_AUDIO,
 												 (USHORT) DeviceIndex);
-	mciOpenParms.pszElementName = (PSZ) & PlayList;
+	mciOpenParms.pszElementName = (PSZ) & PlayList[0];
 
 	/* open WAVEAUDIO-device */
 	if (mciSendCommand(0, MCI_OPEN,
@@ -262,7 +257,7 @@ static int OS2_Init(void)
 	/* Create thread for buffer updates */
 	FinishPlayback = FALSE;
 	ThreadID = _beginthread(OS2_UpdateBufferThread, NULL, 0x4000, NULL);
-	if (!ThreadID) {
+	if (ThreadID == -1) {
 		_mm_errno = MMERR_OS2_THREAD;
 		return 1;
 	}
@@ -275,7 +270,7 @@ static void OS2_Exit(void)
 	MCI_GENERIC_PARMS mciGenericParms;
 
 	FinishPlayback = TRUE;
-	while (ThreadID) {
+	while (ThreadID != -1) {
 		DosPostEventSem(Play);
 		DosPostEventSem(Update);
 		DosSleep(1);

@@ -278,10 +278,9 @@ BOOL CSoundFile::ReadDMF(const BYTE *lpStream, DWORD dwMemLength)
 								// 8: Vibrato
 								case 8: cmd.command = CMD_VIBRATO; cmd.param = eval; break;
 								// 12: Note cut
-								case 12:
-									if (eval & 0xe0) { cmd.command = CMD_S3MCMDEX; cmd.param = (eval>>5)|0xc0; }
-									else if (!cmd.note) { cmd.note = 0xfe; }
-									break;
+								case 12: if (eval & 0xe0) { cmd.command = CMD_S3MCMDEX; cmd.param = (eval>>5)|0xc0; }
+									 else if (!cmd.note) { cmd.note = 0xfe; }
+									 break;
 								#ifdef DMFLOG
 								default: Log("FX2: %02X.%02X\n", efx, eval);
 								#endif
@@ -466,7 +465,7 @@ BOOL CSoundFile::ReadDMF(const BYTE *lpStream, DWORD dwMemLength)
 		// "ENDE": end of file
 		case 0x45444e45:
 			goto dmfexit;
-
+		
 		// Unrecognized id, or "ENDE" field
 		default:
 			dwMemPos += 4;
@@ -577,7 +576,7 @@ int DMFUnpack(LPBYTE psample, LPBYTE ibuf, LPBYTE ibufmax, UINT maxlen)
 	DMF_HTREE tree;
 	UINT actnode;
 	BYTE value, sign, delta = 0;
-
+	
 	memset(&tree, 0, sizeof(tree));
 	tree.ibuf = ibuf;
 	tree.ibufmax = ibufmax;

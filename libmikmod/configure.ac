@@ -2,10 +2,10 @@ dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
 
-AC_INIT([libmikmod],[3.3.10])
+AC_INIT([libmikmod],[3.3.11])
 LIBMIKMOD_MAJOR_VERSION=3
 LIBMIKMOD_MINOR_VERSION=3
-LIBMIKMOD_MICRO_VERSION=10
+LIBMIKMOD_MICRO_VERSION=11
 LIBMIKMOD_VERSION=$LIBMIKMOD_MAJOR_VERSION.$LIBMIKMOD_MINOR_VERSION.$LIBMIKMOD_MICRO_VERSION
 
 AC_CONFIG_AUX_DIR([autotools])
@@ -80,6 +80,7 @@ esac
 # libmikmod specific control variables and their default values.
 # ==============================================================
 
+libmikmod_depackers=yes
 libmikmod_hqmixer=yes
 
 libmikmod_driverlist=nosound
@@ -147,6 +148,14 @@ else
   libmikmod_hqmixer=yes
 fi])
 
+AC_ARG_ENABLE([depackers], [AS_HELP_STRING([--disable-depackers],[exclude support for module depackers [default=no]])],
+[if test "$enableval" = "no"
+then
+  libmikmod_depackers=no
+else
+  libmikmod_depackers=yes
+fi])
+
 AC_ARG_ENABLE([alldrv], [AS_HELP_STRING([--disable-alldrv],[disable all of the audio drivers. using additional --enable-XXX options enables the specified drivers.])],
 [if test "$enableval" = "no"
 then
@@ -192,7 +201,7 @@ fi])
 AC_ARG_ENABLE([alsa], [AS_HELP_STRING([--enable-alsa],[Linux only: include ALSA driver [guessed]])],
 [if test "$enableval" = "yes"
 then
-  libmikmod_driver_alsa=$libmikmod_linux
+  libmikmod_driver_alsa=yes
 else
   libmikmod_driver_alsa=no
 fi])
@@ -212,10 +221,6 @@ then
 else
   libmikmod_driver_sun=no
 fi])
-case $host_os in
-  netbsd*|openbsd*|sunos*|solaris*) ;;
-  *) libmikmod_driver_sun=no ;;
-esac
 
 AC_ARG_ENABLE([sndio], [AS_HELP_STRING([--enable-sndio],[OpenBSD only: include sndio driver [guessed]])],
 [if test "$enableval" = "yes"
@@ -224,11 +229,6 @@ then
 else
   libmikmod_driver_sndio=no
 fi])
-case $host_os in
-# hey, a linux port at sndio.org ..
-  openbsd*|linux*) ;;
-  *) libmikmod_driver_sndio=no ;;
-esac
 
 AC_ARG_ENABLE([aix], [AS_HELP_STRING([--enable-aix],[AIX only: include AIX audio driver [guessed]])],
 [if test "$enableval" = "yes"
@@ -1337,6 +1337,11 @@ fi
 if test $libmikmod_hqmixer = no
 then
 	AC_DEFINE([NO_HQMIXER], 1, [disable the high quality mixer (build only with the standart mixer)])
+fi
+
+if test $libmikmod_depackers = no
+then
+	AC_DEFINE([NO_DEPACKERS], 1, [disable support for module depackers])
 fi
 
 # symbol visibility

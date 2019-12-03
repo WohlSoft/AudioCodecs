@@ -127,12 +127,36 @@ static	IMFHEADER *mh=NULL;
 
 static BOOL IMF_Test(void)
 {
-	UBYTE id[4];
+	UBYTE buf[512], *p;
+	int t, chn;
 
 	_mm_fseek(modreader,0x3c,SEEK_SET);
-	if(!_mm_read_UBYTES(id,4,modreader)) return 0;
-	if(!memcmp(id,"IM10",4)) return 1;
-	return 0;
+	if (!_mm_read_UBYTES(buf,4,modreader)) return 0;
+	if (memcmp(buf,"IM10",4) != 0) return 0;	/* no magic */
+
+	_mm_fseek(modreader,32,SEEK_SET);
+	if (_mm_read_I_UWORD(modreader) > 256) return 0;/* bad ordnum */
+	if (_mm_read_I_UWORD(modreader) > 256) return 0;/* bad patnum */
+	if (_mm_read_I_UWORD(modreader) > 256) return 0;/* bad insnum */
+
+	_mm_fseek(modreader,64,SEEK_SET);
+	if(!_mm_read_UBYTES(buf,512,modreader)) return 0;
+	/* verify channel status */
+	for (t = 0, chn = 0, p = &buf[15]; t < 512; t += 16, p += 16) {
+		switch (*p) {
+		case  0:		/* channel enabled */
+		case  1:		/* channel muted   */
+			chn++;
+			break;
+		case  2:		/* channel disabled */
+			break;
+		default:		/* bad status value */
+			return 0;
+		}
+	}
+	if(!chn) return 0;		/* no channels found */
+
+	return 1;
 }
 
 static BOOL IMF_Init(void)
@@ -468,6 +492,13 @@ static BOOL IMF_Load(BOOL curious)
 	if(!AllocPositions(of.numpos)) return 0;
 	for(t=u=0;t<mh->ordnum;t++)
 		if(mh->orders[t]!=0xff) of.positions[u++]=mh->orders[t];
+	for(t=0;t<of.numpos;t++) {
+		if (of.positions[t]>of.numpat) { /* SANITIY CHECK */
+		/*	fprintf(stderr,"position[%d]=%d > numpat=%d\n",t,of.positions[t],of.numpat);*/
+			_mm_errno = MMERR_LOADING_HEADER;
+			return 0;
+		}
+	}
 
 	/* load pattern info */
 	of.numtrk=of.numpat*of.numchn;
@@ -510,7 +541,7 @@ static BOOL IMF_Load(BOOL curious)
 		_mm_read_I_UWORDS(ih.panenv,IMFENVCNT,modreader);
 		_mm_read_I_UWORDS(ih.pitenv,IMFENVCNT,modreader);
 
-#if defined __STDC__ || defined _MSC_VER || defined MPW_C
+#if defined __STDC__ || defined _MSC_VER || defined __WATCOMC__ || defined MPW_C
 #define IMF_FinishLoadingEnvelope(name)					\
 		ih. name##pts=_mm_read_UBYTE(modreader);		\
 		ih. name##sus=_mm_read_UBYTE(modreader);		\
@@ -563,7 +594,7 @@ static BOOL IMF_Load(BOOL curious)
 			d->samplenumber[u]=ih.what[u]>ih.numsmp?0xffff:ih.what[u]+of.numsmp;
 		d->volfade=ih.volfade;
 
-#if defined __STDC__ || defined _MSC_VER || defined MPW_C
+#if defined __STDC__ || defined _MSC_VER || defined __WATCOMC__ || defined MPW_C
 #define IMF_ProcessEnvelope(name) 									\
 		for (u = 0; u < (IMFENVCNT >> 1); u++) {					\
 			d-> name##env[u].pos = ih. name##env[u << 1];			\

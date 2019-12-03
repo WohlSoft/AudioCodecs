@@ -27,6 +27,10 @@ if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4101 /wd4800 /wd4702 /wd4706 /wd4805 /wd4310 /wd4244 /wd4456 /wd4459 /wd4146 /wd4127 /wd4458 /wd4267 /wd4804")
 endif()
 
+if(POLICY CMP0077) # Cache variables override since 3.12
+    cmake_policy(SET CMP0077 NEW)
+endif()
+
 # Settings
 option(BUILD_GME_STATIC "Build static library of Game-Music-EMU" ON)
 option(BUILD_GME_SHARED "Build shared library of Game-Music-EMU" OFF)
@@ -34,6 +38,7 @@ option(BUILD_GME_SHARED "Build shared library of Game-Music-EMU" OFF)
 set(GME_YM2612_EMU "MAME" CACHE STRING "Which YM2612 emulator to use: \"Nuked\" (LGPLv2.1+), \"MAME\" (GPLv2+), or \"GENS\" (LGPLv2.1+)")
 
 add_definitions(
+    -DSPC_ISOLATED_ECHO_BUFFER
     -DSPC_MORE_ACCURACY
     -D_REENTRANT
     -D_USE_MATH_DEFINES
@@ -117,6 +122,7 @@ set(GME_INSTALL_TARGETS)
 if(BUILD_GME_STATIC)
     add_library(gme_static STATIC ${libgme_SRCS})
     set_target_properties(gme_static PROPERTIES OUTPUT_NAME gme)
+    target_compile_definitions(gme_static PRIVATE -DBLARGG_BUILD_DLL)
     target_include_directories(gme_static PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
     target_include_directories(gme_static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
     list(APPEND GME_INSTALL_TARGETS gme_static)
@@ -126,19 +132,32 @@ endif()
 if(BUILD_GME_SHARED)
     add_library(gme_shared SHARED ${libgme_SRCS})
     set_target_properties(gme_shared PROPERTIES OUTPUT_NAME gme)
+    target_compile_definitions(gme_shared PRIVATE -DBLARGG_BUILD_DLL)
     target_link_libraries(gme_shared zlib)
     target_include_directories(gme_shared PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
     target_include_directories(gme_shared PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
     list(APPEND GME_INSTALL_TARGETS gme_shared)
+    set_target_properties(gme_shared PROPERTIES VERSION ${libGME_VERSION} SOVERSION ${libGME_VERSION_MAJOR})
     message("== GME will be built as shared library ==")
 endif()
 
-install(TARGETS ${GME_INSTALL_TARGETS}
-        LIBRARY DESTINATION "lib"
-        ARCHIVE DESTINATION "lib"
-        INCLUDES DESTINATION "include")
+install(TARGETS
+    ${GME_INSTALL_TARGETS}
+    LIBRARY DESTINATION "lib"
+    ARCHIVE DESTINATION "lib"
+    INCLUDES DESTINATION "include"
+)
 
 install(FILES
-        include/gme.h
-        DESTINATION include/)
+    src/gme.h
+    src/blargg_source.h
+    DESTINATION include/gme
+)
+
+# TEMPORARELY FOR COMPATIBILITY: remove this after mergin of wip-build-polishing on MixerX into master branch
+install(FILES
+    src/gme.h
+    src/blargg_source.h
+    DESTINATION include
+)
 

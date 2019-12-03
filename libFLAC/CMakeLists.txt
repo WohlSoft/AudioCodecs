@@ -3,8 +3,18 @@ project(libFLAC VERSION 1.3.3 LANGUAGES C)
 
 include(CheckIncludeFiles)
 include(CheckFunctionExists)
-
+include(TestBigEndian)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
+
+TEST_BIG_ENDIAN(WORDS_BIGENDIAN)
+if(WORDS_BIGENDIAN)
+    add_definitions(-DCPU_IS_BIG_ENDIAN=1)
+    add_definitions(-DCPU_IS_LITTLE_ENDIAN=0)
+    add_definitions(-DWORDS_BIGENDIAN=1)
+else()
+    add_definitions(-DCPU_IS_BIG_ENDIAN=0)
+    add_definitions(-DCPU_IS_LITTLE_ENDIAN=1)
+endif()
 
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     # Turn on warnings and legacy C/C++ standards to support more compilers
@@ -71,9 +81,7 @@ list(APPEND FLAC_SRC
 )
 
 if(WIN32)
-    add_definitions(-DUNICODE -D_UNICODE)
     list(APPEND FLAC_SRC
-        src/share/win_utf8_io/win_utf8_io.c
         src/libFLAC/windows_unicode_filenames.c
     )
 endif()

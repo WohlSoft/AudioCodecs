@@ -50,6 +50,7 @@ MODULE of;
 
 static	MLOADER *firstloader=NULL;
 
+#ifndef NO_DEPACKERS
 static	MUNPACKER unpackers[] = {
 	PP20_Unpack,
 	MMCMP_Unpack,
@@ -57,6 +58,7 @@ static	MUNPACKER unpackers[] = {
 	S404_Unpack,
 	NULL
 };
+#endif
 
 const UWORD finetune[16] = {
 	8363,8413,8463,8529,8581,8651,8723,8757,
@@ -133,44 +135,44 @@ BOOL ReadComment(UWORD len)
 
 BOOL ReadLinedComment(UWORD len,UWORD linelen)
 {
-	CHAR *tempcomment,*line,*storage;
-	UWORD total=0,t,lines;
-	int i;
+	/* Adapted from the OpenMPT project, C'ified. */
+	CHAR *buf, *storage, *p;
+	size_t numlines, line, fpos, cpos, lpos, cnt;
 
-	lines = (len + linelen - 1) / linelen;
-	if (len) {
-		if(!(tempcomment=(CHAR*)MikMod_malloc(len+1))) return 0;
-		if(!(storage=(CHAR*)MikMod_malloc(linelen+1))) {
-			MikMod_free(tempcomment);
-			return 0;
-		}
-		memset(tempcomment, ' ', len);
-		_mm_read_UBYTES(tempcomment,len,modreader);
+	if (!linelen) return 0;
+	if (!len) return 1;
 
-		/* compute message length */
-		for(line=tempcomment,total=t=0;t<lines;t++,line+=linelen) {
-			for(i=linelen;(i>=0)&&(line[i]==' ');i--) line[i]=0;
-			for(i=0;i<linelen;i++) if (!line[i]) break;
-			total+=1+i;
-		}
+	if (!(buf = (CHAR *) MikMod_malloc(len))) return 0;
+	numlines = (len + linelen - 1) / linelen;
+	cnt = (linelen + 1) * numlines;
+	if (!(storage = (CHAR *) MikMod_malloc(cnt + 1))) {
+		MikMod_free(buf);
+		return 0;
+	}
 
-		if(total>lines) {
-			if(!(of.comment=(CHAR*)MikMod_malloc(total+1))) {
-				MikMod_free(storage);
-				MikMod_free(tempcomment);
-				return 0;
+	_mm_read_UBYTES(buf,len,modreader);
+	storage[cnt] = 0;
+	for (line = 0, fpos = 0, cpos = 0; line < numlines; line++, fpos += linelen, cpos += (linelen + 1))
+	{
+		cnt = len - fpos;
+		if (cnt > linelen) cnt = linelen;
+		p = storage + cpos;
+		memcpy(p, buf + fpos, cnt);
+		p[cnt] = '\r';
+		/* fix weird chars */
+		for (lpos = 0; lpos < linelen; lpos++, p++) {
+			switch (*p) {
+			case '\0':
+			case '\n':
+			case '\r':
+				*p = ' ';
+				break;
 			}
-
-			/* convert message */
-			for(line=tempcomment,t=0;t<lines;t++,line+=linelen) {
-				for(i=0;i<linelen;i++) if(!(storage[i]=line[i])) break;
-				storage[i]=0; /* if (i==linelen) */
-				strcat(of.comment,storage);strcat(of.comment,"\r");
-			}
-			MikMod_free(storage);
-			MikMod_free(tempcomment);
 		}
 	}
+
+	of.comment = storage;
+	MikMod_free(buf);
 	return 1;
 }
 
@@ -347,6 +349,7 @@ static MODULE *ML_AllocUniMod(void)
 	return (MODULE *) MikMod_malloc(sizeof(MODULE));
 }
 
+#ifndef NO_DEPACKERS
 static BOOL ML_TryUnpack(MREADER *reader,void **out,long *outlen)
 {
 	int i;
@@ -360,6 +363,7 @@ static BOOL ML_TryUnpack(MREADER *reader,void **out,long *outlen)
 	}
 	return 0;
 }
+#endif
 
 static void Player_Free_internal(MODULE *mf)
 {
@@ -380,14 +384,17 @@ static CHAR* Player_LoadTitle_internal(MREADER *reader)
 {
 	MLOADER *l;
 	CHAR *title;
+	#ifndef NO_DEPACKERS
 	void *unpk;
 	long newlen;
+	#endif
 
 	modreader=reader;
 	_mm_errno = 0;
 	_mm_critical = 0;
 	_mm_iobase_setcur(modreader);
 
+	#ifndef NO_DEPACKERS
 	if(ML_TryUnpack(modreader,&unpk,&newlen)) {
 		if(!(modreader=_mm_new_mem_reader(unpk,newlen))) {
 			modreader=reader;
@@ -395,6 +402,7 @@ static CHAR* Player_LoadTitle_internal(MREADER *reader)
 			return NULL;
 		}
 	}
+	#endif
 
 	/* Try to find a loader that recognizes the module */
 	for(l=firstloader;l;l=l->next) {
@@ -411,11 +419,13 @@ static CHAR* Player_LoadTitle_internal(MREADER *reader)
 		title = NULL;
 	}
 
+	#ifndef NO_DEPACKERS
 	if (modreader!=reader) {
 		_mm_delete_mem_reader(modreader);
 		modreader=reader;
 		MikMod_free(unpk);
 	}
+	#endif
 	return title;
 }
 
@@ -487,14 +497,17 @@ static MODULE* Player_LoadGeneric_internal(MREADER *reader,int maxchan,BOOL curi
 	MLOADER *l;
 	BOOL ok;
 	MODULE *mf;
+	#ifndef NO_DEPACKERS
 	void *unpk;
 	long newlen;
+	#endif
 
 	modreader = reader;
 	_mm_errno = 0;
 	_mm_critical = 0;
 	_mm_iobase_setcur(modreader);
 
+	#ifndef NO_DEPACKERS
 	if(ML_TryUnpack(modreader,&unpk,&newlen)) {
 		if(!(modreader=_mm_new_mem_reader(unpk,newlen))) {
 			modreader=reader;
@@ -502,6 +515,7 @@ static MODULE* Player_LoadGeneric_internal(MREADER *reader,int maxchan,BOOL curi
 			return NULL;
 		}
 	}
+	#endif
 
 	/* Try to find a loader that recognizes the module */
 	for(l=firstloader;l;l=l->next) {
@@ -511,11 +525,13 @@ static MODULE* Player_LoadGeneric_internal(MREADER *reader,int maxchan,BOOL curi
 
 	if(!l) {
 		_mm_errno = MMERR_NOT_A_MODULE;
+		#ifndef NO_DEPACKERS
 		if(modreader!=reader) {
 			_mm_delete_mem_reader(modreader);
 			modreader=reader;
 			MikMod_free(unpk);
 		}
+		#endif
 		if(_mm_errorhandler) _mm_errorhandler();
 		_mm_rewind(modreader);
 		_mm_iobase_revert(modreader);
@@ -524,11 +540,13 @@ static MODULE* Player_LoadGeneric_internal(MREADER *reader,int maxchan,BOOL curi
 
 	/* init unitrk routines */
 	if(!UniInit()) {
+		#ifndef NO_DEPACKERS
 		if(modreader!=reader) {
 			_mm_delete_mem_reader(modreader);
 			modreader=reader;
 			MikMod_free(unpk);
 		}
+		#endif
 		if(_mm_errorhandler) _mm_errorhandler();
 		_mm_rewind(modreader);
 		_mm_iobase_revert(modreader);
@@ -564,11 +582,13 @@ static MODULE* Player_LoadGeneric_internal(MREADER *reader,int maxchan,BOOL curi
 	if(ok) ok = ((mf=ML_AllocUniMod()) != NULL);
 	if(!ok) {
 		ML_FreeEx(&of);
+		#ifndef NO_DEPACKERS
 		if(modreader!=reader) {
 			_mm_delete_mem_reader(modreader);
 			modreader=reader;
 			MikMod_free(unpk);
 		}
+		#endif
 		if(_mm_errorhandler) _mm_errorhandler();
 		_mm_rewind(modreader);
 		_mm_iobase_revert(modreader);
@@ -599,11 +619,13 @@ static MODULE* Player_LoadGeneric_internal(MREADER *reader,int maxchan,BOOL curi
 	if(ok) ok = !SL_LoadSamples();
 	if(ok) ok = !Player_Init(mf);
 
+	#ifndef NO_DEPACKERS
 	if(modreader!=reader) {
 		_mm_delete_mem_reader(modreader);
 		modreader=reader;
 		MikMod_free(unpk);
 	}
+	#endif
 	_mm_iobase_revert(modreader);
 
 	if(!ok) {
