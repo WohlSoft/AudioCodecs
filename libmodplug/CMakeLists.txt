@@ -3,8 +3,12 @@ project(libmodplug VERSION 0.8.10.0 LANGUAGES CXX)
 
 set(VERSION "0.8.10.0")
 
+if(POLICY CMP0077) # Cache variables override since 3.12
+    cmake_policy(SET CMP0077 NEW)
+endif()
+
 option(MODPLUG_BUILD_SHARED "Build ModPlug Shared Library (DLL)" OFF)
-option(MODPLUG_BUILD_STATIC "Build ModPlug Static Library (DLL)" ON)
+option(MODPLUG_BUILD_STATIC "Build ModPlug Static Library" ON)
 option(MODPLUG_EXPORT_CXX "Export C++ interface from library" ON)
 option(MODPLUG_MIDIFMT_SUPPORT "Enable midi formats support" OFF)
 option(MODPLUG_WAV_SUPPORT "Enable wav formats support" OFF)

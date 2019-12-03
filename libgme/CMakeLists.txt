@@ -27,6 +27,10 @@ if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4101 /wd4800 /wd4702 /wd4706 /wd4805 /wd4310 /wd4244 /wd4456 /wd4459 /wd4146 /wd4127 /wd4458 /wd4267 /wd4804")
 endif()
 
+if(POLICY CMP0077) # Cache variables override since 3.12
+    cmake_policy(SET CMP0077 NEW)
+endif()
+
 # Settings
 option(BUILD_GME_STATIC "Build static library of Game-Music-EMU" ON)
 option(BUILD_GME_SHARED "Build shared library of Game-Music-EMU" OFF)
@@ -133,6 +137,7 @@ if(BUILD_GME_SHARED)
     target_include_directories(gme_shared PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
     target_include_directories(gme_shared PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
     list(APPEND GME_INSTALL_TARGETS gme_shared)
+    set_target_properties(gme_shared PROPERTIES VERSION ${libGME_VERSION} SOVERSION ${libGME_VERSION_MAJOR})
     message("== GME will be built as shared library ==")
 endif()
 

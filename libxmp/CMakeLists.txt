@@ -6,6 +6,13 @@ include(CheckFunctionExists)
 include(TestBigEndian)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
+if(POLICY CMP0077) # Cache variables override since 3.12
+    cmake_policy(SET CMP0077 NEW)
+endif()
+
+option(BUILD_STATIC   "Build static library of libXMP" ON)
+option(BUILD_SHARED   "Build shared library of libXMP" OFF)
+
 TEST_BIG_ENDIAN(WORDS_BIGENDIAN)
 if(WORDS_BIGENDIAN)
     add_definitions(-DWORDS_BIGENDIAN=1)
@@ -222,24 +229,56 @@ if(WIN32)
     endif()
 endif()
 
-add_library(xmp STATIC ${LIBXMP_SRC})
-target_compile_definitions(xmp PRIVATE -DBUILDING_STATIC)
-if(MSVC)
-    target_compile_definitions(xmp PRIVATE -DPATH_MAX=260 -DCLIB_DECL=__stdcall)
+set(XMP_INSTALLS)
+
+if(BUILD_STATIC)
+    add_library(xmp_static STATIC ${LIBXMP_SRC})
+    list(APPEND XMP_INSTALLS xmp_static)
+    if(WIN32 AND BUILD_SHARED)
+        set_target_properties(xmp_static PROPERTIES OUTPUT_NAME xmp-static)
+    else()
+        set_target_properties(xmp_static PROPERTIES OUTPUT_NAME xmp)
+    endif()
+    target_compile_definitions(xmp_static PRIVATE -DBUILDING_STATIC)
+    if(MSVC)
+        target_compile_definitions(xmp_static PRIVATE -DPATH_MAX=260 -DCLIB_DECL=__stdcall)
+    endif()
+
+    target_include_directories(xmp_static PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    target_include_directories(xmp_static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+    if(MSVC) # WORKAROUND for MSVC
+        target_include_directories(xmp_static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include_msvc)
+    endif()
+endif()
+
+if(BUILD_SHARED)
+    add_library(xmp_shared SHARED ${LIBXMP_SRC})
+    list(APPEND XMP_INSTALLS xmp_shared)
+    set_target_properties(xmp_shared PROPERTIES OUTPUT_NAME xmp)
+    if(NOT MSVC)
+        target_link_libraries(xmp_shared PUBLIC m)
+    endif()
+    target_compile_definitions(xmp_shared PRIVATE -DBUILDING_DLL)
+    if(MSVC)
+        target_compile_definitions(xmp_shared PRIVATE -DPATH_MAX=260 -DCLIB_DECL=__stdcall)
+    endif()
+
+    target_include_directories(xmp_shared PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    target_include_directories(xmp_shared PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+    if(MSVC) # WORKAROUND for MSVC
+        target_include_directories(xmp_shared PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include_msvc)
+    endif()
+
+    set_target_properties(xmp_shared PROPERTIES VERSION ${libxmp_VERSION} SOVERSION ${libxmp_VERSION_MAJOR})
 endif()
 
 add_library(XMP_IF INTERFACE)
-if(NOT MSVC)
-    target_link_libraries(XMP_IF INTERFACE xmp m)
+if(NOT BUILD_SHARED)
+    target_link_libraries(XMP_IF INTERFACE xmp_static)
 else()
-    target_link_libraries(XMP_IF INTERFACE xmp)
-endif()
-
-target_include_directories(xmp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_include_directories(xmp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-
-if(MSVC) # WORKAROUND for MSVC
-    target_include_directories(xmp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include_msvc)
+    target_link_libraries(XMP_IF INTERFACE xmp_shared)
 endif()
 
 option(XMP_WITH_DEMO_PLAYER        "Build also demo player for XMP" OFF)
@@ -265,7 +304,7 @@ if(XMP_WITH_DEMO_PLAYER)
     target_link_libraries(xmpsdl ${XMPSDL_LIBS})
 endif()
 
-install(TARGETS xmp
+install(TARGETS ${XMP_INSTALLS}
         RUNTIME DESTINATION "bin"
         LIBRARY DESTINATION "lib"
         ARCHIVE DESTINATION "lib"
