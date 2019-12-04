@@ -8,9 +8,15 @@ set(CMAKE_C_STANDARD 90)
 # Prefer C++98 standard
 set(CMAKE_CXX_STANDARD 98)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+if(NOT CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+endif()
+if(NOT CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+endif()
+if(NOT CMAKE_ARCHIVE_OUTPUT_DIRECTORY)
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+endif()
 
 #===========================================================================================
 # Strip garbage
@@ -258,7 +264,7 @@ endif()
 # === Static library ====
 if(libOPNMIDI_STATIC OR WITH_VLC_PLUGIN)
     add_library(OPNMIDI_static STATIC ${libOPNMIDI_SOURCES})
-    if(libOPNMIDI_SHARED)
+    if(WIN32 AND libOPNMIDI_SHARED)
         set_target_properties(OPNMIDI_static PROPERTIES OUTPUT_NAME OPNMIDI-static)
     else()
         set_target_properties(OPNMIDI_static PROPERTIES OUTPUT_NAME OPNMIDI)
@@ -276,6 +282,10 @@ endif()
 if(libOPNMIDI_SHARED)
     add_library(OPNMIDI_shared SHARED ${libOPNMIDI_SOURCES})
     set_target_properties(OPNMIDI_shared PROPERTIES OUTPUT_NAME OPNMIDI)
+    set_target_properties(OPNMIDI_shared PROPERTIES
+        VERSION ${libOPNMIDI_VERSION}
+        SOVERSION ${libOPNMIDI_VERSION_MAJOR}
+    )
     target_include_directories(OPNMIDI_shared PUBLIC ${libOPNMIDI_SOURCE_DIR}/include)
     set_legacy_standard(OPNMIDI_shared)
     set_visibility_hidden(OPNMIDI_shared)
