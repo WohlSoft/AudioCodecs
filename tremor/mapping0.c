@@ -49,7 +49,7 @@ typedef struct {
   vorbis_func_residue **residue_func;
 
   int ch;
-  long lastframe; /* if a different mode is called, we need to 
+  long lastframe; /* if a different mode is called, we need to
 		     invalidate decay */
 } vorbis_look_mapping0;
 
@@ -88,14 +88,14 @@ static vorbis_look_mapping *mapping0_look(vorbis_dsp_state *vd,vorbis_info_mode 
   vorbis_look_mapping0 *look=(vorbis_look_mapping0 *)_ogg_calloc(1,sizeof(*look));
   vorbis_info_mapping0 *info=look->map=(vorbis_info_mapping0 *)m;
   look->mode=vm;
-  
+
   look->floor_look=(vorbis_look_floor **)_ogg_calloc(info->submaps,sizeof(*look->floor_look));
 
   look->residue_look=(vorbis_look_residue **)_ogg_calloc(info->submaps,sizeof(*look->residue_look));
 
   look->floor_func=(vorbis_func_floor **)_ogg_calloc(info->submaps,sizeof(*look->floor_func));
   look->residue_func=(vorbis_func_residue **)_ogg_calloc(info->submaps,sizeof(*look->residue_func));
-  
+
   for(i=0;i<info->submaps;i++){
     int floornum=info->floorsubmap[i];
     int resnum=info->residuesubmap[i];
@@ -106,7 +106,7 @@ static vorbis_look_mapping *mapping0_look(vorbis_dsp_state *vd,vorbis_info_mode 
     look->residue_func[i]=_residue_P[ci->residue_type[resnum]];
     look->residue_look[i]=look->residue_func[i]->
       look(vd,vm,ci->residue_param[resnum]);
-    
+
   }
 
   look->ch=vi->channels;
@@ -147,9 +147,9 @@ static vorbis_info_mapping *mapping0_unpack(vorbis_info *vi,oggpack_buffer *opb)
       int testM=info->coupling_mag[i]=oggpack_read(opb,ilog(vi->channels));
       int testA=info->coupling_ang[i]=oggpack_read(opb,ilog(vi->channels));
 
-      if(testM<0 || 
-	 testA<0 || 
-	 testM==testA || 
+      if(testM<0 ||
+	 testA<0 ||
+	 testM==testA ||
 	 testM>=vi->channels ||
 	 testA>=vi->channels) goto err_out;
     }
@@ -157,7 +157,7 @@ static vorbis_info_mapping *mapping0_unpack(vorbis_info *vi,oggpack_buffer *opb)
   }
 
   if(oggpack_read(opb,2)!=0)goto err_out; /* 2,3:reserved */
-    
+
   if(info->submaps>1){
     for(i=0;i<vi->channels;i++){
       info->chmuxlist[i]=oggpack_read(opb,4);
@@ -195,10 +195,10 @@ static int mapping0_inverse(vorbis_block *vb,vorbis_look_mapping *l){
 
   VAR_STACK(ogg_int32_t *, pcmbundle, vi->channels);
   VAR_STACK(int, zerobundle, vi->channels);
-  
+
   VAR_STACK(int, nonzero, vi->channels);
   VAR_STACK(void *, floormemo, vi->channels);
-  
+
   /* time domain information decode (note that applying the
      information would have to happen later; we'll probably add a
      function entry to the harness for that later */
@@ -212,7 +212,7 @@ static int mapping0_inverse(vorbis_block *vb,vorbis_look_mapping *l){
     if(floormemo[i])
       nonzero[i]=1;
     else
-      nonzero[i]=0;      
+      nonzero[i]=0;
     memset(vb->pcm[i],0,sizeof(*vb->pcm[i])*n/2);
   }
 
@@ -220,8 +220,8 @@ static int mapping0_inverse(vorbis_block *vb,vorbis_look_mapping *l){
   for(i=0;i<info->coupling_steps;i++){
     if(nonzero[info->coupling_mag[i]] ||
        nonzero[info->coupling_ang[i]]){
-      nonzero[info->coupling_mag[i]]=1; 
-      nonzero[info->coupling_ang[i]]=1; 
+      nonzero[info->coupling_mag[i]]=1;
+      nonzero[info->coupling_ang[i]]=1;
     }
   }
 
@@ -237,24 +237,24 @@ static int mapping0_inverse(vorbis_block *vb,vorbis_look_mapping *l){
 	pcmbundle[ch_in_bundle++]=vb->pcm[j];
       }
     }
-    
+
     look->residue_func[i]->inverse(vb,look->residue_look[i],
 				   pcmbundle,zerobundle,ch_in_bundle);
   }
 
-  //for(j=0;j<vi->channels;j++)
-  //_analysis_output("coupled",seq+j,vb->pcm[j],-8,n/2,0,0);
+  /*for(j=0;j<vi->channels;j++)*/
+  /*_analysis_output("coupled",seq+j,vb->pcm[j],-8,n/2,0,0);*/
 
 
   /* channel coupling */
   for(i=info->coupling_steps-1;i>=0;i--){
     ogg_int32_t *pcmM=vb->pcm[info->coupling_mag[i]];
     ogg_int32_t *pcmA=vb->pcm[info->coupling_ang[i]];
-    
+
     for(j=0;j<n/2;j++){
       ogg_int32_t mag=pcmM[j];
       ogg_int32_t ang=pcmA[j];
-      
+
       if(mag>0)
 	if(ang>0){
 	  pcmM[j]=mag;
@@ -274,8 +274,8 @@ static int mapping0_inverse(vorbis_block *vb,vorbis_look_mapping *l){
     }
   }
 
-  //for(j=0;j<vi->channels;j++)
-  //_analysis_output("residue",seq+j,vb->pcm[j],-8,n/2,0,0);
+  /*for(j=0;j<vi->channels;j++)*/
+  /*_analysis_output("residue",seq+j,vb->pcm[j],-8,n/2,0,0);*/
 
   /* compute and apply spectral envelope */
   for(i=0;i<vi->channels;i++){
@@ -285,8 +285,8 @@ static int mapping0_inverse(vorbis_block *vb,vorbis_look_mapping *l){
       inverse2(vb,look->floor_look[submap],floormemo[i],pcm);
   }
 
-  //for(j=0;j<vi->channels;j++)
-  //_analysis_output("mdct",seq+j,vb->pcm[j],-24,n/2,0,1);
+  /*for(j=0;j<vi->channels;j++)*/
+  /*_analysis_output("mdct",seq+j,vb->pcm[j],-24,n/2,0,1);*/
 
   /* transform the PCM data; takes PCM vector, vb; modifies PCM vector */
   /* only MDCT right now.... */
@@ -295,8 +295,8 @@ static int mapping0_inverse(vorbis_block *vb,vorbis_look_mapping *l){
     mdct_backward(n,pcm,pcm);
   }
 
-  //for(j=0;j<vi->channels;j++)
-  //_analysis_output("imdct",seq+j,vb->pcm[j],-24,n,0,0);
+  /*for(j=0;j<vi->channels;j++)*/
+  /*_analysis_output("imdct",seq+j,vb->pcm[j],-24,n,0,0);*/
 
   /* window the data */
   for(i=0;i<vi->channels;i++){
@@ -306,11 +306,11 @@ static int mapping0_inverse(vorbis_block *vb,vorbis_look_mapping *l){
     else
       for(j=0;j<n;j++)
 	pcm[j]=0;
-    
+
   }
 
-  //for(j=0;j<vi->channels;j++)
-  //_analysis_output("window",seq+j,vb->pcm[j],-24,n,0,0);
+  /*for(j=0;j<vi->channels;j++)*/
+  /*_analysis_output("window",seq+j,vb->pcm[j],-24,n,0,0);*/
 
   seq+=vi->channels;
   /* all done! */
