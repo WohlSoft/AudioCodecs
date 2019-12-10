@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <SDL2/SDL.h>
+#include "SDL.h"
 
 #include "options.h"
 #include "common.h"
@@ -70,7 +70,7 @@ SDL_RWops *open_file(const char *name)
 	plp = plp->next;
       }
   }
-
+  
   /* Nothing could be opened. */
   SNDDBG(("Could not open %s\n", name));
   return 0;

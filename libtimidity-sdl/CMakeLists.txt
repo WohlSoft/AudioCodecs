@@ -20,18 +20,20 @@ add_library(timidity STATIC
     src/timidity.c
 )
 
+set_target_properties(timidity PROPERTIES OUTPUT_NAME "timidity_sdl2")
+
 if(DOWNLOAD_SDL2_DEPENDENCY)
     add_dependencies(timidity SDL2HG)
+    target_include_directories(timidity PRIVATE ${CMAKE_BINARY_DIR}/include/SDL2)
 elseif(SDL2_REPO_PATH)
-    include_directories(${SDL2_REPO_PATH}/include)
+    target_link_libraries(timidity PUBLIC SDL2)
+    target_include_directories(timidity PRIVATE ${SDL2_REPO_PATH}/include)
 else()
-    find_library(SDL2_LIBRARY SDL2)
-    message("Found ${SDL2_LIBRARY}")
+    find_package(SDL2 REQUIRED)
+    message("Found ${SDL2_LIBRARIES}")
+    target_include_directories(timidity PRIVATE ${SDL2_INCLUDE_DIRS})
+    target_link_libraries(timidity PUBLIC ${SDL2_LIBRARIES})
 endif()
-
-target_link_libraries(timidity SDL2)
-
-target_include_directories(timidity PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 install(TARGETS timidity
         LIBRARY DESTINATION "lib"
@@ -39,6 +41,6 @@ install(TARGETS timidity
         INCLUDES DESTINATION "include")
 
 install(FILES
-        include/timidity.h
-        DESTINATION include/)
-
+        src/timidity.h
+        DESTINATION include/
+)

@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <SDL2/SDL.h>
+#include "SDL.h"
 
 #include "timidity.h"
 
@@ -166,7 +166,7 @@ static int read_config_file(const char *name)
             /*
              * I can't find any documentation for these, but I guess they're
              * an alternative way of loading/unloading instruments.
-             *
+             * 
              * "soundfont" sf_file "remove"
              * "soundfont" sf_file ["order=" order] ["cutoff=" cutoff]
              *                     ["reso=" reso] ["amp=" amp]
@@ -194,7 +194,7 @@ static int read_config_file(const char *name)
     }
 
         /* Standard TiMidity config */
-
+    
     else if (!strcmp(w[0], "dir"))
     {
       if (words < 2)
@@ -544,13 +544,13 @@ MidiSong *Timidity_LoadSong(SDL_RWops *rw, SDL_AudioSpec *audio)
   default:
 	  SDL_SetError("Unsupported audio format");
 	  free(song);
-      return NULL;
+	  return NULL;
   }
 
   song->buffer_size = audio->samples;
   song->resample_buffer = safe_malloc(audio->samples * sizeof(sample_t));
   song->common_buffer = safe_malloc(audio->samples * 2 * sizeof(Sint32));
-
+  
   song->control_ratio = audio->freq / CONTROLS_PER_SECOND;
   if (song->control_ratio < 1)
       song->control_ratio = 1;
@@ -566,7 +566,7 @@ MidiSong *Timidity_LoadSong(SDL_RWops *rw, SDL_AudioSpec *audio)
   /* The RWops can safely be closed at this point, but let's make that the
    * responsibility of the caller.
    */
-
+  
   /* Make sure everything is okay */
   if (!song->events) {
     free(song);
@@ -597,7 +597,7 @@ void Timidity_FreeSong(MidiSong *song)
     if (song->drumset[i])
       free(song->drumset[i]);
   }
-
+  
   free(song->common_buffer);
   free(song->resample_buffer);
   free(song->events);

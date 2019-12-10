@@ -6,8 +6,8 @@
     This program is free software; you can redistribute it and/or modify
     it under the terms of the Perl Artistic License, available in COPYING.
 
-   instrum.c
-
+   instrum.c 
+   
    Code to load and unload GUS-compatible instrument patches.
 
 */
@@ -20,7 +20,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <SDL2/SDL.h>
+#include "SDL.h"
 
 #include "timidity.h"
 #include "options.h"
@@ -60,7 +60,7 @@ static void free_bank(MidiSong *song, int dr, int b)
 static Sint32 convert_envelope_rate(MidiSong *song, Uint8 rate)
 {
   Sint32 r;
-
+  
   r = 3 - ((rate >> 6) & 0x3);
   r *= 3;
   r = (Sint32) (rate & 0x3f) << r; /* 6.9 fixed point */
@@ -121,7 +121,7 @@ static Sint32 convert_vibrato_rate(MidiSong *song, Uint8 rate)
 {
   /* Return a suitable vibrato_control_ratio value */
   return
-    (VIBRATO_RATE_TUNING * song->rate) /
+    (VIBRATO_RATE_TUNING * song->rate) / 
       (rate * 2 * VIBRATO_SAMPLE_INCREMENTS);
 }
 
@@ -139,12 +139,12 @@ static void reverse_data(Sint16 *sp, Sint32 ls, Sint32 le)
     }
 }
 
-/*
+/* 
    If panning or note_to_use != -1, it will be used for all samples,
-   instead of the sample-specific values in the instrument file.
+   instead of the sample-specific values in the instrument file. 
 
    For note_to_use, any value <0 or >127 will be forced to 0.
-
+ 
    For other parameters, 1 means yes, 0 means no, other values are
    undefined.
 
@@ -163,7 +163,7 @@ static Instrument *load_instrument(MidiSong *song, char *name, int percussion,
   (void)percussion;/* Unused */
 
   if (!name) return 0;
-
+  
   /* Open patch file */
   if ((rw=open_file(name)) == NULL)
     {
@@ -183,15 +183,15 @@ static Instrument *load_instrument(MidiSong *song, char *name, int percussion,
 	    }
 	}
     }
-
+  
   if (noluck)
     {
       SNDDBG(("Instrument `%s' can't be found.\n", name));
       return 0;
     }
-
+      
   SNDDBG(("Loading instrument %s\n", tmp));
-
+  
   /* Read some headers and do cursory sanity checks. There are loads
      of magic offsets. This could be rewritten... */
 
@@ -204,8 +204,8 @@ static Instrument *load_instrument(MidiSong *song, char *name, int percussion,
       SDL_RWclose(rw);
       return 0;
     }
-
-  if (tmp[82] != 1 && tmp[82] != 0) /* instruments. To some patch makers,
+  
+  if (tmp[82] != 1 && tmp[82] != 0) /* instruments. To some patch makers, 
 				       0 means 1 */
     {
       SNDDBG(("Can't handle patches with %d instruments\n", tmp[82]));
@@ -219,7 +219,7 @@ static Instrument *load_instrument(MidiSong *song, char *name, int percussion,
       SDL_RWclose(rw);
       return 0;
     }
-
+  
   ip=safe_malloc(sizeof(Instrument));
   ip->samples = tmp[198];
   ip->sample = safe_malloc(sizeof(Sample) * ip->samples);
@@ -256,7 +256,7 @@ static Instrument *load_instrument(MidiSong *song, char *name, int percussion,
 	}
 
       sp=&(ip->sample[i]);
-
+      
       READ_LONG(sp->data_length);
       READ_LONG(sp->loop_start);
       READ_LONG(sp->loop_end);
@@ -266,7 +266,7 @@ static Instrument *load_instrument(MidiSong *song, char *name, int percussion,
       READ_LONG(sp->root_freq);
       SDL_RWseek(rw, 2, RW_SEEK_CUR); /* Why have a "root frequency" and then
 				    * "tuning"?? */
-
+      
       READ_CHAR(tmp[0]);
 
       if (panning==-1)
@@ -275,7 +275,7 @@ static Instrument *load_instrument(MidiSong *song, char *name, int percussion,
 	sp->panning=(Uint8)(panning & 0x7F);
 
       /* envelope, tremolo, and vibrato */
-      if (18 != SDL_RWread(rw, tmp, 1, 18)) goto fail;
+      if (18 != SDL_RWread(rw, tmp, 1, 18)) goto fail; 
 
       if (!tmp[13] || !tmp[14])
 	{
@@ -322,22 +322,22 @@ static Instrument *load_instrument(MidiSong *song, char *name, int percussion,
 	sp->note_to_use=(Uint8)(note_to_use);
       else
 	sp->note_to_use=0;
-
+      
       /* seashore.pat in the Midia patch set has no Sustain. I don't
          understand why, and fixing it by adding the Sustain flag to
          all looped patches probably breaks something else. We do it
          anyway. */
-
-      if (sp->modes & MODES_LOOPING)
+	 
+      if (sp->modes & MODES_LOOPING) 
 	sp->modes |= MODES_SUSTAIN;
 
       /* Strip any loops and envelopes we're permitted to */
-      if ((strip_loop==1) &&
-	  (sp->modes & (MODES_SUSTAIN | MODES_LOOPING |
+      if ((strip_loop==1) && 
+	  (sp->modes & (MODES_SUSTAIN | MODES_LOOPING | 
 			MODES_PINGPONG | MODES_REVERSE)))
 	{
 	  SNDDBG((" - Removing loop and/or sustain\n"));
-	  sp->modes &=~(MODES_SUSTAIN | MODES_LOOPING |
+	  sp->modes &=~(MODES_SUSTAIN | MODES_LOOPING | 
 			MODES_PINGPONG | MODES_REVERSE);
 	}
 
@@ -358,7 +358,7 @@ static Instrument *load_instrument(MidiSong *song, char *name, int percussion,
 	      sp->modes &= ~(MODES_SUSTAIN|MODES_ENVELOPE);
 	      SNDDBG((" - No loop, removing sustain and envelope\n"));
 	    }
-	  else if (!memcmp(tmp, "??????", 6) || tmp[11] >= 100)
+	  else if (!memcmp(tmp, "??????", 6) || tmp[11] >= 100) 
 	    {
 	      /* Envelope rates all maxed out? Envelope end at a high "offset"?
 		 That's a weird envelope. Take it out. */
@@ -380,7 +380,7 @@ static Instrument *load_instrument(MidiSong *song, char *name, int percussion,
 	{
 	  sp->envelope_rate[j]=
 	    convert_envelope_rate(song, tmp[j]);
-	  sp->envelope_offset[j]=
+	  sp->envelope_offset[j]= 
 	    convert_envelope_offset(tmp[6+j]);
 	}
 
@@ -388,7 +388,7 @@ static Instrument *load_instrument(MidiSong *song, char *name, int percussion,
       sp->data = (sample_t *) safe_malloc(sp->data_length+4);
       if (1 != SDL_RWread(rw, sp->data, sp->data_length, 1))
 	goto fail;
-
+      
       if (!(sp->modes & MODES_16BIT)) /* convert to 16-bit data */
 	{
 	  Sint32 k=sp->data_length;
@@ -416,7 +416,7 @@ static Instrument *load_instrument(MidiSong *song, char *name, int percussion,
 	    }
 	}
 #endif
-
+      
       if (sp->modes & MODES_UNSIGNED) /* convert to signed data */
 	{
 	  Sint32 k=sp->data_length/2;
@@ -525,7 +525,7 @@ static int fill_bank(MidiSong *song, int dr, int b)
 	  if (!(bank->tone[i].name))
 	    {
 	      SNDDBG(("No instrument mapped to %s %d, program %d%s\n",
-		   (dr)? "drum set" : "tone bank", b, i,
+		   (dr)? "drum set" : "tone bank", b, i, 
 		   (b!=0) ? "" : " - this instrument will not be heard"));
 	      if (b!=0)
 		{
@@ -549,17 +549,17 @@ static int fill_bank(MidiSong *song, int dr, int b)
 	    }
 	  else if (!(bank->instrument[i] =
 		     load_instrument(song,
-				     bank->tone[i].name,
+				     bank->tone[i].name, 
 				     (dr) ? 1 : 0,
 				     bank->tone[i].pan,
 				     bank->tone[i].amp,
-				     (bank->tone[i].note!=-1) ?
+				     (bank->tone[i].note!=-1) ? 
 				     bank->tone[i].note :
 				     ((dr) ? i : -1),
 				     (bank->tone[i].strip_loop!=-1) ?
 				     bank->tone[i].strip_loop :
 				     ((dr) ? 1 : -1),
-				     (bank->tone[i].strip_envelope != -1) ?
+				     (bank->tone[i].strip_envelope != -1) ? 
 				     bank->tone[i].strip_envelope :
 				     ((dr) ? 1 : -1),
 				     bank->tone[i].strip_tail )))
