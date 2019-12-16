@@ -15,7 +15,7 @@
 #define DEFAULT_PROGRAM 0
 
 /* 9 here is MIDI channel 10, which is the standard percussion channel.
-   Some files (notably C:\WINDOWS\CANYON.MID) think that 16 is one too. 
+   Some files (notably C:\WINDOWS\CANYON.MID) think that 16 is one too.
    On the other hand, some files know that 16 is not a drum channel and
    try to play music on it. This is now a runtime option, so this isn't
    a critical choice anymore. */
@@ -71,17 +71,8 @@
 
 /* You could specify a complete path, e.g. "/etc/timidity.cfg", and
    then specify the library directory in the configuration file. */
-#define CONFIG_FILE	"timidity.cfg"
-#define CONFIG_FILE_ETC "/etc/timidity.cfg"
-#define CONFIG_FILE_ETC_TIMIDITY_FREEPATS "/etc/timidity/freepats.cfg"
-
-#if defined(__WIN32__) || defined(__OS2__)
-#define DEFAULT_PATH	"C:\\TIMIDITY"
-#else
-#define DEFAULT_PATH	"/etc/timidity"
-#define DEFAULT_PATH1	"/usr/share/timidity"
-#define DEFAULT_PATH2	"/usr/local/share/timidity"
-#define DEFAULT_PATH3	"/usr/local/lib/timidity"
+#ifndef TIMIDITY_CFG
+#define TIMIDITY_CFG "timidity.cfg"
 #endif
 
 /* These affect general volume */
@@ -105,13 +96,6 @@
 
 #ifndef PI
   #define PI 3.14159265358979323846
-#endif
-
-/* The path separator (D.M.) */
-#if defined(__WIN32__) || defined(__OS2__)
-#  define PATH_SEP '\\'
-#else
-#  define PATH_SEP '/'
 #endif
 
 #define SNDDBG(X)

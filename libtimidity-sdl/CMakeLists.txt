@@ -19,6 +19,7 @@ add_library(timidity STATIC
     src/tables.c
     src/timidity.c
 )
+target_compile_definitions(timidity PRIVATE -DHAVE_CONFIG_H=0)
 
 set_target_properties(timidity PROPERTIES OUTPUT_NAME "timidity_sdl2")
 
