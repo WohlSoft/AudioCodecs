@@ -40,7 +40,7 @@ if(WIN32 AND MINGW)
     set(SDL2_PROJECT_BRANCH GIT_TAG "${SDL2_GIT_BRANCH}")
 else()
     set(SDL_SOURCE_PATH_URL "https://hg.libsdl.org/SDL/archive/${SDL2_HG_BRANCH}.tar.bz2")
-    message("== SDL2 will be downloaded from official Mercirual as TAR-BZ2 archive from '${SDL2_HG_BRANCH}' revision")
+    message("== SDL2 will be downloaded from official Mercurial as TAR-BZ2 archive from '${SDL2_HG_BRANCH}' revision")
 endif()
 
 ExternalProject_Add(
