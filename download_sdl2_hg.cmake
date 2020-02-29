@@ -66,6 +66,10 @@ install(
     CODE "file( INSTALL \${builtSdl2Heads} DESTINATION \"${CMAKE_INSTALL_PREFIX}/include/SDL2\" )"
     CODE "file( GLOB builtSdlLibs \"${CMAKE_BINARY_DIR}/lib/*SDL2*\" )"
     CODE "file( INSTALL \${builtSdlLibs} DESTINATION \"${CMAKE_INSTALL_PREFIX}/lib\" )"
+    CODE "file( GLOB builtSdlCMakeConfs \"${CMAKE_BINARY_DIR}/lib/cmake/SDL2/*\" )"
+    CODE "file( INSTALL \${builtSdlCMakeConfs} DESTINATION \"${CMAKE_INSTALL_PREFIX}/lib/cmake/SDL2\" )"
+    CODE "file( GLOB builtSdlPkgConfs \"${CMAKE_BINARY_DIR}/lib/pkgconfig/sdl2.pc\" )"
+    CODE "file( INSTALL \${builtSdlPkgConfs} DESTINATION \"${CMAKE_INSTALL_PREFIX}/lib/pkgconfig\" )"
     CODE "file( GLOB builtSdlBins \"${CMAKE_BINARY_DIR}/bin/*SDL2*\" )"
     CODE "file( INSTALL \${builtSdlBins} DESTINATION \"${CMAKE_INSTALL_PREFIX}/bin\" )"
 )
