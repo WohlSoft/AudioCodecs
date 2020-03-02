@@ -43,6 +43,11 @@ else()
     message("== SDL2 will be downloaded from official Mercurial as TAR-BZ2 archive from '${SDL2_HG_BRANCH}' revision")
 endif()
 
+set(APPLE_FLAGS)
+if(APPLE)
+    set(APPLE_FLAGS "-DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET}")
+endif()
+
 ExternalProject_Add(
     SDL2HG
     PREFIX ${CMAKE_BINARY_DIR}/external/SDL2
@@ -51,6 +56,8 @@ ExternalProject_Add(
     URL ${SDL_SOURCE_PATH_URL}
     CMAKE_ARGS
         "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+        "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}"
+        "-DCMAKE_CONFIGURATION_TYPES=${CMAKE_CONFIGURATION_TYPES}"
         "-DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}"
         -DSNDIO=OFF
         -DSDL_SHARED=${BUILD_SDL2_SHARED}
@@ -58,6 +65,7 @@ ExternalProject_Add(
         -DCMAKE_DEBUG_POSTFIX=${CMAKE_DEBUG_POSTFIX}
         ${SDL2_CMAKE_FPIC_FLAG}
         ${SDL2_WASAPI_FLAG}
+        ${APPLE_FLAGS}
 )
 
 # Install built SDL's headers and libraries into actual installation directory
