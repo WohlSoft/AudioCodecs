@@ -132,6 +132,8 @@ option(WITH_VLC_PLUGIN      "Build also a plugin for VLC Media Player" OFF)
 option(VLC_PLUGIN_NOINSTALL "Don't install VLC plugin into VLC directory" OFF)
 option(WITH_DAC_UTIL        "Build also OPN2 DAC testing utility" OFF)
 
+option(WITH_EXTRA_BANKS     "Install extra bank files" OFF)
+
 set(libOPNMIDI_INSTALLS)
 
 include_directories(${libOPNMIDI_SOURCE_DIR}/include)
@@ -332,6 +334,10 @@ if(WITH_MIDI2VGM)
     add_subdirectory(utils/midi2vgm)
 endif()
 
+if(NOT ANDROID)
+    add_subdirectory(utils/wopn2hpp)
+endif()
+
 if(WITH_VLC_PLUGIN)
     add_subdirectory(utils/vlc_codec)
 endif()
@@ -339,7 +345,6 @@ endif()
 if(WITH_DAC_UTIL)
     add_subdirectory(utils/dac_test)
 endif()
-
 
 if(WITH_HQ_RESAMPLER)
     find_library(ZITA_RESAMPLER_LIBRARY "zita-resampler" REQUIRED)
@@ -362,6 +367,24 @@ install(FILES
         include/opnmidi.h
         #include/opnmidi.hpp # WIP
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+
+if(WITH_EXTRA_BANKS AND NOT APPLE)
+    file(GLOB WOPN_FILES ${libOPNMIDI_SOURCE_DIR}/fm_banks/*.wopn)
+    install(FILES ${WOPN_FILES}
+            DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/sounds/wopn")
+
+    file(GLOB WOPNTXT_FILES ${libOPNMIDI_SOURCE_DIR}/fm_banks/*.txt)
+    install(FILES ${WOPNTXT_FILES}
+            DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/doc/libOPNMIDI/wopn")
+endif()
+
+file(GLOB DOCTXT_FILES
+    "${libOPNMIDI_SOURCE_DIR}/docs/*.txt"
+    "${libOPNMIDI_SOURCE_DIR}/LICENSE*.txt"
+    README.md AUTHORS
+)
+install(FILES ${DOCTXT_FILES}
+        DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/doc/libOPNMIDI")
 
 if(NOT ANDROID)
     configure_file(libOPNMIDI.pc.in libOPNMIDI.pc @ONLY)
@@ -408,3 +431,6 @@ message("===== Utils and extras =====")
 message("WITH_MIDIPLAY            = ${WITH_MIDIPLAY}")
 message("WITH_VLC_PLUGIN          = ${WITH_VLC_PLUGIN}")
 message("WITH_DAC_UTIL            = ${WITH_DAC_UTIL}")
+if(NOT APPLE)
+    message("WITH_EXTRA_BANKS         = ${WITH_EXTRA_BANKS}")
+endif()
