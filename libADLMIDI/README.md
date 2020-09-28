@@ -102,6 +102,9 @@ The library is licensed under in it's parts LGPL 2.1+, GPL v2+, GPL v3+, and MIT
 * **MIDIPLAY_WAVE_ONLY** - (ON/OFF, default OFF) Build Demo MIDI player without support of real time playing. It will output into WAV only.
 * **WITH_ADLMIDI2** - (ON/OFF, default OFF) Build Classic ADLMIDI MIDI player (Requires SDL2 on Linux and macOS, requires pthread on Windows with MinGW, SDL doesn't required on Windows).
 * **WITH_VLC_PLUGIN** - (ON/OFF, default OFF) Compile VLC plugin. For now, works on Linux and VLC. Support for other platforms comming soon!
+* **WITH_WINMMDRV** - (ON/OFF, default OFF) (Windows platform only) Compile the WinMM MIDI driver to use libOPNMIDI as a system MIDI device.
+  * **WITH_WINMMDRV_PTHREADS** - (ON/OFF, default ON) Link libwinpthreads statically (when using pthread-based builds).
+  * **WITH_WINMMDRV_MINGWEX** - (ON/OFF, default OFF) Link libmingwex statically (when using vanilla MinGW builds). Useful for targetting to pre-XP Windows versions.
 * **WITH_OLD_UTILS** - (ON/OFF, default OFF) Build old utilities to dump some bank formats, made by original creator of ADLMIDI
 * **EXAMPLE_SDL2_AUDIO** - (ON/OFF, default OFF) Build also a simple SDL2 demo MIDI player
 
@@ -175,7 +178,7 @@ To build that example you will need to have installed SDL2 library.
 * Add support of MIDI Format 2 files
 
 # Changelog
-## 1.4.1   dev
+## 1.5.0   2020-09-28
  * Drum note length expanding is now supported in real-time mode (Thanks to [Jean Pierre Cimalando](https://github.com/jpcima) for a work!)
  * Channels manager has been improved (Thanks to [Jean Pierre Cimalando](https://github.com/jpcima) for a work!)
  * Nuked OPL3 1.8 emulator got some optimizations ported from 1.7 where they are was applied previously (Thanks to [Jean Pierre Cimalando](https://github.com/jpcima) for a work!)
@@ -183,14 +186,15 @@ To build that example you will need to have installed SDL2 library.
  * Added Public Domain Opal OPL3 emulator made by Reality (a team who originally made the Reality Adlib Tracker) (Thanks to [Jean Pierre Cimalando](https://github.com/jpcima) for a work!)
  * Added LGPL licensed JavaOPL3 emulator made by Robson Cozendey in Java and later rewritten into C++ for GZDoom (Thanks to [Jean Pierre Cimalando](https://github.com/jpcima) for a work!)
  * Fully rewritten an embedded bank database format, embedded banks now supports a wider set (more than 127:127 instruments in one bank)
- * Improved an accuracy of the DMX volume model, include the buggy AM intepretation
- * Improved an accuracy of Apogee volume model, include the bug of AM instruments
- * Improved an accuracy of Win9X volume model
- * Removed C++ extras. C++-binded instruments tester is useless since a real-time MIDI API can completely replace it
+ * Improved accuracy of the DMX volume model, include the buggy AM interpretation
+ * Improved accuracy of Apogee volume model, include the bug of AM instruments
+ * Improved accuracy of the Win9X volume model
+ * Removed C++ extras. C++-bounded instruments tester is useless since a real-time MIDI API can completely replace it
  * Added AIL volume model
  * Added Generic FM variant of Win9X volume model
  * Fixed an incorrect work of CC-121 (See https://github.com/Wohlstand/libADLMIDI/issues/227 for details)
- * Added an aproximal simulation of HMI volume model (TODO: Research an actual HMI volume model and fix it!)
+ * Added HMI volume model (Thanks to [Alexey Khokholov](https://github.com/nukeykt) for help with research!)
+ * Added frequency models, assigned to every volume model: AIL, HMI, DMX, Apogee, 9X, and the Generic formula
 
 ## 1.4.0   2018-10-01
  * Implemented a full support for Portamento! (Thanks to [Jean Pierre Cimalando](https://github.com/jpcima) for a work!)

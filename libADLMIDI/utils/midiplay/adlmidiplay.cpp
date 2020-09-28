@@ -221,11 +221,13 @@ const char* volume_model_to_str(int vm)
     case ADLMIDI_VolumeModel_APOGEE_Fixed:
         return "Apogee Sound System (fixed AM voices)";
     case ADLMIDI_VolumeModel_AIL:
-        return "Audio Interfaces Library (AIL)";
+        return "Audio Interface Library (AIL)";
     case ADLMIDI_VolumeModel_9X_GENERIC_FM:
         return "9X (Generic FM)";
     case ADLMIDI_VolumeModel_HMI:
-        return "HMI";
+        return "HMI Sound Operating System";
+    case ADLMIDI_VolumeModel_HMI_OLD:
+        return "HMI Sound Operating System (Old)";
     }
 }
 
@@ -247,13 +249,18 @@ static int stop = 0;
 #ifndef HARDWARE_OPL3
 static void sighandler(int dum)
 {
-    if((dum == SIGINT)
-        || (dum == SIGTERM)
-    #if !defined(_WIN32) && !defined(__WATCOMC__)
-        || (dum == SIGHUP)
-    #endif
-    )
+    switch(dum)
+    {
+    case SIGINT:
+    case SIGTERM:
+#ifndef _WIN32
+    case SIGHUP:
+#endif
         stop = 1;
+        break;
+    default:
+        break;
+    }
 }
 #endif
 
@@ -381,7 +388,7 @@ int main(int argc, char **argv)
             "    5 9x SB16\n"
             "    6 DMX (Fixed AM voices)\n"
             "    7 Apogee Sound System (Fixed AM voices)\n"
-            "    8 Audio Interfaces Library (AIL)\n"
+            "    8 Audio Interface Library (AIL)\n"
             "    9 9x Generic FM\n"
             "   10 HMI Sound Operating System\n"
         );

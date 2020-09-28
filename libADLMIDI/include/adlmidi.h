@@ -29,8 +29,8 @@ extern "C" {
 #endif
 
 #define ADLMIDI_VERSION_MAJOR       1
-#define ADLMIDI_VERSION_MINOR       4
-#define ADLMIDI_VERSION_PATCHLEVEL  1
+#define ADLMIDI_VERSION_MINOR       5
+#define ADLMIDI_VERSION_PATCHLEVEL  0
 
 #define ADLMIDI_TOSTR_I(s) #s
 #define ADLMIDI_TOSTR(s) ADLMIDI_TOSTR_I(s)
@@ -118,12 +118,14 @@ enum ADLMIDI_VolumeModels
     ADLMIDI_VolumeModel_DMX_Fixed = 6,
     /*! Apogee model with a fixed bug of AM voices*/
     ADLMIDI_VolumeModel_APOGEE_Fixed = 7,
-    /*! Audio Interfaces Library volume scaling model */
+    /*! Audio Interface Library volume scaling model */
     ADLMIDI_VolumeModel_AIL = 8,
     /*! Aproximated and shorted volume map table (Generic FM driver). Similar to general, but has less granularity. */
     ADLMIDI_VolumeModel_9X_GENERIC_FM = 9,
     /*! HMI Sound Operating System volume scaling model */
-    ADLMIDI_VolumeModel_HMI = 10
+    ADLMIDI_VolumeModel_HMI = 10,
+    /*! HMI Sound Operating System volume scaling model, older variant with bugs */
+    ADLMIDI_VolumeModel_HMI_OLD = 11
 };
 
 /**
