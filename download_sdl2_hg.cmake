@@ -40,7 +40,12 @@ if(WIN32 AND MINGW)
     set(SDL2_PROJECT_BRANCH GIT_TAG "${SDL2_GIT_BRANCH}")
 else()
     set(SDL_SOURCE_PATH_URL "https://hg.libsdl.org/SDL/archive/${SDL2_HG_BRANCH}.tar.bz2")
-    message("== SDL2 will be downloaded from official Mercirual as TAR-BZ2 archive from '${SDL2_HG_BRANCH}' revision")
+    message("== SDL2 will be downloaded from official Mercurial as TAR-BZ2 archive from '${SDL2_HG_BRANCH}' revision")
+endif()
+
+set(APPLE_FLAGS)
+if(APPLE)
+    set(APPLE_FLAGS "-DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET}")
 endif()
 
 ExternalProject_Add(
@@ -51,6 +56,7 @@ ExternalProject_Add(
     URL ${SDL_SOURCE_PATH_URL}
     CMAKE_ARGS
         "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+        "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}"
         "-DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}"
         -DSNDIO=OFF
         -DSDL_SHARED=${BUILD_SDL2_SHARED}
@@ -58,6 +64,7 @@ ExternalProject_Add(
         -DCMAKE_DEBUG_POSTFIX=${CMAKE_DEBUG_POSTFIX}
         ${SDL2_CMAKE_FPIC_FLAG}
         ${SDL2_WASAPI_FLAG}
+        ${APPLE_FLAGS}
 )
 
 # Install built SDL's headers and libraries into actual installation directory
@@ -66,6 +73,10 @@ install(
     CODE "file( INSTALL \${builtSdl2Heads} DESTINATION \"${CMAKE_INSTALL_PREFIX}/include/SDL2\" )"
     CODE "file( GLOB builtSdlLibs \"${CMAKE_BINARY_DIR}/lib/*SDL2*\" )"
     CODE "file( INSTALL \${builtSdlLibs} DESTINATION \"${CMAKE_INSTALL_PREFIX}/lib\" )"
+    CODE "file( GLOB builtSdlCMakeConfs \"${CMAKE_BINARY_DIR}/lib/cmake/SDL2/*\" )"
+    CODE "file( INSTALL \${builtSdlCMakeConfs} DESTINATION \"${CMAKE_INSTALL_PREFIX}/lib/cmake/SDL2\" )"
+    CODE "file( GLOB builtSdlPkgConfs \"${CMAKE_BINARY_DIR}/lib/pkgconfig/sdl2.pc\" )"
+    CODE "file( INSTALL \${builtSdlPkgConfs} DESTINATION \"${CMAKE_INSTALL_PREFIX}/lib/pkgconfig\" )"
     CODE "file( GLOB builtSdlBins \"${CMAKE_BINARY_DIR}/bin/*SDL2*\" )"
     CODE "file( INSTALL \${builtSdlBins} DESTINATION \"${CMAKE_INSTALL_PREFIX}/bin\" )"
 )

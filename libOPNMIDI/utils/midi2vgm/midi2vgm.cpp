@@ -1,11 +1,11 @@
 /*
  * MIDI to VGM converter, an additional tool included with libOPNMIDI library
  *
- * Copyright (c) 2015-2019 Vitaly Novichkov <admin@wohlnet.ru>
+ * Copyright (c) 2015-2020 Vitaly Novichkov <admin@wohlnet.ru>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * the Free Software Foundation, either version 2 of the License, or
  * any later version.
  *
  * This program is distributed in the hope that it will be useful,
@@ -28,6 +28,8 @@
 #include <deque>
 #include <algorithm>
 #include <signal.h>
+
+#include "compact/vgm_cmp.h"
 
 #if defined(_MSC_VER) && _MSC_VER < 1900
 
@@ -124,6 +126,9 @@ static inline void secondsToHMSM(double seconds_full, char *hmsm_buffer, size_t 
 
 
 #define DEFAULT_BANK_NAME "xg.wopn"
+#ifndef DEFAULT_INSTALL_PREFIX
+#define DEFAULT_INSTALL_PREFIX "/usr"
+#endif
 
 static std::string findDefaultBank()
 {
@@ -132,9 +137,11 @@ static std::string findDefaultBank()
         DEFAULT_BANK_NAME,
         "../fm_banks/" DEFAULT_BANK_NAME,
 #ifdef __unix__
-        "/usr/share/opnmidiplay/" DEFAULT_BANK_NAME,
-        "/usr/local/share/opnmidiplay/" DEFAULT_BANK_NAME,
+        DEFAULT_INSTALL_PREFIX "/share/sounds/wopn/" DEFAULT_BANK_NAME,
+        DEFAULT_INSTALL_PREFIX "/share/opnmidiplay/" DEFAULT_BANK_NAME,
 #endif
+        "../share/sounds/wopn/" DEFAULT_BANK_NAME,
+        "../share/opnmidiplay/" DEFAULT_BANK_NAME,
     };
     const size_t paths_count = sizeof(paths) / sizeof(const char*);
     std::string ret;
@@ -176,6 +183,7 @@ int main(int argc, char **argv)
             "\n"
             " -l                Enables in-song looping support\n"
             " -s                Enables scaling of modulator volumes\n"
+            " -z                Make a compressed VGZ file\n"
             " -frb              Enables full-ranged CC74 XG Brightness controller\n"
             " --chips <count>   Choose a count of chips (1 by default, 2 maximum)\n"
             "\n"
@@ -203,6 +211,7 @@ int main(int argc, char **argv)
      * Set library options by parsing of command line arguments
      */
     bool scaleModulators = false;
+    bool makeVgz = false;
     bool fullRangedBrightness = false;
     int loopEnabled = 0;
     size_t soloTrack = ~static_cast<size_t>(0);
@@ -218,6 +227,8 @@ int main(int argc, char **argv)
             fullRangedBrightness = true;
         else if(!std::strcmp("-s", argv[arg]))
             scaleModulators = true;
+        else if(!std::strcmp("-z", argv[arg]))
+            makeVgz = true;
         else if(!std::strcmp("-l", argv[arg]))
             loopEnabled = 1;
         else if(!std::strcmp("--chips", argv[arg]))
@@ -268,8 +279,8 @@ int main(int argc, char **argv)
         return 2;
     }
 
-    std::string wave_out = musPath + ".vgm";
-    opn2_set_vgm_out_path(wave_out.c_str());
+    std::string vgm_out = musPath + (makeVgz ? ".vgz" : ".vgm");
+    opn2_set_vgm_out_path(vgm_out.c_str());
 
     myDevice = opn2_init(sampleRate);
     if(!myDevice)
@@ -360,7 +371,7 @@ int main(int argc, char **argv)
         secondsToHMSM(loopEnd, loopEndHMS, 25);
     }
 
-    std::fprintf(stdout, " - Recording VGM file %s...\n", wave_out.c_str());
+    std::fprintf(stdout, " - Recording VGM file %s...\n", vgm_out.c_str());
     std::fprintf(stdout, "\n==========================================\n");
     std::fflush(stdout);
 
@@ -374,12 +385,18 @@ int main(int argc, char **argv)
     std::fprintf(stdout, "                                               \n\n");
 
     if(stop)
-        std::fprintf(stdout, "Interrupted! Recorded WAV is incomplete, but playable!\n");
+    {
+        std::fprintf(stdout, "Interrupted! Recorded VGM is incomplete, but playable!\n");
+        std::fflush(stdout);
+        opn2_close(myDevice);
+    }
     else
+    {
+        opn2_close(myDevice);
+        VgmCMP::vgm_cmp_main(vgm_out, makeVgz);
         std::fprintf(stdout, "Completed!\n");
-    std::fflush(stdout);
-
-    opn2_close(myDevice);
+        std::fflush(stdout);
+    }
 
     return 0;
 }

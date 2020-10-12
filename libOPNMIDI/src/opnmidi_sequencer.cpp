@@ -2,7 +2,7 @@
  * libADLMIDI is a free Software MIDI synthesizer library with OPL3 emulation
  *
  * Original ADLMIDI code: Copyright (c) 2010-2014 Joel Yliluoma <bisqwit@iki.fi>
- * ADLMIDI Library API:   Copyright (c) 2015-2019 Vitaly Novichkov <admin@wohlnet.ru>
+ * ADLMIDI Library API:   Copyright (c) 2015-2020 Vitaly Novichkov <admin@wohlnet.ru>
  *
  * Library is based on the ADLMIDI, a MIDI player for Linux and Windows with OPL3 emulation:
  * http://iki.fi/bisqwit/source/adlmidi.html
@@ -97,6 +97,12 @@ static size_t rtCurrentDevice(void *userdata, size_t track)
     OPNMIDIplay *context = reinterpret_cast<OPNMIDIplay *>(userdata);
     return context->realTime_currentDevice(track);
 }
+
+static void rtSongBegin(void *userdata)
+{
+    OPNMIDIplay *context = reinterpret_cast<OPNMIDIplay *>(userdata);
+    return context->realTime_ResetState();
+}
 /* NonStandard calls End */
 
 
@@ -124,6 +130,9 @@ void OPNMIDIplay::initSequencerInterface()
     /* NonStandard calls */
     seq->rt_deviceSwitch = rtDeviceSwitch;
     seq->rt_currentDevice = rtCurrentDevice;
+
+    seq->onSongStart = rtSongBegin;
+    seq->onSongStart_userData = this;
     /* NonStandard calls End */
 
     m_sequencer->setInterface(seq);

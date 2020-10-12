@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 3.2)
-project (libADLMIDI VERSION 1.4.1 LANGUAGES C CXX)
+project (libADLMIDI VERSION 1.5.0 LANGUAGES C CXX)
 
 include(GNUInstallDirs)
 include(CheckCCompilerFlag)
@@ -23,6 +23,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 if(DJGPP OR MSDOS)
     set(ADLMIDI_DOS 1)
+    add_definitions(-DADLMIDI_HW_OPL)
 endif()
 
 #===========================================================================================
@@ -112,7 +113,6 @@ endfunction()
 option(libADLMIDI_STATIC   "Build static library of libADLMIDI" ON)
 option(libADLMIDI_SHARED   "Build shared library of libADLMIDI" OFF)
 
-option(WITH_CPP_EXTRAS      "Build with support for C++ extras (features can be found in 'adlmidi.hpp' header)" OFF)
 option(WITH_MIDI_SEQUENCER  "Build with embedded MIDI sequencer. Disable this if you want use library in real-time MIDI drivers or plugins." ON)
 option(WITH_EMBEDDED_BANKS  "Use embedded banks" ON)
 option(WITH_HQ_RESAMPLER    "Build with support for high quality resampling" OFF)
@@ -124,7 +124,7 @@ option(USE_OPAL_EMULATOR    "Use Opal emulator (inaccurate)" ON)
 option(USE_JAVA_EMULATOR    "Use JavaOPL emulator" ON)
 
 option(WITH_GENADLDATA      "Build and run full rebuild of embedded banks cache" OFF)
-option(WITH_GENADLDATA_COMMENTS "Enable comments in generated ADLDATA cache file" OFF)
+option(WITH_GENADLDATA_COMMENTS "Enable comments in a generated embedded instruments cache file" OFF)
 
 option(WITH_MIDIPLAY        "Build also demo MIDI player" OFF)
 option(MIDIPLAY_WAVE_ONLY   "Build Demo MIDI player without support of real time playing. It will output into WAV only." OFF)
@@ -132,8 +132,13 @@ option(WITH_ADLMIDI2        "Build also classic ADLMIDI player [EXPERIMENTAL]" O
 option(WITH_VLC_PLUGIN      "Build also a plugin for VLC Media Player" OFF)
 option(VLC_PLUGIN_NOINSTALL "Don't install VLC plugin into VLC directory" OFF)
 option(WITH_OLD_UTILS       "Build also old utilities" OFF)
+option(WITH_MUS2MID         "Build a MUS to MIDI converter" OFF)
 option(WITH_XMI2MID         "Build a XMI to MIDI converter" OFF)
 option(EXAMPLE_SDL2_AUDIO   "Build also a simple SDL2 demo MIDI player" OFF)
+
+if(WIN32)
+    option(WITH_WINMMDRV    "Build a WinMM MIDI driver" OFF)
+endif()
 
 function(handle_options targetLib)
     if(WITH_MIDI_SEQUENCER)
@@ -196,17 +201,15 @@ function(handle_options targetLib)
     endif()
 
     if(WITH_EMBEDDED_BANKS)
-        target_sources(${targetLib} PRIVATE ${libADLMIDI_SOURCE_DIR}/src/adldata.cpp)
+        target_sources(${targetLib} PRIVATE
+            ${libADLMIDI_SOURCE_DIR}/src/inst_db.cpp
+        )
     else()
         target_compile_definitions(${targetLib} PUBLIC DISABLE_EMBEDDED_BANKS)
     endif()
 
     if(NOT WITH_MIDI_SEQUENCER)
         target_compile_definitions(${targetLib} PUBLIC ADLMIDI_DISABLE_MIDI_SEQUENCER)
-    endif()
-
-    if(NOT WITH_CPP_EXTRAS)
-        target_compile_definitions(${targetLib} PUBLIC ADLMIDI_DISABLE_CPP_EXTRAS)
     endif()
 
     if(WITH_EMBEDDED_BANKS AND WITH_GENADLDATA AND NOT ADLMIDI_DOS)
@@ -330,6 +333,10 @@ if(WITH_ADLMIDI2)
     add_subdirectory(utils/adlmidi-2)
 endif()
 
+if(WITH_MUS2MID)
+    add_subdirectory(utils/mus2mid)
+endif()
+
 if(WITH_XMI2MID)
     add_subdirectory(utils/xmi2mid)
 endif()
@@ -340,6 +347,10 @@ endif()
 
 if(WITH_VLC_PLUGIN AND NOT ADLMIDI_DOS)
     add_subdirectory(utils/vlc_codec)
+endif()
+
+if(WIN32 AND WITH_WINMMDRV)
+    add_subdirectory(utils/winmm_drv)
 endif()
 
 set(libADLMIDI_INSTALLS )
@@ -357,8 +368,14 @@ install(TARGETS ${libADLMIDI_INSTALLS}
 
 install(FILES
         include/adlmidi.h
-        include/adlmidi.hpp
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+
+file(GLOB DOCTXT_FILES
+    "${libADLMIDI_SOURCE_DIR}/LICENSE*.txt"
+    README.md AUTHORS
+)
+install(FILES ${DOCTXT_FILES}
+        DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/doc/libADLMIDI")
 
 if(NOT ANDROID)
     configure_file(libADLMIDI.pc.in libADLMIDI.pc @ONLY)
@@ -391,7 +408,6 @@ message("libADLMIDI_STATIC        = ${libADLMIDI_STATIC}")
 message("libADLMIDI_SHARED        = ${libADLMIDI_SHARED}")
 message("WITH_UNIT_TESTS          = ${WITH_UNIT_TESTS}")
 
-message("WITH_CPP_EXTRAS          = ${WITH_CPP_EXTRAS}")
 message("WITH_MIDI_SEQUENCER      = ${WITH_MIDI_SEQUENCER}")
 message("WITH_EMBEDDED_BANKS      = ${WITH_EMBEDDED_BANKS}")
 message("WITH_HQ_RESAMPLER        = ${WITH_HQ_RESAMPLER}")
@@ -411,5 +427,9 @@ message("MIDIPLAY_WAVE_ONLY       = ${MIDIPLAY_WAVE_ONLY}")
 message("WITH_ADLMIDI2            = ${WITH_ADLMIDI2}")
 message("WITH_VLC_PLUGIN          = ${WITH_VLC_PLUGIN}")
 message("WITH_OLD_UTILS           = ${WITH_OLD_UTILS}")
+message("WITH_MUS2MID             = ${WITH_MUS2MID}")
 message("WITH_XMI2MID             = ${WITH_XMI2MID}")
 message("EXAMPLE_SDL2_AUDIO       = ${EXAMPLE_SDL2_AUDIO}")
+if(WIN32)
+    message("WITH_WINMMDRV            = ${WITH_WINMMDRV}")
+endif()

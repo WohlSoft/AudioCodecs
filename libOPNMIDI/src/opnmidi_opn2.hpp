@@ -2,7 +2,7 @@
  * libOPNMIDI is a free Software MIDI synthesizer library with OPN2 (YM2612) emulation
  *
  * MIDI parser and player (Original code from ADLMIDI): Copyright (c) 2010-2014 Joel Yliluoma <bisqwit@iki.fi>
- * OPNMIDI Library and YM2612 support:   Copyright (c) 2017-2019 Vitaly Novichkov <admin@wohlnet.ru>
+ * OPNMIDI Library and YM2612 support:   Copyright (c) 2017-2020 Vitaly Novichkov <admin@wohlnet.ru>
  *
  * Library is based on the ADLMIDI, a MIDI player for Linux and Windows with OPL3 emulation:
  * http://iki.fi/bisqwit/source/adlmidi.html
@@ -57,7 +57,7 @@ public:
 #endif
 private:
     //! Cached patch data, needed by Touch()
-    std::vector<opnInstData>    m_insCache;
+    std::vector<OpnTimbre>    m_insCache;
     //! Cached per-channel LFO sensitivity flags
     std::vector<uint8_t>        m_regLFOSens;
     //! LFO setup registry cache
@@ -70,7 +70,7 @@ public:
     struct Bank
     {
         //! MIDI Bank instruments
-        opnInstMeta2 ins[128];
+        OpnInstMeta ins[128];
     };
     typedef BasicBankMap<Bank> BankMap;
     //! MIDI bank instruments data
@@ -80,7 +80,7 @@ public:
 
 public:
     //! Blank instrument template
-    static const opnInstMeta2 m_emptyInstrument;
+    static const OpnInstMeta m_emptyInstrument;
 
     //! Total number of running concurrent emulated chips
     uint32_t m_numChips;
@@ -90,6 +90,8 @@ public:
     bool m_runAtPcmRate;
     //! Enable soft panning
     bool m_softPanning;
+    //! Master volume, controlled via SysEx (0...127)
+    uint8_t m_masterVolume;
 
     //! Just a padding. Reserved.
     char _padding2[3];
@@ -101,6 +103,8 @@ public:
     {
         //! MIDI mode
         MODE_MIDI,
+        //! MIDI mode
+        MODE_XMIDI,
         //! Id-Software Music mode
         MODE_IMF,
         //! Creative Music Files mode
@@ -189,9 +193,9 @@ public:
     /**
      * @brief On the note in specified chip channel with specified frequency of the tone
      * @param c Channel of chip (Emulated chip choosing by next formula: [c = ch + (chipId * 23)])
-     * @param hertz Frequency of the tone in hertzes
+     * @param tone The tone to play (integer part - MIDI halftone, decimal part - relative bend offset)
      */
-    void noteOn(size_t c, double hertz);
+    void noteOn(size_t c, double tone);
 
     /**
      * @brief Change setup of instrument in specified chip channel
@@ -199,14 +203,18 @@ public:
      * @param volume Volume level (from 0 to 127)
      * @param brightness CC74 Brightness level (from 0 to 127)
      */
-    void touchNote(size_t c, uint8_t volume, uint8_t brightness = 127);
+    void touchNote(size_t c,
+                   uint_fast32_t velocity,
+                   uint_fast32_t channelVolume = 127,
+                   uint_fast32_t channelExpression = 127,
+                   uint8_t brightness = 127);
 
     /**
      * @brief Set the instrument into specified chip channel
      * @param c Channel of chip (Emulated chip choosing by next formula: [c = ch + (chipId * 23)])
      * @param instrument Instrument data to set into the chip channel
      */
-    void setPatch(size_t c, const opnInstData &instrument);
+    void setPatch(size_t c, const OpnTimbre &instrument);
 
     /**
      * @brief Set panpot position

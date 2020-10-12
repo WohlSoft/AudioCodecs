@@ -416,6 +416,12 @@ IF (ENABLE_STATIC)
     )
     LIST (APPEND LIBMIKMOD_LIBS "mikmod-static")
 
+    IF(NOT WIN32)
+        SET_TARGET_PROPERTIES(mikmod-static
+            PROPERTIES COMPILE_FLAGS -fPIC
+        )
+    ENDIF(NOT WIN32)
+
     SET_TARGET_PROPERTIES(
         mikmod-static
         PROPERTIES OUTPUT_NAME "mikmod"

@@ -2,7 +2,7 @@
  * libOPNMIDI is a free Software MIDI synthesizer library with OPN2 (YM2612) emulation
  *
  * MIDI parser and player (Original code from ADLMIDI): Copyright (c) 2010-2014 Joel Yliluoma <bisqwit@iki.fi>
- * OPNMIDI Library and YM2612 support:   Copyright (c) 2017-2019 Vitaly Novichkov <admin@wohlnet.ru>
+ * OPNMIDI Library and YM2612 support:   Copyright (c) 2017-2020 Vitaly Novichkov <admin@wohlnet.ru>
  *
  * Library is based on the ADLMIDI, a MIDI player for Linux and Windows with OPL3 emulation:
  * http://iki.fi/bisqwit/source/adlmidi.html
@@ -24,42 +24,13 @@
 #include "opnmidi_midiplay.hpp"
 #include "opnmidi_opn2.hpp"
 #include "opnmidi_private.hpp"
+#ifndef OPNMIDI_DISABLE_MIDI_SEQUENCER
 #include "midi_sequencer.hpp"
+#endif
 #include "chips/opn_chip_base.h"
 
 // Minimum life time of percussion notes
 static const double drum_note_min_time = 0.03;
-
-
-// Mapping from MIDI volume level to OPL level value.
-
-static const uint_fast32_t DMX_volume_mapping_table[128] =
-{
-    0,  1,  3,  5,  6,  8,  10, 11,
-    13, 14, 16, 17, 19, 20, 22, 23,
-    25, 26, 27, 29, 30, 32, 33, 34,
-    36, 37, 39, 41, 43, 45, 47, 49,
-    50, 52, 54, 55, 57, 59, 60, 61,
-    63, 64, 66, 67, 68, 69, 71, 72,
-    73, 74, 75, 76, 77, 79, 80, 81,
-    82, 83, 84, 84, 85, 86, 87, 88,
-    89, 90, 91, 92, 92, 93, 94, 95,
-    96, 96, 97, 98, 99, 99, 100, 101,
-    101, 102, 103, 103, 104, 105, 105, 106,
-    107, 107, 108, 109, 109, 110, 110, 111,
-    112, 112, 113, 113, 114, 114, 115, 115,
-    116, 117, 117, 118, 118, 119, 119, 120,
-    120, 121, 121, 122, 122, 123, 123, 123,
-    124, 124, 125, 125, 126, 126, 127, 127,
-};
-
-static const uint_fast32_t W9X_volume_mapping_table[32] =
-{
-    63, 63, 40, 36, 32, 28, 23, 21,
-    19, 17, 15, 14, 13, 12, 11, 10,
-    9,  8,  7,  6,  5,  5,  4,  4,
-    3,  3,  2,  2,  1,  1,  0,  0
-};
 
 enum { MasterVolumeDefault = 127 };
 
@@ -91,7 +62,6 @@ void OPNMIDIplay::OpnChannel::addAge(int64_t us)
 }
 
 OPNMIDIplay::OPNMIDIplay(unsigned long sampleRate) :
-    m_masterVolume(MasterVolumeDefault),
     m_sysExDeviceId(0),
     m_synthMode(Mode_XG),
     m_arpeggioCounter(0)
@@ -178,7 +148,8 @@ void OPNMIDIplay::applySetup()
     synth.reset(m_setup.emulator, m_setup.PCM_RATE, static_cast<OPNFamily>(chipType), this);
     m_chipChannels.clear();
     m_chipChannels.resize(synth.m_numChannels, OpnChannel());
-#ifdef OPNMIDI_MIDI2VGM
+    resetMIDIDefaults();
+#if defined(OPNMIDI_MIDI2VGM) && !defined(OPNMIDI_DISABLE_MIDI_SEQUENCER)
     m_sequencerInterface->onloopStart = synth.m_loopStartHook;
     m_sequencerInterface->onloopStart_userData = synth.m_loopStartHookData;
     m_sequencerInterface->onloopEnd = synth.m_loopEndHook;
@@ -198,7 +169,8 @@ void OPNMIDIplay::partialReset()
     synth.reset(m_setup.emulator, m_setup.PCM_RATE, synth.chipFamily(), this);
     m_chipChannels.clear();
     m_chipChannels.resize(synth.m_numChannels);
-#ifdef OPNMIDI_MIDI2VGM
+    resetMIDIDefaults();
+#if defined(OPNMIDI_MIDI2VGM) && !defined(OPNMIDI_DISABLE_MIDI_SEQUENCER)
     m_sequencerInterface->onloopStart = synth.m_loopStartHook;
     m_sequencerInterface->onloopStart_userData = synth.m_loopStartHookData;
     m_sequencerInterface->onloopEnd = synth.m_loopEndHook;
@@ -209,7 +181,8 @@ void OPNMIDIplay::partialReset()
 
 void OPNMIDIplay::resetMIDI()
 {
-    m_masterVolume = MasterVolumeDefault;
+    Synth &synth = *m_synth;
+    synth.m_masterVolume = MasterVolumeDefault;
     m_sysExDeviceId = 0;
     m_synthMode = Mode_XG;
     m_arpeggioCounter = 0;
@@ -217,9 +190,30 @@ void OPNMIDIplay::resetMIDI()
     m_midiChannels.clear();
     m_midiChannels.resize(16, MIDIchannel());
 
+    resetMIDIDefaults();
+
     caugh_missing_instruments.clear();
     caugh_missing_banks_melodic.clear();
     caugh_missing_banks_percussion.clear();
+}
+
+void OPNMIDIplay::resetMIDIDefaults(int offset)
+{
+    Synth &synth = *m_synth;
+
+    for(size_t c = offset, n = m_midiChannels.size(); c < n; ++c)
+    {
+        MIDIchannel &ch = m_midiChannels[c];
+        if(synth.m_musicMode == Synth::MODE_XMIDI)
+        {
+            ch.def_volume = 127;
+            ch.def_bendsense_lsb = 0;
+            ch.def_bendsense_msb = 12;
+        }
+        else
+        if(synth.m_musicMode == Synth::MODE_RSXX)
+            ch.def_volume = 127;
+    }
 }
 
 void OPNMIDIplay::TickIterators(double s)
@@ -274,7 +268,6 @@ void OPNMIDIplay::realTime_ResetState()
     {
         MIDIchannel &chan = m_midiChannels[ch];
         chan.resetAllControllers();
-        chan.volume = (synth.m_musicMode == Synth::MODE_RSXX) ? 127 : 100;
         chan.vibpos = 0.0;
         chan.lastlrpn = 0;
         chan.lastmrpn = 0;
@@ -284,7 +277,7 @@ void OPNMIDIplay::realTime_ResetState()
         noteUpdateAll(uint16_t(ch), Upd_All);
         noteUpdateAll(uint16_t(ch), Upd_Off);
     }
-    m_masterVolume = MasterVolumeDefault;
+    synth.m_masterVolume = MasterVolumeDefault;
 }
 
 bool OPNMIDIplay::realTime_NoteOn(uint8_t channel, uint8_t note, uint8_t velocity)
@@ -301,7 +294,7 @@ bool OPNMIDIplay::realTime_NoteOn(uint8_t channel, uint8_t note, uint8_t velocit
         if(!i.is_end())
         {
             MIDIchannel::NoteInfo &ni = i->value;
-            const int veloffset = ni.ains->midi_velocity_offset;
+            const int veloffset = ni.ains->midiVelocityOffset;
             velocity = static_cast<uint8_t>(std::min(127, std::max(1, static_cast<int>(velocity) + veloffset)));
             ni.vol = velocity;
             noteUpdate(channel, i, Upd_Volume);
@@ -359,7 +352,7 @@ bool OPNMIDIplay::realTime_NoteOn(uint8_t channel, uint8_t note, uint8_t velocit
     if(isPercussion)
         bank += Synth::PercussionTag;
 
-    const opnInstMeta2 *ains = &Synth::m_emptyInstrument;
+    const OpnInstMeta *ains = &Synth::m_emptyInstrument;
 
     //Set bank bank
     const Synth::Bank *bnk = NULL;
@@ -382,7 +375,7 @@ bool OPNMIDIplay::realTime_NoteOn(uint8_t channel, uint8_t note, uint8_t velocit
         }
     }
     //Or fall back to first bank
-    if(ains->flags & opnInstMeta::Flag_NoSound)
+    if(ains->flags & OpnInstMeta::Flag_NoSound)
     {
         Synth::BankMap::iterator b = synth.m_insBanks.find(bank & Synth::PercussionTag);
         if(b != synth.m_insBanks.end())
@@ -392,13 +385,13 @@ bool OPNMIDIplay::realTime_NoteOn(uint8_t channel, uint8_t note, uint8_t velocit
             ains = &bnk->ins[midiins];
     }
 
-    const int veloffset = ains->midi_velocity_offset;
+    const int veloffset = ains->midiVelocityOffset;
     velocity = static_cast<uint8_t>(std::min(127, std::max(1, static_cast<int>(velocity) + veloffset)));
 
     int32_t tone = note;
     if(!isPercussion && (bank > 0)) // For non-zero banks
     {
-        if(ains->flags & opnInstMeta::Flag_NoSound)
+        if(ains->flags & OpnInstMeta::Flag_NoSound)
         {
             if(hooks.onDebugMessage)
             {
@@ -413,25 +406,25 @@ bool OPNMIDIplay::realTime_NoteOn(uint8_t channel, uint8_t note, uint8_t velocit
         }
     }
 
-    if(ains->tone)
+    if(ains->drumTone)
     {
         /*if(ains.tone < 20)
             tone += ains.tone;
         else*/
-        if(ains->tone < 128)
-            tone = ains->tone;
+        if(ains->drumTone < 128)
+            tone = ains->drumTone;
         else
-            tone -= ains->tone - 128;
+            tone -= ains->drumTone - 128;
     }
 
     MIDIchannel::NoteInfo::Phys voices[MIDIchannel::NoteInfo::MaxNumPhysChans] = {
-        {0, ains->opn[0], /*false*/},
-        {0, ains->opn[1], /*pseudo_4op*/},
+        {0, ains->op[0], /*false*/},
+        {0, ains->op[1], /*pseudo_4op*/},
     };
     //bool pseudo_4op = ains.flags & opnInstMeta::Flag_Pseudo8op;
     //if((opn.AdlPercussionMode == 1) && PercussionMap[midiins & 0xFF]) i[1] = i[0];
 
-    bool isBlankNote = (ains->flags & opnInstMeta::Flag_NoSound) != 0;
+    bool isBlankNote = (ains->flags & OpnInstMeta::Flag_NoSound) != 0;
 
     if(hooks.onDebugMessage)
     {
@@ -699,7 +692,7 @@ void OPNMIDIplay::realTime_Controller(uint8_t channel, uint8_t type, uint8_t val
         break;
 
     case 121: // Reset all controllers
-        m_midiChannels[channel].resetAllControllers();
+        m_midiChannels[channel].resetAllControllers121();
         noteUpdateAll(channel, Upd_Pan + Upd_Volume + Upd_Pitch);
         // Kill all sustained notes
         killSustainingNotes(channel, -1, OpnChannel::LocationData::Sustain_ANY);
@@ -878,7 +871,8 @@ bool OPNMIDIplay::doUniversalSysEx(unsigned dev, bool realtime, const uint8_t *d
             unsigned volume =
                 (((unsigned)data[0] & 0x7F)) |
                 (((unsigned)data[1] & 0x7F) << 7);
-            m_masterVolume = static_cast<uint8_t>(volume >> 7);
+            if(m_synth.get())
+                m_synth->m_masterVolume = static_cast<uint8_t>(volume >> 7);
             for(size_t ch = 0; ch < m_midiChannels.size(); ch++)
                 noteUpdateAll(uint16_t(ch), Upd_Volume);
             return true;
@@ -1083,7 +1077,7 @@ void OPNMIDIplay::noteUpdate(size_t midCh,
     const double currentTone    = info.currentTone;
     const uint8_t vol     = info.vol;
     const size_t midiins = info.midiins;
-    const opnInstMeta2 &ains = *info.ains;
+    const OpnInstMeta &ains = *info.ains;
     OpnChannel::Location my_loc;
     my_loc.MidCh = static_cast<uint16_t>(midCh);
     my_loc.note  = info.note;
@@ -1111,8 +1105,8 @@ void OPNMIDIplay::noteUpdate(size_t midCh,
                 OpnChannel::LocationData &d = ci->value;
                 d.sustained = OpnChannel::LocationData::Sustain_None;
                 d.vibdelay_us  = 0;
-                d.fixed_sustain = (ains.ms_sound_kon == static_cast<uint16_t>(opnNoteOnMaxTime));
-                d.kon_time_until_neglible_us = 1000 * ains.ms_sound_kon;
+                d.fixed_sustain = (ains.soundKeyOnMs == static_cast<uint16_t>(opnNoteOnMaxTime));
+                d.kon_time_until_neglible_us = 1000 * ains.soundKeyOnMs;
                 d.ins       = ins;
             }
         }
@@ -1148,7 +1142,7 @@ void OPNMIDIplay::noteUpdate(size_t midCh,
                     }
                     else
                     {
-                        m_chipChannels[c].koff_time_until_neglible_us = 1000 * int64_t(ains.ms_sound_koff);
+                        m_chipChannels[c].koff_time_until_neglible_us = 1000 * int64_t(ains.soundKeyOffMs);
                     }
                 }
             }
@@ -1173,9 +1167,9 @@ void OPNMIDIplay::noteUpdate(size_t midCh,
 
         if(props_mask & Upd_Volume)
         {
-            uint_fast32_t volume;
-            bool is_percussion = (midCh == 9) || m_midiChannels[midCh].is_xg_percussion;
-            uint_fast32_t brightness = is_percussion ? 127 : m_midiChannels[midCh].brightness;
+            const MIDIchannel &ch = m_midiChannels[midCh];
+            bool is_percussion = (midCh == 9) || ch.is_xg_percussion;
+            uint_fast32_t brightness = is_percussion ? 127 : ch.brightness;
 
             if(!m_setup.fullRangeBrightnessCC74)
             {
@@ -1186,81 +1180,11 @@ void OPNMIDIplay::noteUpdate(size_t midCh,
                     brightness *= 2;
             }
 
-            switch(synth.m_volumeScale)
-            {
-            default:
-            case Synth::VOLUME_Generic:
-            {
-                volume = vol * m_masterVolume * m_midiChannels[midCh].volume * m_midiChannels[midCh].expression;
-                /* If the channel has arpeggio, the effective volume of
-                     * *this* instrument is actually lower due to timesharing.
-                     * To compensate, add extra volume that corresponds to the
-                     * time this note is *not* heard.
-                     * Empirical tests however show that a full equal-proportion
-                     * increment sounds wrong. Therefore, using the square root.
-                     */
-                //volume = (int)(volume * std::sqrt( (double) ch[c].users.size() ));
-
-                // The formula below: SOLVE(V=127^3 * 2^( (A-63.49999) / 8), A)
-                volume = volume > (8725 * 127) ? static_cast<uint_fast32_t>((std::log(static_cast<double>(volume)) * 11.541560327111707 - 1.601379199767093e+02) * 2.0) : 0;
-                // The incorrect formula below: SOLVE(V=127^3 * (2^(A/63)-1), A)
-                //opl.Touch_Real(c, volume>11210 ? 91.61112 * std::log(4.8819E-7*volume + 1.0)+0.5 : 0);
-            }
-            break;
-
-            case Synth::VOLUME_NATIVE:
-            {
-                volume = vol * m_midiChannels[midCh].volume * m_midiChannels[midCh].expression;
-                //volume = volume * m_masterVolume / (127 * 127 * 127) / 2;
-                volume = (volume * m_masterVolume) / 4096766;
-            }
-            break;
-
-            case Synth::VOLUME_DMX:
-            {
-                volume = 2 * (m_midiChannels[midCh].volume * m_midiChannels[midCh].expression * m_masterVolume / 16129) + 1;
-                //volume = 2 * (Ch[MidCh].volume) + 1;
-                volume = (DMX_volume_mapping_table[(vol < 128) ? vol : 127] * volume) >> 9;
-                if(volume > 0)
-                    volume += 64;//OPN has 0~127 range. As 0...63 is almost full silence, but at 64 to 127 is very closed to OPL3, just add 64.
-            }
-            break;
-
-            case Synth::VOLUME_APOGEE:
-            {
-                volume = (m_midiChannels[midCh].volume * m_midiChannels[midCh].expression * m_masterVolume / 16129);
-                volume = ((64 * (vol + 0x80)) * volume) >> 15;
-                //volume = ((63 * (vol + 0x80)) * Ch[MidCh].volume) >> 15;
-                if(volume > 0)
-                    volume += 64;//OPN has 0~127 range. As 0...63 is almost full silence, but at 64 to 127 is very closed to OPL3, just add 64.
-            }
-            break;
-
-            case Synth::VOLUME_9X:
-            {
-                //volume = 63 - W9X_volume_mapping_table[(((vol * Ch[MidCh].volume /** Ch[MidCh].expression*/) * 127 / 16129 /*2048383*/) >> 2)];
-                volume = 63 - W9X_volume_mapping_table[((vol * m_midiChannels[midCh].volume * m_midiChannels[midCh].expression * m_masterVolume / 2048383) >> 2)];
-                //volume = W9X_volume_mapping_table[vol >> 2] + volume;
-                if(volume > 0)
-                    volume += 64;//OPN has 0~127 range. As 0...63 is almost full silence, but at 64 to 127 is very closed to OPL3, just add 64.
-            }
-            break;
-            }
-
-            synth.touchNote(c, static_cast<uint8_t>(volume), static_cast<uint8_t>(brightness));
-
-            /* DEBUG ONLY!!!
-            static uint32_t max = 0;
-
-            if(volume == 0)
-                max = 0;
-
-            if(volume > max)
-                max = volume;
-
-            printf("%d\n", max);
-            fflush(stdout);
-            */
+            synth.touchNote(c,
+                            vol,
+                            ch.volume,
+                            ch.expression,
+                            static_cast<uint8_t>(brightness));
         }
 
         if(props_mask & Upd_Pitch)
@@ -1272,20 +1196,22 @@ void OPNMIDIplay::noteUpdate(size_t midCh,
             {
                 MIDIchannel &chan = m_midiChannels[midCh];
                 double midibend = chan.bend * chan.bendsense;
-                double bend = midibend + ins.ains.finetune;
+                double bend = midibend + ins.ains.noteOffset;
                 double phase = 0.0;
                 uint8_t vibrato = std::max(chan.vibrato, chan.aftertouch);
+
                 vibrato = std::max(vibrato, info.vibrato);
 
-                if((ains.flags & opnInstMeta::Flag_Pseudo8op) && ins.ains == ains.opn[1])
+                if((ains.flags & OpnInstMeta::Flag_Pseudo8op) && ins.ains == ains.op[1])
                 {
-                    phase = ains.fine_tune;//0.125; // Detune the note slightly (this is what Doom does)
+                    phase = ains.voice2_fine_tune;
                 }
 
                 if(vibrato && (d.is_end() || d->value.vibdelay_us >= chan.vibdelay_us))
                     bend += static_cast<double>(vibrato) * chan.vibdepth * std::sin(chan.vibpos);
 
-                synth.noteOn(c, std::exp(0.057762265 * (currentTone + bend + phase)));
+                synth.noteOn(c, currentTone + bend + phase);
+
                 if(hooks.onNote)
                     hooks.onNote(hooks.onNote_userData, c, noteTone, static_cast<int>(midiins), vol, midibend);
             }
@@ -1680,6 +1606,7 @@ size_t OPNMIDIplay::chooseDevice(const std::string &name)
     size_t n = m_midiDevices.size() * 16;
     m_midiDevices.insert(std::make_pair(name, n));
     m_midiChannels.resize(n + 16);
+    resetMIDIDefaults(static_cast<int>(n));
     return n;
 }
 

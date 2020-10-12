@@ -2,7 +2,7 @@
  * libOPNMIDI is a free Software MIDI synthesizer library with OPN2 (YM2612) emulation
  *
  * MIDI parser and player (Original code from ADLMIDI): Copyright (c) 2010-2014 Joel Yliluoma <bisqwit@iki.fi>
- * OPNMIDI Library and YM2612 support:   Copyright (c) 2017-2019 Vitaly Novichkov <admin@wohlnet.ru>
+ * OPNMIDI Library and YM2612 support:   Copyright (c) 2017-2020 Vitaly Novichkov <admin@wohlnet.ru>
  *
  * Library is based on the ADLMIDI, a MIDI player for Linux and Windows with OPL3 emulation:
  * http://iki.fi/bisqwit/source/adlmidi.html
@@ -26,7 +26,9 @@
 #include "opnmidi_private.hpp"
 #include "opnmidi_cvt.hpp"
 #include "file_reader.hpp"
+#ifndef OPNMIDI_DISABLE_MIDI_SEQUENCER
 #include "midi_sequencer.hpp"
+#endif
 #include "wopn/wopn_file.h"
 
 bool OPNMIDIplay::LoadBank(const std::string &filename)
@@ -43,12 +45,12 @@ bool OPNMIDIplay::LoadBank(const void *data, size_t size)
     return LoadBank(file);
 }
 
-void cvt_OPNI_to_FMIns(opnInstMeta2 &ins, const OPN2_Instrument &in)
+void cvt_OPNI_to_FMIns(OpnInstMeta &ins, const OPN2_Instrument &in)
 {
     return cvt_generic_to_FMIns(ins, in);
 }
 
-void cvt_FMIns_to_OPNI(OPN2_Instrument &ins, const opnInstMeta2 &in)
+void cvt_FMIns_to_OPNI(OPN2_Instrument &ins, const OpnInstMeta &in)
 {
     cvt_FMIns_to_generic(ins, in);
 }
@@ -133,8 +135,8 @@ bool OPNMIDIplay::LoadBank(FileAndMemReader &fr)
             Synth::Bank &bank = synth.m_insBanks[bankno];
             for(int j = 0; j < 128; j++)
             {
-                opnInstMeta2 &ins = bank.ins[j];
-                std::memset(&ins, 0, sizeof(opnInstMeta2));
+                OpnInstMeta &ins = bank.ins[j];
+                std::memset(&ins, 0, sizeof(OpnInstMeta));
                 WOPNInstrument &inIns = slots_src_ins[ss][i].ins[j];
                 cvt_generic_to_FMIns(ins, inIns);
             }
@@ -189,11 +191,14 @@ bool OPNMIDIplay::LoadMIDI_post()
         /* Same as for CMF */
         return false;
     }
+    else if(format == MidiSequencer::Format_XMIDI)
+        synth.m_musicMode = Synth::MODE_XMIDI;
 
     m_setup.tick_skip_samples_delay = 0;
     synth.reset(m_setup.emulator, m_setup.PCM_RATE, synth.chipFamily(), this); // Reset OPN2 chip
     m_chipChannels.clear();
     m_chipChannels.resize(synth.m_numChannels);
+    resetMIDIDefaults();
 #ifdef OPNMIDI_MIDI2VGM
     m_sequencerInterface->onloopStart = synth.m_loopStartHook;
     m_sequencerInterface->onloopStart_userData = synth.m_loopStartHookData;

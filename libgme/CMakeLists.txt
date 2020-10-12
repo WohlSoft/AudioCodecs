@@ -153,11 +153,3 @@ install(FILES
     src/blargg_source.h
     DESTINATION include/gme
 )
-
-# TEMPORARELY FOR COMPATIBILITY: remove this after mergin of wip-build-polishing on MixerX into master branch
-install(FILES
-    src/gme.h
-    src/blargg_source.h
-    DESTINATION include
-)
-

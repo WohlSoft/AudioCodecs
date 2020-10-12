@@ -20,7 +20,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <SDL2/SDL.h>
+#include "SDL.h"
 
 #include "timidity.h"
 #include "options.h"
@@ -158,16 +158,15 @@ static Instrument *load_instrument(MidiSong *song, char *name, int percussion,
   Sample *sp;
   SDL_RWops *rw;
   char tmp[1024];
-  int i,j,noluck=0;
+  int i,j;
   static char *patch_ext[] = PATCH_EXT_LIST;
-  (void)percussion;/* Unused */
 
+  (void)percussion; /* unused */
   if (!name) return 0;
 
   /* Open patch file */
   if ((rw=open_file(name)) == NULL)
     {
-      noluck=1;
       /* Try with various extensions */
       for (i=0; patch_ext[i]; i++)
 	{
@@ -176,15 +175,12 @@ static Instrument *load_instrument(MidiSong *song, char *name, int percussion,
 	      strcpy(tmp, name);
 	      strcat(tmp, patch_ext[i]);
 	      if ((rw=open_file(tmp)) != NULL)
-		{
-		  noluck=0;
 		  break;
-		}
 	    }
 	}
     }
 
-  if (noluck)
+  if (rw == NULL)
     {
       SNDDBG(("Instrument `%s' can't be found.\n", name));
       return 0;
@@ -225,7 +221,6 @@ static Instrument *load_instrument(MidiSong *song, char *name, int percussion,
   ip->sample = safe_malloc(sizeof(Sample) * ip->samples);
   for (i=0; i<ip->samples; i++)
     {
-
       Uint8 fractions;
       Sint32 tmplong;
       Uint16 tmpshort;
@@ -239,7 +234,7 @@ static Instrument *load_instrument(MidiSong *song, char *name, int percussion,
       thing = SDL_SwapLE16(tmpshort);
 #define READ_LONG(thing) \
       if (1 != SDL_RWread(rw, &tmplong, 4, 1)) goto fail; \
-      thing = SDL_SwapLE32(tmplong);
+      thing = (Sint32)SDL_SwapLE32((Uint32)tmplong);
 
       SDL_RWseek(rw, 7, RW_SEEK_CUR); /* Skip the wave name */
 
@@ -314,8 +309,8 @@ static Instrument *load_instrument(MidiSong *song, char *name, int percussion,
       READ_CHAR(sp->modes);
 
       SDL_RWseek(rw, 40, RW_SEEK_CUR); /* skip the useless scale frequency, scale
-				       factor (what's it mean?), and reserved
-				       space */
+				  factor (what's it mean?), and reserved
+				  space */
 
       /* Mark this as a fixed-pitch instrument if such a deed is desired. */
       if (note_to_use!=-1)
@@ -327,7 +322,6 @@ static Instrument *load_instrument(MidiSong *song, char *name, int percussion,
          understand why, and fixing it by adding the Sustain flag to
          all looped patches probably breaks something else. We do it
          anyway. */
-
       if (sp->modes & MODES_LOOPING)
 	sp->modes |= MODES_SUSTAIN;
 

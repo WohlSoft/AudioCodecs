@@ -1,13 +1,19 @@
 cmake_minimum_required(VERSION 3.2)
 project(libVorbis VERSION 1.3.6 LANGUAGES C)
 
+include(CheckIncludeFile)
+
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
 add_definitions(
     -DHAVE_CONFIG_H
 )
 
+check_include_file(alloca.h HAVE_ALLOCA_H)
+
 add_definitions(-DFLOAT_LOOKUP -DINT_LOOKUP)
+
+configure_file(config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config/config.h)
 
 if(MSVC)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4244 /wd4267 /wd4305")
@@ -44,9 +50,12 @@ add_library(vorbisenc STATIC
     lib/vorbisenc.c
 )
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libogg/include)
+include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib
+    ${CMAKE_CURRENT_SOURCE_DIR}/../libogg/include
+    ${CMAKE_CURRENT_BINARY_DIR}/config
+)
 
 target_include_directories(vorbis PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(vorbisfile PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
