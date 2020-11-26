@@ -23,7 +23,7 @@ target_compile_definitions(timidity PRIVATE -DHAVE_CONFIG_H=0)
 
 set_target_properties(timidity PROPERTIES OUTPUT_NAME "timidity_sdl2")
 
-if(DOWNLOAD_SDL2_DEPENDENCY)
+if(DOWNLOAD_SDL2_DEPENDENCY OR USE_LOCAL_SDL2)
     add_dependencies(timidity SDL2HG)
     target_include_directories(timidity PRIVATE ${CMAKE_BINARY_DIR}/include/SDL2)
 elseif(SDL2_REPO_PATH)
