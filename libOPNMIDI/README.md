@@ -58,13 +58,17 @@ The library is licensed under in it's parts LGPL 2.1+, GPL v2+, GPL v3+, and MIT
 * GENS 2.10 emulator is licensed under LGPL v2.1+.
 * MAME YM2612 emulator is licensed under GPL v2+.
 * Genesis Plus GX emulator is licensed under GPL v2+.
+* Neko Project II Kai (fmgen, developed by "cisc" <cisc@retropc.net>) OPNA emulator is licensed under MIT-compatible license.
+* PMDWin emulator OPNA emulator is licensed under BSD 2-Clause.
+* MAME YM2608 emulator is licensed under GPL v2+.
 * Chip interfaces are licensed under LGPL v2.1+.
 * File Reader class and MIDI Sequencer is licensed under MIT.
 * Other parts of library are licensed under GPLv3+.
 
 ## Available CMake options
-* **CMAKE_PREFIX_PATH** - destination folder where libOPNMIDI will be installed. On Linux it is /usr/local/ by default.
-* **CMAKE_BUILD_TYPE** - Build types: **Debug** or **Release**
+* **CMAKE_INSTALL_PREFIX** - destination folder where libOPNMIDI will be installed. On Linux it is /usr/local/ by default.
+* **CMAKE_BUILD_TYPE** - Build types: **Debug** or **Release**. Also **MinSizeRel** or **RelWithDebInfo**.
+
 * **WITH_MIDIPLAY** - (ON/OFF, default OFF) Build demo MIDI player (Requires SDL2 and also pthread on Windows with MinGW)
 * **WITH_VLC_PLUGIN** - (ON/OFF, default OFF) Compile VLC plugin. For now, works on Linux and VLC. Support for other platforms comming soon!
 * **WITH_WINMMDRV** - (ON/OFF, default OFF) (Windows platform only) Compile the WinMM MIDI driver to use libOPNMIDI as a system MIDI device.
