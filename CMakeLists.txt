@@ -64,7 +64,7 @@ if(BUILD_FLAC)
     add_subdirectory(libFLAC)
 endif()
 
-option(BUILD_ID3TAGSDL "Enable building of libID3TAG-SDL" ON)
+option(BUILD_ID3TAGSDL "Enable building of libID3TAG-SDL" OFF)
 if(BUILD_ID3TAGSDL)
     add_subdirectory(libid3tag-sdl)
     if(DOWNLOAD_SDL2_DEPENDENCY)
