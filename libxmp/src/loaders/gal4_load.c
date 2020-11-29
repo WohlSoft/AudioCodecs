@@ -68,9 +68,10 @@ static int get_main(struct module_data *m, int size, HIO_HANDLE *f, void *parm)
 	struct xmp_module *mod = &m->mod;
 	char buf[64];
 	int flags;
-	
+
 	hio_read(buf, 1, 64, f);
 	strncpy(mod->name, buf, 63);	/* ensure string terminator */
+	mod->name[63] = '\0';
 	libxmp_set_type(m, "Galaxy Music System 4.0");
 
 	flags = hio_read8(f);
@@ -218,7 +219,7 @@ static int get_inst(struct module_data *m, int size, HIO_HANDLE *f, void *parm)
 	hio_read8(f);		/* 00 */
 	i = hio_read8(f);		/* instrument number */
 
-	hio_read(&mod->xxi[i].name, 1, 28, f);
+	hio_read(mod->xxi[i].name, 1, 28, f);
 	mod->xxi[i].nsm = hio_read8(f);
 
 	for (j = 0; j < 108; j++) {
@@ -296,13 +297,13 @@ static int get_inst(struct module_data *m, int size, HIO_HANDLE *f, void *parm)
 	for (j = 0; j < mod->xxi[i].nsm; j++, data->snum++) {
 		hio_read32b(f);	/* SAMP */
 		hio_read32b(f);	/* size */
-	
-		hio_read(&mod->xxs[data->snum].name, 1, 28, f);
-	
+
+		hio_read(mod->xxs[data->snum].name, 1, 28, f);
+
 		mod->xxi[i].sub[j].pan = hio_read8(f) * 4;
 		if (mod->xxi[i].sub[j].pan == 0)	/* not sure about this */
 			mod->xxi[i].sub[j].pan = 0x80;
-		
+
 		mod->xxi[i].sub[j].vol = hio_read8(f);
 		flags = hio_read8(f);
 		hio_read8(f);	/* unknown - 0x80 */
@@ -312,11 +313,11 @@ static int get_inst(struct module_data *m, int size, HIO_HANDLE *f, void *parm)
 		mod->xxi[i].sub[j].vra = vra;
 		mod->xxi[i].sub[j].vsw = vsw;
 		mod->xxi[i].sub[j].sid = data->snum;
-	
+
 		mod->xxs[data->snum].len = hio_read32l(f);
 		mod->xxs[data->snum].lps = hio_read32l(f);
 		mod->xxs[data->snum].lpe = hio_read32l(f);
-	
+
 		mod->xxs[data->snum].flg = 0;
 		if (flags & 0x04)
 			mod->xxs[data->snum].flg |= XMP_SAMPLE_16BIT;
@@ -326,15 +327,15 @@ static int get_inst(struct module_data *m, int size, HIO_HANDLE *f, void *parm)
 			mod->xxs[data->snum].flg |= XMP_SAMPLE_LOOP_BIDIR;
 		/* if (flags & 0x80)
 			mod->xxs[data->snum].flg |= ? */
-	
+
 		srate = hio_read32l(f);
 		finetune = 0;
 		libxmp_c2spd_to_note(srate, &mod->xxi[i].sub[j].xpo, &mod->xxi[i].sub[j].fin);
 		mod->xxi[i].sub[j].fin += finetune;
-	
+
 		hio_read32l(f);			/* 0x00000000 */
 		hio_read32l(f);			/* unknown */
-	
+
 		D_(D_INFO "  %X: %05x%c%05x %05x %c V%02x P%02x %5d",
 			j, mod->xxs[data->snum].len,
 			mod->xxs[data->snum].flg & XMP_SAMPLE_16BIT ? '+' : ' ',
@@ -345,7 +346,7 @@ static int get_inst(struct module_data *m, int size, HIO_HANDLE *f, void *parm)
 			mod->xxi[i].sub[j].vol,
 			mod->xxi[i].sub[j].pan,
 			srate);
-	
+
 		if (mod->xxs[data->snum].len > 1) {
 			int snum = data->snum;
 			if (libxmp_load_sample(m, f, 0, &mod->xxs[snum], NULL) < 0)

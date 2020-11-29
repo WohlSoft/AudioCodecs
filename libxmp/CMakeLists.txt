@@ -61,7 +61,7 @@ list(APPEND LIBXMP_SRC
     src/effects.c
     src/filter.c
     src/fmopl.c
-    src/fnmatch.c
+    src/xfnmatch.c
     src/format.c
     src/hio.c
     src/lfo.c

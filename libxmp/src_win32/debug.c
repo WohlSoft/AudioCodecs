@@ -2,19 +2,19 @@
  * Win32 debug message helper by Mirko Buffoni
  */
 
-#if defined WIN32 && defined _DEBUG
+#if defined(_WIN32) && defined(_DEBUG)
 
 #include <stdio.h>
 #include <stdarg.h>
-void D_(const char *format, ...)
+void _D(const char *format, ...)
 {
-    va_list argptr;
+	va_list argptr;
 
-    /* do the output */
-    va_start(argptr, format);
-    vprintf(format, argptr);
-    printf("\n");
-    va_end(argptr);
+	/* do the output */
+	va_start(argptr, format);
+	vprintf(format, argptr);
+	printf("\n");
+	va_end(argptr);
 }
 
 #endif

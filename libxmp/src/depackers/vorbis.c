@@ -23,13 +23,13 @@
 //   - cannot concatenate multiple vorbis streams
 //   - sample positions are 32-bit, limiting seekable 192Khz
 //       files to around 6 hours (Ogg supports 64-bit)
-// 
+//
 // All of these limitations may be removed in future versions.
 
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>
 #endif
-#ifdef WIN32
+#ifdef _WIN32
 #include <malloc.h>
 #endif
 
@@ -712,10 +712,9 @@ static int compute_codewords(Codebook *c, uint8 *len, int n, uint32 *values)
    for (k=0; k < n; ++k) if (len[k] < NO_CODE) break;
 
    // sanity check
-   if (k == n) return -1;
-   if (len[k] >= 32) return -1;
+   if (k == n) return (c->sorted_entries == 0);
+   if (len[k] >= 32) return FALSE;
 
-   if (k == n) { assert(c->sorted_entries == 0); return TRUE; }
    // add to the list
    add_entry(c, 0, k, m++, len[k], values);
    // add all available leaves
@@ -3609,7 +3608,7 @@ static int start_decoder(vorb *f)
             c->lookup_values = val;
 	    /* Sanity check */
             if (val <= 0) {
-              return FALSE;
+              return error(f, VORBIS_invalid_setup);
             }
          } else {
             c->lookup_values = c->entries * c->dimensions;
@@ -3656,7 +3655,7 @@ static int start_decoder(vorb *f)
                   /* Sanity check */
                   if (div == 0) {
                     free(mults);
-                    return FALSE;
+                    return error(f, VORBIS_invalid_setup);
                   }
                }
             }
@@ -3683,11 +3682,11 @@ static int start_decoder(vorb *f)
             /* Sanity check */
             if (c->sparse) {
                if (c->lookup_values > c->sorted_entries * c->dimensions) {
-                  return FALSE;
+                  return error(f, VORBIS_invalid_setup);
                }
             } else {
                if (c->lookup_values > c->entries * c->dimensions) {
-                  return FALSE;
+                  return error(f, VORBIS_invalid_setup);
                }
             }
 
@@ -3792,7 +3791,7 @@ static int start_decoder(vorb *f)
 
       /* Sanity check */
       if (r->end - r->begin > 1024) {
-        return FALSE;
+        return error(f, VORBIS_invalid_setup);
       }
 
       r->part_size = get_bits(f,24)+1;
@@ -3819,7 +3818,7 @@ static int start_decoder(vorb *f)
 
       /* Sanity check */
       if (r->classbook >= f->codebook_count) {
-         return -1;
+         return error(f, VORBIS_invalid_setup);
       }
 
       // precompute the classifications[] array to avoid inner-loop mod/divide

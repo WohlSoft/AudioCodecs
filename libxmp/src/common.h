@@ -1,17 +1,19 @@
 #ifndef LIBXMP_COMMON_H
 #define LIBXMP_COMMON_H
 
-#ifdef __AROS__
-#define __AMIGA__
-#endif
-
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include "xmp.h"
 
+#if defined(__MORPHOS__) || defined(__AROS__) || defined(AMIGAOS) || \
+    defined(__amigaos__) || defined(__amigaos4__) ||defined(__amigados__) || \
+    defined(AMIGA) || defined(_AMIGA) || defined(__AMIGA__)
+#define LIBXMP_AMIGA	1	/* to identify amiga platforms. */
+#endif
+
 #if (defined(__GNUC__) || defined(__clang__)) && defined(XMP_SYM_VISIBILITY)
-#if !defined(WIN32) && !defined(__ANDROID__) && !defined(__APPLE__) && !defined(__AMIGA__) && !defined(__MSDOS__) && !defined(B_BEOS_VERSION) && !defined(__ATHEOS__) && !defined(EMSCRIPTEN) && !defined(__MINT__)
+#if !defined(_WIN32) && !defined(__ANDROID__) && !defined(__APPLE__) && !defined(LIBXMP_AMIGA) && !defined(__MSDOS__) && !defined(B_BEOS_VERSION) && !defined(__ATHEOS__) && !defined(EMSCRIPTEN) && !defined(__MINT__)
 #define USE_VERSIONED_SYMBOLS
 #endif
 #endif
@@ -146,10 +148,23 @@ void __inline CLIB_DECL D_(const char *text, ...) { do {} while (0); }
 #define unlink _unlink
 #endif
 #if defined(_WIN32) || defined(__WATCOMC__) /* in win32.c */
+#define USE_LIBXMP_SNPRINTF
+/* MSVC 2015+ has C99 compliant snprintf and vsnprintf implementations.
+ * If __USE_MINGW_ANSI_STDIO is defined for MinGW (which it is by default),
+ * compliant implementations will be used instead of the broken MSVCRT
+ * functions. Additionally, GCC may optimize some calls to those functions. */
+#if defined(_MSC_VER) && _MSC_VER >= 1900
+#undef USE_LIBXMP_SNPRINTF
+#endif
+#if defined(__MINGW32__) && defined(__USE_MINGW_ANSI_STDIO) && (__USE_MINGW_ANSI_STDIO != 0)
+#undef USE_LIBXMP_SNPRINTF
+#endif
+#ifdef USE_LIBXMP_SNPRINTF
 int libxmp_vsnprintf(char *, size_t, const char *, va_list);
 int libxmp_snprintf (char *, size_t, const char *, ...);
 #define snprintf  libxmp_snprintf
 #define vsnprintf libxmp_vsnprintf
+#endif
 #endif
 
 /* Quirks */
@@ -255,7 +270,7 @@ struct module_data {
 
 	char *dirname;			/* file dirname */
 	char *basename;			/* file basename */
-	char *filename;			/* Module file name */
+	const char *filename;		/* Module file name */
 	char *comment;			/* Comments, if any */
 	uint8 md5[16];			/* MD5 message digest */
 	int size;			/* File size */
@@ -403,6 +418,7 @@ struct context_data {
 char	*libxmp_adjust_string	(char *);
 int	libxmp_exclude_match	(const char *);
 int	libxmp_prepare_scan	(struct context_data *);
+void	libxmp_free_scan	(struct context_data *);
 int	libxmp_scan_sequences	(struct context_data *);
 int	libxmp_get_sequence	(struct context_data *, int);
 int	libxmp_set_player_mode	(struct context_data *);

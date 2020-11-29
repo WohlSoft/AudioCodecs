@@ -73,9 +73,10 @@ static int get_init(struct module_data *m, int size, HIO_HANDLE *f, void *parm)
 	struct local_data *data = (struct local_data *)parm;
 	char buf[64];
 	int flags;
-	
+
 	hio_read(buf, 1, 64, f);
 	strncpy(mod->name, buf, 63);	/* ensure string terminator */
+	mod->name[63] = '\0';
 	libxmp_set_type(m, "Galaxy Music System 5.0");
 	flags = hio_read8(f);	/* bit 0: Amiga period */
 	if (~flags & 0x01)
@@ -204,8 +205,8 @@ static int get_inst(struct module_data *m, int size, HIO_HANDLE *f, void *parm)
 	hio_read32b(f);		/* 42 01 00 00 */
 	hio_read8(f);		/* 00 */
 	i = hio_read8(f);		/* instrument number */
-	
-	hio_read(&mod->xxi[i].name, 1, 28, f);
+
+	hio_read(mod->xxi[i].name, 1, 28, f);
 	hio_seek(f, 290, SEEK_CUR);	/* Sample/note map, envelopes */
 	mod->xxi[i].nsm = hio_read16l(f);
 
@@ -226,7 +227,7 @@ static int get_inst(struct module_data *m, int size, HIO_HANDLE *f, void *parm)
 	hio_read32b(f);	/* size */
 	hio_read32b(f);	/* unknown - usually 0x40000000 */
 
-	hio_read(&mod->xxs[i].name, 1, 28, f);
+	hio_read(mod->xxs[i].name, 1, 28, f);
 
 	hio_read32b(f);	/* unknown - 0x0000 */
 	hio_read8(f);	/* unknown - 0x00 */
