@@ -224,7 +224,7 @@ if(WIN32)
     )
     if(CMAKE_BUILD_TYPE_LOWER STREQUAL "debug")
         list(APPEND LIBXMP_SRC
-            src_win32/debug.c
+            src/win32/debug.c
         )
     endif()
 endif()
