@@ -141,8 +141,10 @@ rem Tip: instead of "release" you can have "debug" to build debug versions. Inst
 * **libMikMod:** GNU LGPLv2+
 * **libModPlug:** Public Domain
 * **libOGG:** BSD 3-clause "New" or "Revised" License
-* **libOPNMIDI:** GNU LGPLv3+ or GNU GPLv3+
 * **libOpenMPT:** BSD
+* **libOPNMIDI:** GNU LGPLv3+ or GNU GPLv3+
+* **libOpus:** BSD 3-clause "New" or "Revised" License
+* **libSDL2:** ZLib
 * **libSMPEG:** GNU LGPLv2+
 * **libTimidity-SDL:** The "Artistic License"
 * **libVorbis:** BSD 3-clause "New" or "Revised" License
@@ -157,6 +159,8 @@ rem Tip: instead of "release" you can have "debug" to build debug versions. Inst
 * libModPlug
 * libOGG
 * libOpenMPT
+* libOpus
+* libSDL2
 * libTimidity-SDL
 * libVorbis
 * libZlib
@@ -170,6 +174,8 @@ rem Tip: instead of "release" you can have "debug" to build debug versions. Inst
 * libModPlug
 * libOGG
 * libOpenMPT
+* libOpus
+* libSDL2
 * libSMPEG
 * libTimidity
 * libVorbis
