@@ -44,13 +44,37 @@ function updateGME()
     rm -Rf "../$2-tmp"
 }
 
+function updateXMP()
+{
+    printf "\n=== Update $2 library... ===\n\n"
+
+    if [ ! -d "../$2" ]; then
+        echo "ERROR! Folder $2 is not exists!"
+        echo "-- Did you ran the script not from the _common folder? --"
+        echo "-- Please change into _common folder and run this script again! --"
+        exit 1
+    fi
+
+    echo "Removing old $2 folder..."
+    rm -Rf "../$2/src/"
+
+    git clone --depth 1 "$1" "../$2-tmp"
+
+    echo "Copyng necessary files.."
+    cp -a "../$2-tmp/src" "../$2/src"
+    cp "../$2-tmp/include/xmp.h" "../$2/include/xmp.h"
+
+    echo "Removing unnecessary $2-tmp folder..."
+    rm -Rf "../$2-tmp"
+}
+
 updateRepo https://github.com/Wohlstand/libADLMIDI.git libADLMIDI
 updateRepo https://github.com/Wohlstand/libOPNMIDI.git libOPNMIDI
 updateGME https://Wohlstand@bitbucket.org/mpyne/game-music-emu.git libgme
+updateXMP https://github.com/libxmp/libxmp.git libxmp
 
 
 
 printf "\n\nAll libraries has been updated!\n\n"
 
 exit 0
-
