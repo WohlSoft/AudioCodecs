@@ -129,7 +129,7 @@ static int get_inst_cnt(struct module_data *m, int size, HIO_HANDLE *f, void *pa
 
 	hio_read8(f);			/* 00 */
 	i = hio_read8(f) + 1;		/* instrument number */
-	
+
 	if (i > mod->ins)
 		mod->ins = i;
 
@@ -147,12 +147,12 @@ static int get_patt(struct module_data *m, int size, HIO_HANDLE *f, void *parm)
 	int i, len, chan;
 	int rows, r;
 	uint8 flag;
-	
+
 	i = hio_read8(f);	/* pattern number */
 	len = hio_read32l(f);
-	
+
 	/* Sanity check */
-	if (i >= mod->pat || len <= 0) {
+	if (i >= mod->pat || len <= 0 || mod->xxp[i]) {
 		return -1;
 	}
 
@@ -219,6 +219,11 @@ static int get_inst(struct module_data *m, int size, HIO_HANDLE *f, void *parm)
 	hio_read8(f);		/* 00 */
 	i = hio_read8(f);		/* instrument number */
 
+	/* Sanity check */
+	if (i >= mod->ins || mod->xxi[i].nsm) {
+		return -1;
+	}
+
 	hio_read(mod->xxi[i].name, 1, 28, f);
 	mod->xxi[i].nsm = hio_read8(f);
 
@@ -265,20 +270,26 @@ static int get_inst(struct module_data *m, int size, HIO_HANDLE *f, void *parm)
 	mod->xxi[i].aei.lpe = LSN(val);
 	mod->xxi[i].pei.lpe = MSN(val);
 
-	if (mod->xxi[i].aei.npt <= 0 || mod->xxi[i].aei.npt >= XMP_MAX_ENV_POINTS)
+	if (mod->xxi[i].aei.npt <= 0 || mod->xxi[i].aei.npt > MIN(10, XMP_MAX_ENV_POINTS))
 		mod->xxi[i].aei.flg &= ~XMP_ENVELOPE_ON;
 
-	if (mod->xxi[i].pei.npt <= 0 || mod->xxi[i].pei.npt >= XMP_MAX_ENV_POINTS)
+	if (mod->xxi[i].pei.npt <= 0 || mod->xxi[i].pei.npt > MIN(10, XMP_MAX_ENV_POINTS))
 		mod->xxi[i].pei.flg &= ~XMP_ENVELOPE_ON;
 
 	hio_read(buf, 1, 30, f);		/* volume envelope points */;
 	for (j = 0; j < mod->xxi[i].aei.npt; j++) {
+		if (j >= 10) {
+			break;
+		}
 		mod->xxi[i].aei.data[j * 2] = readmem16l(buf + j * 3) / 16;
 		mod->xxi[i].aei.data[j * 2 + 1] = buf[j * 3 + 2];
 	}
 
 	hio_read(buf, 1, 30, f);		/* pan envelope points */;
 	for (j = 0; j < mod->xxi[i].pei.npt; j++) {
+		if (j >= 10) {
+			break;
+		}
 		mod->xxi[i].pei.data[j * 2] = readmem16l(buf + j * 3) / 16;
 		mod->xxi[i].pei.data[j * 2 + 1] = buf[j * 3 + 2];
 	}

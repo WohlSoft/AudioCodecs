@@ -287,7 +287,7 @@ printf("load_fixed_huffman()\n");
 
 static int load_codes(FILE *in, struct bitstream_t *bitstream, int *lengths, int len_size, int count, int *hclen_code_length, int *hclen_code, struct huffman_tree_t *huffman_tree)
 {
-  int r,t,c,x;
+  int r,t,c,x,b;
   int code,curr_code;
   int bl_count[512];
   int next_code[512];
@@ -306,7 +306,11 @@ static int load_codes(FILE *in, struct bitstream_t *bitstream, int *lengths, int
       if (hclen_code_length[t]==0) continue;
       while (bitstream->bitptr<hclen_code_length[t])
       {
-        bitstream->holding=reverse[getc(in)]+(bitstream->holding<<8);
+        b = getc(in);
+        if (b < 0)
+          return -1;
+
+        bitstream->holding=reverse[b]+(bitstream->holding<<8);
         bitstream->bitptr+=8;
       }
 
@@ -347,7 +351,11 @@ static int load_codes(FILE *in, struct bitstream_t *bitstream, int *lengths, int
 
       if (bitstream->bitptr<2)
       {
-        bitstream->holding=reverse[getc(in)]+(bitstream->holding<<8);
+        b = getc(in);
+        if (b < 0)
+          return -1;
+
+        bitstream->holding=reverse[b]+(bitstream->holding<<8);
         bitstream->bitptr+=8;
       }
 
@@ -367,7 +375,11 @@ static int load_codes(FILE *in, struct bitstream_t *bitstream, int *lengths, int
     {
       if (bitstream->bitptr<3)
       {
-        bitstream->holding=reverse[getc(in)]+(bitstream->holding<<8);
+        b = getc(in);
+        if (b < 0)
+          return -1;
+
+        bitstream->holding=reverse[b]+(bitstream->holding<<8);
         bitstream->bitptr+=8;
       }
 
@@ -389,7 +401,11 @@ static int load_codes(FILE *in, struct bitstream_t *bitstream, int *lengths, int
     {
       if (bitstream->bitptr<7)
       {
-        bitstream->holding=reverse[getc(in)]+(bitstream->holding<<8);
+        b = getc(in);
+        if (b < 0)
+          return -1;
+
+        bitstream->holding=reverse[b]+(bitstream->holding<<8);
         bitstream->bitptr+=8;
       }
 
@@ -515,11 +531,16 @@ static int load_dynamic_huffman(FILE *in, struct huffman_t *huffman, struct bits
   int next_code[19];
   int code,bits;
   int t;
+  int b;
   int res;
 
   while (bitstream->bitptr<14)
   {
-    bitstream->holding=reverse[getc(in)]+(bitstream->holding<<8);
+    b = getc(in);
+    if (b < 0)
+      return -1;
+
+    bitstream->holding=reverse[b]+(bitstream->holding<<8);
     bitstream->bitptr+=8;
   }
 
@@ -564,7 +585,11 @@ static int load_dynamic_huffman(FILE *in, struct huffman_t *huffman, struct bits
 
     if (bitstream->bitptr<3)
     {
-      bitstream->holding=reverse[getc(in)]+(bitstream->holding<<8);
+      b = getc(in);
+      if (b < 0)
+        return -1;
+
+      bitstream->holding=reverse[b]+(bitstream->holding<<8);
       bitstream->bitptr+=8;
     }
 
@@ -989,15 +1014,15 @@ int libxmp_inflate(FILE *in, FILE *out, uint32 *checksum, int is_zip)
   int comp_method;
   int block_len,bfinal;
   int t;
-  struct huffman_tree_t *huffman_tree_len;
-  struct huffman_tree_t *huffman_tree_dist;
+  struct huffman_tree_t *huffman_tree_len = NULL;
+  struct huffman_tree_t *huffman_tree_dist = NULL;
   struct inflate_data data;
   int res;
 
   memset(&huffman, 0, sizeof(struct huffman_t));
   huffman.checksum=0xffffffff;
 
-  data.huffman_tree_len_static=0;
+  data.huffman_tree_len_static = NULL;
 
   huffman_tree_len=malloc(HUFFMAN_TREE_SIZE * sizeof(struct huffman_tree_t));
   if (huffman_tree_len == NULL)
@@ -1007,7 +1032,7 @@ int libxmp_inflate(FILE *in, FILE *out, uint32 *checksum, int is_zip)
 
   huffman_tree_dist=malloc(HUFFMAN_TREE_SIZE * sizeof(struct huffman_tree_t));
   if (huffman_tree_dist == NULL)
-    goto err2;
+    goto err;
 
   memset(huffman_tree_dist, 0xff, HUFFMAN_TREE_SIZE * sizeof(struct huffman_tree_t));
 
@@ -1018,14 +1043,15 @@ int libxmp_inflate(FILE *in, FILE *out, uint32 *checksum, int is_zip)
 #endif
 
 if (!is_zip) {
-  int x;
-  if ((x = getc(in)) < 0) {
-    goto err3;
+  int x = getc(in);
+  if (x < 0) {
+    goto err;
   }
   CMF=x;
 
-  if ((x = getc(in)) < 0) {
-    goto err3;
+  x = getc(in);
+  if (x < 0) {
+    goto err;
   }
   FLG=x;
 
@@ -1042,7 +1068,7 @@ if (!is_zip) {
   if ((CMF&15)!=8)
   {
     /* printf("Unsupported compression used.\n"); */
-    goto err3;
+    goto err;
   }
 
   if ((FLG&32)!=0)
@@ -1053,7 +1079,7 @@ if (!is_zip) {
   if (((CMF*256+FLG)%31)!=0)
   {
     /* printf("FCHECK fails.\n"); */
-    goto err3;
+    goto err;
   }
 }
 
@@ -1066,7 +1092,12 @@ if (!is_zip) {
   {
     if (bitstream.bitptr<3)
     {
-      bitstream.holding=reverse[getc(in)]+(bitstream.holding<<8);
+      res = getc(in);
+      if (res < 0) {
+        goto err;
+      }
+
+      bitstream.holding=reverse[res]+(bitstream.holding<<8);
       bitstream.bitptr+=8;
     }
 
@@ -1104,7 +1135,7 @@ if (!is_zip) {
       {
         res = getc(in);
         if (res < 0) {
-          goto err3;
+          goto err;
         }
         huffman.window[huffman.window_ptr++]=res;
 
@@ -1117,16 +1148,16 @@ if (!is_zip) {
       }
     } 
       else
-    if (comp_method==2)	/* Reduced with compression factor 1 */
+    if (comp_method==2)
     {
       /* Fixed Huffman */
-      if (data.huffman_tree_len_static==0) {
+      if (data.huffman_tree_len_static == NULL) {
 	if (load_fixed_huffman(&huffman, &data.huffman_tree_len_static) < 0)
-	  goto err4;
+	  goto err;
       }
 
       if (decompress(in, &huffman, &bitstream, data.huffman_tree_len_static, 0, out, &data) < 0) {
-          goto err4;
+          goto err;
       }
 /*
       free(huffman_tree_len);
@@ -1134,17 +1165,16 @@ if (!is_zip) {
 */
     }
       else
-    if (comp_method==1) /* Shrunk */
+    if (comp_method==1)
     {
-
       /* Dynamic Huffman */
       res = load_dynamic_huffman(in,&huffman,&bitstream,huffman_tree_len,huffman_tree_dist);
       if (res < 0) {
-        goto err4;
+        goto err;
       }
 
       if (decompress(in, &huffman, &bitstream, huffman_tree_len, huffman_tree_dist, out, &data) < 0) {
-        goto err4;
+        goto err;
       }
 
     }
@@ -1182,12 +1212,9 @@ if (!is_zip) {
 
   return 0;
 
- err4:
-  free(data.huffman_tree_len_static);
- err3:
-  free(huffman_tree_dist);
- err2:
-  free(huffman_tree_len);
  err:
+  free(data.huffman_tree_len_static);
+  free(huffman_tree_dist);
+  free(huffman_tree_len);
   return -1;
 }
