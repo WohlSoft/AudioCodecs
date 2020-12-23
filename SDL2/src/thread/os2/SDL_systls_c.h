@@ -18,42 +18,21 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
+
 #include "../../SDL_internal.h"
 
-#ifndef SDL_JOYSTICK_IOS_H
-#define SDL_JOYSTICK_IOS_H
+#if SDL_THREAD_OS2
 
-#include "SDL_stdinc.h"
-#include "../SDL_sysjoystick.h"
+#include "../SDL_thread_c.h"
 
-@class GCController;
+extern SDL_TLSData **ppSDLTLSData;
 
-typedef struct joystick_hwdata
-{
-    SDL_bool accelerometer;
-    SDL_bool remote;
+/* SDL_OS2TLSAlloc() called from SDL_InitSubSystem() */
+void SDL_OS2TLSAlloc(void);
 
-    GCController __unsafe_unretained *controller;
-    SDL_bool uses_pause_handler;
-    int num_pause_presses;
-    Uint32 pause_button_down_time;
+/* SDL_OS2TLSFree() called from SDL_QuitSubSystem() */
+void SDL_OS2TLSFree(void);
 
-    char *name;
-    SDL_Joystick *joystick;
-    SDL_JoystickID instance_id;
-    SDL_JoystickGUID guid;
-
-    int naxes;
-    int nbuttons;
-    int nhats;
-    Uint16 button_mask;
-
-    struct joystick_hwdata *next;
-} joystick_hwdata;
-
-typedef joystick_hwdata SDL_JoystickDeviceItem;
-
-#endif /* SDL_JOYSTICK_IOS_H */
-
+#endif /* SDL_THREAD_OS2 */
 
 /* vi: set ts=4 sw=4 expandtab: */
