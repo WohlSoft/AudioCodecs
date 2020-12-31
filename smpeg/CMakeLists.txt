@@ -5,7 +5,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=gnu++98 -Wno-pedantic -Wno-sequence-point")
-    if(NOT APPLE)
+    if(NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "^(Apple)?Clang$")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-but-set-variable")
     endif()
 endif()
