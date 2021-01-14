@@ -25,6 +25,7 @@ static int depack_starpack(HIO_HANDLE *in, FILE *out)
 	int paddr_tmp2[128];
 	int tmp_ptr, tmp1, tmp2;
 	int smp_addr = 0;
+	int spaces_left;
 
 	memset(pnum, 0, sizeof(pnum));
 	memset(pnum_tmp, 0, sizeof(pnum_tmp));
@@ -44,7 +45,7 @@ static int depack_starpack(HIO_HANDLE *in, FILE *out)
 		write16b(out, hio_read16b(in));	/* loop size */
 	}
 
-	pat_pos = hio_read16b(in);		/* size of pattern table */
+	pat_pos = hio_read16b(in) >> 2;		/* num positions = size of pattern table / 4 */
 
 	if (pat_pos >= 128) {
 		return -1;
@@ -107,13 +108,15 @@ static int depack_starpack(HIO_HANDLE *in, FILE *out)
 	}
 
 	/* try to locate unused patterns .. hard ! */
+	spaces_left = 128 - pat_pos;
 	j = 0;
 	for (i = 0; i < (pat_pos - 1); i++) {
 		paddr_tmp[j] = paddr_tmp2[i];
 		j += 1;
-		if ((paddr_tmp2[i + 1] - paddr_tmp2[i]) > 1024) {
+		if ((paddr_tmp2[i + 1] - paddr_tmp2[i]) > 1024 && spaces_left > 0) {
 			/*printf ( "! pattern %ld is not used ... saved anyway\n" , j ); */
 			paddr_tmp[j] = paddr_tmp2[i] + 1024;
+			spaces_left--;
 			j += 1;
 		}
 	}
@@ -190,13 +193,7 @@ static int test_starpack(const uint8 *data, char *t, int s)
 	int i;
 	int plist_size, len, sdata_ofs, pdata_ofs;
 
-#if 0
-	/* test 1 */
-	if (i < 23) {
-		Test = BAD;
-		return;
-	}
-#endif
+	PW_REQUEST_DATA(s, 788);
 
 	/* test 2 */
 	plist_size = readmem16b(data + 268);
@@ -248,17 +245,19 @@ static int test_starpack(const uint8 *data, char *t, int s)
 		return -1;
 
 	/* pattern addresses > sample address ? */
-	for (i = 0; i < len; i += 4) {
+	for (i = 0; i < len; i++) {
 		/* each pattern address */
-		if (readmem32b(data + i + 272) > sdata_ofs)
+		if (readmem32b(data + i * 4 + 272) > sdata_ofs)
 			return -1;
 	}
 
 	/* test last patterns of the pattern list == 0 ? */
-	for (i += 2; i < 128; i++) {
+	for (; i < 128; i++) {
 		if (readmem32b(data + i * 4 + 272) != 0)
 			return -1;
 	}
+
+	PW_REQUEST_DATA(s, sdata_ofs + 4);
 
 	/* test pattern data */
 	pdata_ofs = 788;
