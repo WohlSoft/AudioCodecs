@@ -47,7 +47,7 @@ endif()
 
 set(APPLE_FLAGS)
 if(APPLE)
-    set(APPLE_FLAGS 
+    set(APPLE_FLAGS
         "-DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET}"
         "-DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}"
     )
@@ -101,6 +101,10 @@ install(
     CODE "file( INSTALL \${builtSdl2Heads} DESTINATION \"${CMAKE_INSTALL_PREFIX}/include/SDL2\" )"
     CODE "file( GLOB builtSdlLibs \"${CMAKE_BINARY_DIR}/lib/*SDL2*\" )"
     CODE "file( INSTALL \${builtSdlLibs} DESTINATION \"${CMAKE_INSTALL_PREFIX}/lib\" )"
+    CODE "file( GLOB builtHidapiLibs \"${CMAKE_BINARY_DIR}/lib/*hidapi*\" )"
+    CODE "if(builtHidapiLibs)"
+    CODE "      file( INSTALL \${builtHidapiLibs} DESTINATION \"${CMAKE_INSTALL_PREFIX}/lib\" )"
+    CODE "endif()"
     CODE "file( GLOB builtSdlCMakeConfs \"${CMAKE_BINARY_DIR}/lib/cmake/SDL2/*\" )"
     CODE "file( INSTALL \${builtSdlCMakeConfs} DESTINATION \"${CMAKE_INSTALL_PREFIX}/lib/cmake/SDL2\" )"
     CODE "file( GLOB builtSdlPkgConfs \"${CMAKE_BINARY_DIR}/lib/pkgconfig/sdl2.pc\" )"
