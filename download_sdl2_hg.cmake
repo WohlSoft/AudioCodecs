@@ -47,9 +47,23 @@ endif()
 
 set(APPLE_FLAGS)
 if(APPLE)
-    set(APPLE_FLAGS 
+    set(APPLE_FLAGS
         "-DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET}"
         "-DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}"
+    )
+endif()
+
+set(ANDROID_FLAGS)
+if(ANDROID)
+    set(ANDROID_FLAGS
+        "-DANDROID_ABI=${ANDROID_ABI}"
+        "-DANDROID_NDK=${ANDROID_NDK}"
+        "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"
+        "-DANDROID_PLATFORM=${ANDROID_PLATFORM}"
+        "-DANDROID_TOOLCHAIN=${ANDROID_TOOLCHAIN}"
+        "-DANDROID_NATIVE_API_LEVEL=${ANDROID_NATIVE_API_LEVEL}"
+        "-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}"
+        "-DANDROID_ARM_NEON=${ANDROID_ARM_NEON}"
     )
 endif()
 
@@ -71,6 +85,7 @@ if(USE_LOCAL_SDL2)
             ${SDL2_CMAKE_FPIC_FLAG}
             ${SDL2_WASAPI_FLAG}
             ${APPLE_FLAGS}
+            ${ANDROID_FLAGS}
     )
 else()
     ExternalProject_Add(
@@ -91,6 +106,7 @@ else()
             ${SDL2_CMAKE_FPIC_FLAG}
             ${SDL2_WASAPI_FLAG}
             ${APPLE_FLAGS}
+            ${ANDROID_FLAGS}
     )
 endif()
 
