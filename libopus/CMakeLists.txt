@@ -34,7 +34,7 @@ if(TARGET_PROCESSOR MATCHES "x86_64|AMD64" OR TARGET_PROCESSOR MATCHES "^i.86$")
     set(OPUS_X86_ARCHITECTURE 1)
 elseif(${TARGET_PROCESSOR} MATCHES "arm.*")
     message("ARM detected")
-    if(NOT APPLE) # TODO: Fix ARM support for macOS
+    if(NOT APPLE AND NOT ANDROID) # TODO: Fix ARM support for macOS
         set(OPUS_ARM_ARCHITECTURE 1)
     endif()
     message(WARNING "BE CAREFUL, ARM SUPPORT IN CMAKE BUILD HERE IS WIP!!!")
