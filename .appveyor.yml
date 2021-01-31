@@ -13,12 +13,12 @@ environment:
     - BUILD_TYPE: Debug
       COMPILER: MinGW-w32
       GENERATOR: "MinGW Makefiles"
-      APPVEYOR_BUILD_WORKER_IMAGE: "Visual Studio 2019"
+      APPVEYOR_BUILD_WORKER_IMAGE: "Visual Studio 2015"
       PLATFORM: Win32
     - BUILD_TYPE: Release
       COMPILER: MinGW-w32
       GENERATOR: "MinGW Makefiles"
-      APPVEYOR_BUILD_WORKER_IMAGE: "Visual Studio 2019"
+      APPVEYOR_BUILD_WORKER_IMAGE: "Visual Studio 2015"
       PLATFORM: Win32
     - BUILD_TYPE: Debug
       COMPILER: MinGW-w64
