@@ -13,6 +13,14 @@ endif()
 option(BUILD_STATIC   "Build static library of libXMP" ON)
 option(BUILD_SHARED   "Build shared library of libXMP" OFF)
 
+option(LIBXMP_BUILD_LITE   "Build lite version of libXMP" ON)
+option(LIBXMP_BUILD_FULL   "Build full version of libXMP" ON)
+
+option(LIBXMP_DISABLE_IT   "Disable IT support at libXMP-Lite" OFF)
+option(LIBXMP_ENABLE_CORE_PLAYER    "Enable built-in Core Player at libXMP" OFF)
+option(LIBXMP_DISABLE_DEPACKERS     "Disable archive depackers at libXMP" ON)
+option(LIBXMP_DISABLE_PROWIZARD     "Disable the ProWizard at libXMP" OFF)
+
 TEST_BIG_ENDIAN(WORDS_BIGENDIAN)
 if(WORDS_BIGENDIAN)
     add_definitions(-DWORDS_BIGENDIAN=1)
@@ -32,9 +40,6 @@ if(HAVE_POWF_FUNCTION)
     add_definitions(-DHAVE_POWF=1)
 endif()
 
-set(LIBXMP_CORE_PLAYER OFF)
-# add_definitions(-DLIBXMP_CORE_PLAYER)
-
 if("${CMAKE_CXX_COMPILER_ID}" MATCHES "^(Apple)?Clang$")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-shift-negative-value")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-shift-negative-value")
@@ -53,19 +58,50 @@ endif()
 
 set(CMAKE_C_STANDARD 99)
 
-set(LIBXMP_SRC)
+set(LIBXMP_SRC_LITE)
+set(LIBXMP_SRC_FULL)
+set(LIBXMP_SRC_COMMON)
 
-list(APPEND LIBXMP_SRC
+# Lite version
+set(LIBXMP_SRC_LIST_LITE_ONLY
+    lite/src/format.c
+    lite/src/loaders/mod_load.c
+)
+
+set(LIBXMP_SRC_LIST_LITE
     src/control.c
     src/dataio.c
     src/effects.c
     src/filter.c
-    src/fmopl.c
-    src/xfnmatch.c
-    src/format.c
     src/hio.c
     src/lfo.c
     src/load.c
+    src/loaders/common.c
+    src/loaders/it_load.c
+    src/loaders/itsex.c
+    src/loaders/s3m_load.c
+    src/loaders/sample.c
+    src/loaders/xm_load.c
+    src/load_helpers.c
+    src/memio.c
+    src/mix_all.c
+    src/mixer.c
+    src/period.c
+    src/player.c
+    src/read_event.c
+    src/scan.c
+    src/smix.c
+    src/virtual.c
+)
+
+# Full version
+set(LIBXMP_SRC_LIST_FULL_ONLY
+    src/format.c
+    src/loaders/mod_load.c
+)
+
+set(LIBXMP_SRC_LIST_FULL
+    src/fmopl.c
     src/loaders/669_load.c
     src/loaders/abk_load.c
     src/loaders/amf_load.c
@@ -73,7 +109,6 @@ list(APPEND LIBXMP_SRC
     src/loaders/asif.c
     src/loaders/asylum_load.c
     src/loaders/chip_load.c
-    src/loaders/common.c
     src/loaders/dbm_load.c
     src/loaders/digi_load.c
     src/loaders/dt_load.c
@@ -89,8 +124,6 @@ list(APPEND LIBXMP_SRC
     src/loaders/iff.c
     src/loaders/imf_load.c
     src/loaders/ims_load.c
-    src/loaders/it_load.c
-    src/loaders/itsex.c
     src/loaders/liq_load.c
     src/loaders/masi_load.c
     src/loaders/mdl_load.c
@@ -102,10 +135,32 @@ list(APPEND LIBXMP_SRC
     src/loaders/mmd1_load.c
     src/loaders/mmd3_load.c
     src/loaders/mmd_common.c
-    src/loaders/mod_load.c
     src/loaders/mtm_load.c
     src/loaders/no_load.c
     src/loaders/okt_load.c
+    src/loaders/psm_load.c
+    src/loaders/pt3_load.c
+    src/loaders/ptm_load.c
+    src/loaders/pw_load.c
+    src/loaders/rtm_load.c
+    src/loaders/sfx_load.c
+    src/loaders/stim_load.c
+    src/loaders/st_load.c
+    src/loaders/stm_load.c
+    src/loaders/stx_load.c
+    src/loaders/sym_load.c
+    src/loaders/ult_load.c
+    src/loaders/umx_load.c
+    src/loaders/voltable.c
+    src/lutgen.c
+    src/md5.c
+    src/mix_paula.c
+    src/mkstemp.c
+    src/tempfile.c
+    src/xfnmatch.c
+)
+
+set(LIBXMP_SRC_LIST_PROWIZARD
     src/loaders/prowizard/ac1d.c
     src/loaders/prowizard/di.c
     src/loaders/prowizard/eureka.c
@@ -146,100 +201,102 @@ list(APPEND LIBXMP_SRC
     src/loaders/prowizard/wn.c
     src/loaders/prowizard/xann.c
     src/loaders/prowizard/zen.c
-    src/loaders/psm_load.c
-    src/loaders/pt3_load.c
-    src/loaders/ptm_load.c
-    src/loaders/pw_load.c
-    src/loaders/rtm_load.c
-    src/loaders/s3m_load.c
-    src/loaders/sample.c
-    src/loaders/sfx_load.c
-    src/loaders/stim_load.c
-    src/loaders/st_load.c
-    src/loaders/stm_load.c
-    src/loaders/stx_load.c
-    src/loaders/sym_load.c
-    src/loaders/ult_load.c
-    src/loaders/umx_load.c
-    src/loaders/voltable.c
-    src/loaders/xm_load.c
-    src/load_helpers.c
-    src/lutgen.c
-    src/md5.c
-    src/memio.c
-    src/mix_all.c
-    src/mixer.c
-    src/mix_paula.c
-    src/mkstemp.c
-    src/period.c
-    src/player.c
-    src/read_event.c
-    src/scan.c
-    src/smix.c
-    src/tempfile.c
-    src/virtual.c
 )
 
-if(NOT LIBXMP_CORE_PLAYER)
-    list(APPEND LIBXMP_SRC
-        src/depackers/arcfs.c
-        src/depackers/bunzip2.c
-        src/depackers/crc32.c
-        src/depackers/gunzip.c
-        src/depackers/inflate.c
-        src/depackers/mmcmp.c
-        src/depackers/muse.c
-        src/depackers/oxm.c
-        src/depackers/ppdepack.c
-        src/depackers/readlzw.c
-        src/depackers/readrle.c
-        src/depackers/s404_dec.c
-        src/depackers/unarc.c
-        src/depackers/uncompress.c
-        src/depackers/unlha.c
-        src/depackers/unlzx.c
-        src/depackers/unsqsh.c
-        src/depackers/unxz.c
-        src/depackers/unzip.c
-        src/depackers/vorbis.c
-        src/depackers/xz_dec_lzma2.c
-        src/depackers/xz_dec_stream.c
-        src/extras.c
-        src/hmn_extras.c
-        src/med_extras.c
-    )
-endif()
+set(LIBXMP_SRC_LIST_DEPACKERS
+    src/depackers/arcfs.c
+    src/depackers/bunzip2.c
+    src/depackers/crc32.c
+    src/depackers/gunzip.c
+    src/depackers/inflate.c
+    src/depackers/mmcmp.c
+    src/depackers/muse.c
+    src/depackers/oxm.c
+    src/depackers/ppdepack.c
+    src/depackers/readlzw.c
+    src/depackers/readrle.c
+    src/depackers/s404_dec.c
+    src/depackers/unarc.c
+    src/depackers/uncompress.c
+    src/depackers/unlha.c
+    src/depackers/unlzx.c
+    src/depackers/unsqsh.c
+    src/depackers/unxz.c
+    src/depackers/unzip.c
+    src/depackers/vorbis.c
+    src/depackers/xz_dec_lzma2.c
+    src/depackers/xz_dec_stream.c
+)
+
+set(LIBXMP_SRC_LIST_CORE_PLAYER
+    src/extras.c
+    src/hmn_extras.c
+    src/med_extras.c
+)
 
 if(AMIGA)
-    list(APPEND LIBXMP_SRC
+    list(APPEND LIBXMP_SRC_LIST_DEPACKERS
         src/depackers/xfd.c
         src/depackers/xfd_link.c
     )
 endif()
 
 if(WIN32)
-    list(APPEND LIBXMP_SRC
+    list(APPEND LIBXMP_SRC_COMMON
         src/win32.c
         src/win32/ptpopen.c
     )
     if(CMAKE_BUILD_TYPE_LOWER STREQUAL "debug")
-        list(APPEND LIBXMP_SRC
+        list(APPEND LIBXMP_SRC_COMMON
             src/win32/debug.c
         )
     endif()
 endif()
 
+set(LIBXMP_DEFINES)
+
+if(DISABLE_IT)
+    list(APPEND LIBXMP_DEFINES -DLIBXMP_CORE_DISABLE_IT)
+endif()
+
+if(ENABLE_CORE_PLAYER)
+    list(APPEND LIBXMP_SRC_LITE ${LIBXMP_SRC_LIST_CORE_PLAYER})
+    list(APPEND LIBXMP_SRC_FULL ${LIBXMP_SRC_LIST_CORE_PLAYER})
+    list(APPEND LIBXMP_DEFINES -DLIBXMP_CORE_PLAYER)
+endif()
+
+if(LIBXMP_DISABLE_DEPACKERS)
+    list(APPEND LIBXMP_DEFINES -DLIBXMP_NO_DEPACKERS)
+else()
+    if(ENABLE_CORE_PLAYER)
+        list(APPEND LIBXMP_SRC_LIST_FULL_ONLY ${LIBXMP_SRC_LIST_DEPACKERS})
+    endif()
+endif()
+
+if(LIBXMP_DISABLE_PROWIZARD)
+    list(APPEND LIBXMP_DEFINES -DLIBXMP_NO_PROWIZARD)
+else()
+    list(APPEND LIBXMP_SRC_LIST_FULL_ONLY ${LIBXMP_SRC_LIST_PROWIZARD})
+endif()
+
+list(APPEND LIBXMP_SRC_LITE ${LIBXMP_SRC_LIST_LITE} ${LIBXMP_SRC_LIST_LITE_ONLY} ${LIBXMP_SRC_COMMON})
+list(APPEND LIBXMP_SRC_FULL ${LIBXMP_SRC_LIST_LITE} ${LIBXMP_SRC_LIST_FULL_ONLY} ${LIBXMP_SRC_LIST_FULL} ${LIBXMP_SRC_COMMON})
+
 set(XMP_INSTALLS)
 
-if(BUILD_STATIC)
-    add_library(xmp_static STATIC ${LIBXMP_SRC})
+# ============= FULL =============
+if(LIBXMP_BUILD_FULL AND BUILD_STATIC)
+    add_library(xmp_static STATIC ${LIBXMP_SRC_FULL})
     list(APPEND XMP_INSTALLS xmp_static)
+
     if(WIN32 AND BUILD_SHARED)
         set_target_properties(xmp_static PROPERTIES OUTPUT_NAME xmp-static)
     else()
         set_target_properties(xmp_static PROPERTIES OUTPUT_NAME xmp)
     endif()
-    target_compile_definitions(xmp_static PRIVATE -DBUILDING_STATIC)
+
+    target_compile_definitions(xmp_static PRIVATE ${LIBXMP_DEFINES} -DBUILDING_STATIC)
+
     if(MSVC)
         target_compile_definitions(xmp_static PRIVATE -DPATH_MAX=260 -DCLIB_DECL=__stdcall)
     endif()
@@ -252,14 +309,17 @@ if(BUILD_STATIC)
     endif()
 endif()
 
-if(BUILD_SHARED)
-    add_library(xmp_shared SHARED ${LIBXMP_SRC})
+if(LIBXMP_BUILD_FULL AND BUILD_SHARED)
+    add_library(xmp_shared SHARED ${LIBXMP_SRC_FULL})
     list(APPEND XMP_INSTALLS xmp_shared)
     set_target_properties(xmp_shared PROPERTIES OUTPUT_NAME xmp)
+
     if(NOT MSVC)
         target_link_libraries(xmp_shared PUBLIC m)
     endif()
-    target_compile_definitions(xmp_shared PRIVATE -DBUILDING_DLL)
+
+    target_compile_definitions(xmp_shared PRIVATE ${LIBXMP_DEFINES} -DBUILDING_DLL)
+
     if(MSVC)
         target_compile_definitions(xmp_shared PRIVATE -DPATH_MAX=260 -DCLIB_DECL=__stdcall)
     endif()
@@ -274,11 +334,84 @@ if(BUILD_SHARED)
     set_target_properties(xmp_shared PROPERTIES VERSION ${libxmp_VERSION} SOVERSION ${libxmp_VERSION_MAJOR})
 endif()
 
+
+# ============= LITE =============
+
+set(LIBXMP_LITE_DEFINES
+    -DLIBXMP_NO_PROWIZARD
+    -DLIBXMP_NO_DEPACKERS
+)
+
+if(LIBXMP_BUILD_LITE AND BUILD_STATIC)
+    add_library(xmp_lite_static STATIC ${LIBXMP_SRC_LITE})
+    list(APPEND XMP_INSTALLS xmp_lite_static)
+
+    if(WIN32 AND BUILD_SHARED)
+        set_target_properties(xmp_lite_static PROPERTIES OUTPUT_NAME xmp-lite-static)
+    else()
+        set_target_properties(xmp_lite_static PROPERTIES OUTPUT_NAME xmp-lite)
+    endif()
+
+    target_compile_definitions(xmp_lite_static PRIVATE ${LIBXMP_DEFINES} ${LIBXMP_LITE_DEFINES} -DBUILDING_STATIC)
+
+    if(MSVC)
+        target_compile_definitions(xmp_lite_static PRIVATE -DPATH_MAX=260 -DCLIB_DECL=__stdcall)
+    endif()
+
+    target_include_directories(xmp_lite_static PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    target_include_directories(xmp_lite_static PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/loaders
+    )
+
+    if(MSVC) # WORKAROUND for MSVC
+        target_include_directories(xmp_lite_static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include_msvc)
+    endif()
+endif()
+
+if(LIBXMP_BUILD_LITE AND BUILD_SHARED)
+    add_library(xmp_lite_shared SHARED ${LIBXMP_SRC_LITE})
+    list(APPEND XMP_INSTALLS xmp_lite_shared)
+    set_target_properties(xmp_lite_shared PROPERTIES OUTPUT_NAME xmp-lite)
+
+    if(NOT MSVC)
+        target_link_libraries(xmp_lite_shared PUBLIC m)
+    endif()
+
+    target_compile_definitions(xmp_lite_shared PRIVATE ${LIBXMP_DEFINES} ${LIBXMP_LITE_DEFINES} -DBUILDING_DLL)
+
+    if(MSVC)
+        target_compile_definitions(xmp_lite_shared PRIVATE -DPATH_MAX=260 -DCLIB_DECL=__stdcall)
+    endif()
+
+    target_include_directories(xmp_lite_shared PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    target_include_directories(xmp_lite_shared PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/loaders
+    )
+
+    if(MSVC) # WORKAROUND for MSVC
+        target_include_directories(xmp_lite_shared PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include_msvc)
+    endif()
+
+    set_target_properties(xmp_lite_shared PROPERTIES VERSION ${libxmp_VERSION} SOVERSION ${libxmp_VERSION_MAJOR})
+endif()
+
+
+
 add_library(XMP_IF INTERFACE)
-if(NOT BUILD_SHARED)
-    target_link_libraries(XMP_IF INTERFACE xmp_static)
-else()
-    target_link_libraries(XMP_IF INTERFACE xmp_shared)
+if(BUILD_FULL)
+    if(NOT BUILD_SHARED)
+        target_link_libraries(XMP_IF INTERFACE xmp_static)
+    else()
+        target_link_libraries(XMP_IF INTERFACE xmp_shared)
+    endif()
+elseif(BUILD_LITE)
+    if(NOT BUILD_SHARED)
+        target_link_libraries(XMP_IF INTERFACE xmp_lite_static)
+    else()
+        target_link_libraries(XMP_IF INTERFACE xmp_lite_shared)
+    endif()
 endif()
 
 option(XMP_WITH_DEMO_PLAYER        "Build also demo player for XMP" OFF)
