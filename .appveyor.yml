@@ -2,14 +2,14 @@ version: 1.0.{build}
 
 environment:
   matrix:
-    - BUILD_TYPE: Debug
-      COMPILER: MinGW
-      GENERATOR: "MinGW Makefiles"
-      PLATFORM: Win32
-    - BUILD_TYPE: Release
-      COMPILER: MinGW
-      GENERATOR: "MinGW Makefiles"
-      PLATFORM: Win32
+#    - BUILD_TYPE: Debug
+#      COMPILER: MinGW
+#      GENERATOR: "MinGW Makefiles"
+#      PLATFORM: Win32
+#    - BUILD_TYPE: Release
+#      COMPILER: MinGW
+#      GENERATOR: "MinGW Makefiles"
+#      PLATFORM: Win32
     - BUILD_TYPE: Debug
       COMPILER: MinGW-w64
       GENERATOR: "MinGW Makefiles"
@@ -91,4 +91,3 @@ deploy:
 
 #on_finish:
 #  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-
