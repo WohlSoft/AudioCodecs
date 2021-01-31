@@ -12,9 +12,15 @@ endif()
 
 option(BUILD_STATIC   "Build static library of libXMP" ON)
 option(BUILD_SHARED   "Build shared library of libXMP" OFF)
+if(NOT BUILD_STATIC AND NOT BUILD_SHARED)
+    message(FATAL_ERROR "Both static and shared builds got disabled. You must enable at least one of them.")
+endif()
 
 option(LIBXMP_BUILD_LITE   "Build lite version of libXMP" ON)
 option(LIBXMP_BUILD_FULL   "Build full version of libXMP" ON)
+if(NOT LIBXMP_BUILD_LITE AND NOT LIBXMP_BUILD_FULL)
+    message(FATAL_ERROR "Both Full and Lite versions got disabled. You must enable at least one of them.")
+endif()
 
 option(LIBXMP_DISABLE_IT   "Disable IT support at libXMP-Lite" OFF)
 option(LIBXMP_DISABLE_DEPACKERS     "Disable archive depackers at libXMP" ON)
