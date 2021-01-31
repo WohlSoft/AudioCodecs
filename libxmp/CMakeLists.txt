@@ -17,7 +17,6 @@ option(LIBXMP_BUILD_LITE   "Build lite version of libXMP" ON)
 option(LIBXMP_BUILD_FULL   "Build full version of libXMP" ON)
 
 option(LIBXMP_DISABLE_IT   "Disable IT support at libXMP-Lite" OFF)
-option(LIBXMP_ENABLE_CORE_PLAYER    "Enable built-in Core Player at libXMP" OFF)
 option(LIBXMP_DISABLE_DEPACKERS     "Disable archive depackers at libXMP" ON)
 option(LIBXMP_DISABLE_PROWIZARD     "Disable the ProWizard at libXMP" OFF)
 
@@ -101,7 +100,9 @@ set(LIBXMP_SRC_LIST_FULL_ONLY
 )
 
 set(LIBXMP_SRC_LIST_FULL
+    src/extras.c
     src/fmopl.c
+    src/hmn_extras.c
     src/loaders/669_load.c
     src/loaders/abk_load.c
     src/loaders/amf_load.c
@@ -154,6 +155,7 @@ set(LIBXMP_SRC_LIST_FULL
     src/loaders/voltable.c
     src/lutgen.c
     src/md5.c
+    src/med_extras.c
     src/mix_paula.c
     src/mkstemp.c
     src/tempfile.c
@@ -228,12 +230,6 @@ set(LIBXMP_SRC_LIST_DEPACKERS
     src/depackers/xz_dec_stream.c
 )
 
-set(LIBXMP_SRC_LIST_CORE_PLAYER
-    src/extras.c
-    src/hmn_extras.c
-    src/med_extras.c
-)
-
 if(AMIGA)
     list(APPEND LIBXMP_SRC_LIST_DEPACKERS
         src/depackers/xfd.c
@@ -259,18 +255,10 @@ if(DISABLE_IT)
     list(APPEND LIBXMP_DEFINES -DLIBXMP_CORE_DISABLE_IT)
 endif()
 
-if(ENABLE_CORE_PLAYER)
-    list(APPEND LIBXMP_SRC_LITE ${LIBXMP_SRC_LIST_CORE_PLAYER})
-    list(APPEND LIBXMP_SRC_FULL ${LIBXMP_SRC_LIST_CORE_PLAYER})
-    list(APPEND LIBXMP_DEFINES -DLIBXMP_CORE_PLAYER)
-endif()
-
 if(LIBXMP_DISABLE_DEPACKERS)
     list(APPEND LIBXMP_DEFINES -DLIBXMP_NO_DEPACKERS)
 else()
-    if(ENABLE_CORE_PLAYER)
-        list(APPEND LIBXMP_SRC_LIST_FULL_ONLY ${LIBXMP_SRC_LIST_DEPACKERS})
-    endif()
+    list(APPEND LIBXMP_SRC_LIST_FULL_ONLY ${LIBXMP_SRC_LIST_DEPACKERS})
 endif()
 
 if(LIBXMP_DISABLE_PROWIZARD)
@@ -338,6 +326,7 @@ endif()
 # ============= LITE =============
 
 set(LIBXMP_LITE_DEFINES
+    -DLIBXMP_CORE_PLAYER
     -DLIBXMP_NO_PROWIZARD
     -DLIBXMP_NO_DEPACKERS
 )
