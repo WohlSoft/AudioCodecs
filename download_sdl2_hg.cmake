@@ -35,7 +35,7 @@ set(SDL2_GIT_BRANCH "origin/main" CACHE STRING "GIT branch for SDL2 (Official Gi
 set(SDL2_PROJECT_BRANCH)
 if(USE_LOCAL_SDL2)
     message("== SDL2 will be built from a local copy")
-elseif(WIN32 AND MINGW)
+else()
     set(SDL_SOURCE_PATH_GIT "https://github.com/libsdl-org/SDL.git")
     message("== SDL2 will be downloaded as official GIT repository from '${SDL2_GIT_BRANCH}' revision")
     set(SDL2_PROJECT_BRANCH GIT_TAG "${SDL2_GIT_BRANCH}")
