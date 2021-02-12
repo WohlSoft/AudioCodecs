@@ -1,6 +1,6 @@
 #!/bin/bash
 
-wget --content-disposition https://hg.libsdl.org/SDL/archive/release-2.0.14.tar.gz -O SDL-repo.tar.gz
+wget --content-disposition https://github.com/libsdl-org/SDL/archive/release-2.0.14.tar.gz -O SDL-repo.tar.gz
 tar -xf SDL-repo.tar.gz
 mv SDL-release-2.0.14 SDL2
 rm -Rf SDL2/VisualC/
