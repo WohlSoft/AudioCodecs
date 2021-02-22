@@ -299,7 +299,7 @@ if(LIBXMP_BUILD_FULL AND BUILD_STATIC)
     target_include_directories(xmp_static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
     if(MSVC) # WORKAROUND for MSVC
-        target_include_directories(xmp_static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include_msvc)
+        target_include_directories(xmp_static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/win32)
     endif()
 endif()
 
