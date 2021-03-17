@@ -1,5 +1,4 @@
-/* 
-
+/*
     TiMidity -- Experimental MIDI to WAVE converter
     Copyright (C) 1995 Tuukka Toivonen <toivonen@clinet.fi>
 
@@ -7,13 +6,9 @@
     it under the terms of the Perl Artistic License, available in COPYING.
 
     output.c
-    
+
     Audio output (to file / device) functions.
 */
-
-#if HAVE_CONFIG_H
-#  include <config.h>
-#endif
 
 #include "SDL.h"
 

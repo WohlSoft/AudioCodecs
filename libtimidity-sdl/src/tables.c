@@ -1,17 +1,10 @@
 /*
-
     TiMidity -- Experimental MIDI to WAVE converter
     Copyright (C) 1995 Tuukka Toivonen <toivonen@clinet.fi>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the Perl Artistic License, available in COPYING.
 */
-
-#if HAVE_CONFIG_H
-#  include <config.h>
-#endif
-
-#include <stdio.h>
 
 #include "SDL.h"
 
@@ -20,12 +13,12 @@
 const Sint32 freq_table[128]=
 {
  8176, 8662, 9177, 9723, 
- 10301, 10913, 11562, 12250, 
+ 10301, 10913, 11562, 12250,
  12978, 13750, 14568, 15434,
- 
+
  16352, 17324, 18354, 19445,
- 20602, 21827, 23125, 24500, 
- 25957, 27500, 29135, 30868, 
+ 20602, 21827, 23125, 24500,
+ 25957, 27500, 29135, 30868,
 
  32703, 34648, 36708, 38891,
  41203, 43654, 46249, 48999,
@@ -64,7 +57,7 @@ const Sint32 freq_table[128]=
 };
 
 /* v=2.^((x/127-1) * 6) */
-const double vol_table[128] = 
+const double vol_table[128] =
 {
  0.015625, 0.016145143728351113, 0.016682602624583379, 0.017237953096759438,
  0.017811790741104401, 0.01840473098076444, 0.019017409725829021, 0.019650484055324921,
@@ -201,3 +194,4 @@ const double bend_coarse[128] = {
  1024, 1084.8902086239189, 1149.4011374687975, 1217.7480857627863,
  1290.1591550923506, 1366.8760106701147, 1448.1546878700494, 1534.2664467217226
 };
+
