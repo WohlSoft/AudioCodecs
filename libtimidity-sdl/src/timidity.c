@@ -7,7 +7,15 @@
 */
 
 #include "SDL.h"
-#include "../../utils.h" /* for SDL_strtokr() */
+/*  --------------------- AudioCodecs ---------------------------- */
+/*#include "../../utils.h"*/ /* for SDL_strtokr() */
+#if SDL_VERSION_ATLEAST(2,0,12) /* Standalone use of Timidity-SDL requires use of SDL 2.0.12 and older */
+#define HAVE_SDL_STRTOKR
+#else /* Otherwise, this can be used as a part of the MixerX library only */
+#define SDL_strtokr _MIX_strtokr
+extern char *SDL_strtokr(char *s1, const char *s2, char **saveptr);
+#endif
+/* --------------------------------------------------------------- */
 
 #include "timidity.h"
 
