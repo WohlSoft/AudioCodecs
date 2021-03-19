@@ -11,7 +11,7 @@
 #include "common.h"
 #include "tables.h"
 
-const Sint32 freq_table[128]=
+const Sint32 freq_table[128] =
 {
  8176, 8662, 9177, 9723, 
  10301, 10913, 11562, 12250,
