@@ -316,10 +316,12 @@ GLES2_WindowEvent(SDL_Renderer * renderer, const SDL_WindowEvent *event)
 {
     GLES2_RenderData *data = (GLES2_RenderData *)renderer->driverdata;
 
+#ifndef __ANDROID__
     if (event->event == SDL_WINDOWEVENT_MINIMIZED) {
         /* According to Apple documentation, we need to finish drawing NOW! */
         data->glFinish();
     }
+#endif
 }
 
 static int
