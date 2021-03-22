@@ -18,6 +18,8 @@ add_library(timidity STATIC
     src/resample.c
     src/tables.c
     src/timidity.c
+    # Crutches and bicycles
+    src/utils.c
 )
 target_compile_definitions(timidity PRIVATE -DHAVE_CONFIG_H=0)
 
