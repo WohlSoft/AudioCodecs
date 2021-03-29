@@ -180,7 +180,7 @@ if (ENABLE_SF3)
     endif()
 endif()
 
-configure_file(fluidlite.pc.in ${CMAKE_BINARY_DIR}/fluidlite.pc @ONLY)
+configure_file(fluidlite.pc.in ${CMAKE_CURRENT_BINARY_DIR}/fluidlite.pc @ONLY)
 
 install(TARGETS ${FLUIDLITE_INSTALL_TARGETS}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
