@@ -8,6 +8,8 @@ project(fluidlite)
 
 include(GNUInstallDirs)
 
+set(CMAKE_C_STANDARD 99)
+
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
 list(APPEND HEADERS
