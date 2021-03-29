@@ -27,21 +27,23 @@
 extern "C" {
 #endif
 
-//#if defined(WIN32)
-//#if defined(FLUIDSYNTH_DLL_EXPORTS)
-//#define FLUIDSYNTH_API __declspec(dllexport)
-//#elif defined(FLUIDSYNTH_NOT_A_DLL)
-//#define FLUIDSYNTH_API
-//#else
-//#define FLUIDSYNTH_API __declspec(dllimport)
-//#endif
+#if 0
+#if defined(WIN32)
+#if defined(FLUIDSYNTH_DLL_EXPORTS)
+#define FLUIDSYNTH_API __declspec(dllexport)
+#elif defined(FLUIDSYNTH_NOT_A_DLL)
+#define FLUIDSYNTH_API
+#else
+#define FLUIDSYNTH_API __declspec(dllimport)
+#endif
 
-//#elif defined(MACOS9)
-//#define FLUIDSYNTH_API __declspec(export)
+#elif defined(MACOS9)
+#define FLUIDSYNTH_API __declspec(export)
 
-//#else
-//#define FLUIDSYNTH_API
-//#endif
+#else
+#define FLUIDSYNTH_API
+#endif
+#endif
 
 #define FLUIDSYNTH_API
 
