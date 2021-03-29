@@ -74,7 +74,6 @@ fluid_channel_init_ctrl(fluid_channel_t* chan, int is_all_ctrl_off)
 {
   int i;
 
-  chan->key_pressure = 0;
   chan->channel_pressure = 0;
   chan->pitch_bend = 0x2000; /* Range is 0x4000, pitch bend wheel starts in centered position */
 
@@ -103,6 +102,11 @@ fluid_channel_init_ctrl(fluid_channel_t* chan, int is_all_ctrl_off)
     for (i = 0; i < 128; i++) {
       SETCC(chan, i, 0);
     }
+  }
+
+  /* Reset polyphonic key pressure on all voices */
+  for (i = 0; i < 128; i++) {
+    fluid_channel_set_key_pressure(chan, i, 0);
   }
 
   /* Set RPN controllers to NULL state */
@@ -244,6 +248,10 @@ fluid_channel_cc(fluid_channel_t* chan, int num, int value)
 
   case BANK_SELECT_MSB:
     {
+      if (chan->channum == 9 && fluid_settings_str_equal(chan->synth->settings, "synth.drums-channel.active", "yes")) {
+        return FLUID_OK; /* ignored */
+      }
+
       chan->bank_msb = (unsigned char) (value & 0x7f);
 /*      printf("** bank select msb recieved: %d\n", value); */
 
@@ -261,6 +269,9 @@ fluid_channel_cc(fluid_channel_t* chan, int num, int value)
 
   case BANK_SELECT_LSB:
     {
+      if (chan->channum == 9 && fluid_settings_str_equal(chan->synth->settings, "synth.drums-channel.active", "yes")) {
+        return FLUID_OK; /* ignored */
+      }
       /* FIXME: according to the Downloadable Sounds II specification,
          bit 31 should be set when we receive the message on channel
          10 (drum channel) */

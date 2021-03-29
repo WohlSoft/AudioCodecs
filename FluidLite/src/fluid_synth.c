@@ -1319,6 +1319,49 @@ fluid_synth_channel_pressure(fluid_synth_t* synth, int chan, int val)
 }
 
 /**
+ * Set the MIDI polyphonic key pressure controller value.
+ * @param synth FluidSynth instance
+ * @param chan MIDI channel number (0 to MIDI channel count - 1)
+ * @param key MIDI key number (0-127)
+ * @param val MIDI key pressure value (0-127)
+ * @return FLUID_OK on success, FLUID_FAILED otherwise
+ */
+int
+fluid_synth_key_pressure(fluid_synth_t* synth, int chan, int key, int val)
+{
+  int result = FLUID_OK;
+  if (key < 0 || key > 127) {
+    return FLUID_FAILED;
+  }
+  if (val < 0 || val > 127) {
+    return FLUID_FAILED;
+  }
+
+  if (synth->verbose)
+    FLUID_LOG(FLUID_INFO, "keypressure\t%d\t%d\t%d", chan, key, val);
+
+  fluid_channel_set_key_pressure (synth->channel[chan], key, val);
+
+  // fluid_synth_update_key_pressure_LOCAL
+  {
+    fluid_voice_t* voice;
+    int i;
+
+    for (i = 0; i < synth->polyphony; i++) {
+      voice = synth->voice[i];
+
+      if (voice->chan == chan && voice->key == key) {
+        result = fluid_voice_modulate(voice, 0, FLUID_MOD_KEYPRESSURE);
+        if (result != FLUID_OK)
+          break;
+      }
+    }
+  }
+
+  return result;
+}
+
+/**
  * Set the MIDI pitch bend controller value.
  * @param synth FluidSynth instance
  * @param chan MIDI channel number
@@ -1516,7 +1559,13 @@ fluid_synth_program_change(fluid_synth_t* synth, int chan, int prognum)
   if (synth->verbose)
     FLUID_LOG(FLUID_INFO, "prog\t%d\t%d\t%d", chan, banknum, prognum);
 
-  preset = fluid_synth_find_preset(synth, banknum, prognum); //if (channel->channum == 9) fluid_synth_find_preset(synth, DRUM_INST_BANK, prognum);
+  if (channel->channum == 9 && fluid_settings_str_equal(synth->settings, "synth.drums-channel.active", "yes")) {
+    preset = fluid_synth_find_preset(synth, DRUM_INST_BANK, prognum);
+  }
+  else
+  {
+    preset = fluid_synth_find_preset(synth, banknum, prognum);
+  }
 
   /* Fallback to another preset if not found */
   if (!preset)
@@ -1547,7 +1596,7 @@ fluid_synth_program_change(fluid_synth_t* synth, int chan, int prognum)
 
     if (preset)
       FLUID_LOG(FLUID_WARN, "Instrument not found on channel %d [bank=%d prog=%d], substituted [bank=%d prog=%d]",
-		chan, banknum, prognum, subst_bank, subst_prog); 
+		chan, banknum, prognum, subst_bank, subst_prog);
   }
 
   sfont_id = preset? fluid_sfont_get_id(preset->sfont) : 0;
@@ -2394,6 +2443,9 @@ fluid_synth_alloc_voice(fluid_synth_t* synth, fluid_sample_t* sample, int chan, 
 
   if (chan >= 0) {
 	  channel = synth->channel[chan];
+  } else {
+    FLUID_LOG(FLUID_WARN, "Channel should be valid");
+    return NULL;
   }
 
   if (fluid_voice_init(voice, sample, channel, key, vel,
@@ -2528,14 +2580,12 @@ fluid_synth_sfload(fluid_synth_t* synth, const char* filename, int reset_presets
   for (list = synth->loaders; list; list = fluid_list_next(list)) {
     loader = (fluid_sfloader_t*) fluid_list_get(list);
 
-    sfont = FLUID_NEW(fluid_sfont_t);
+    sfont = fluid_sfloader_load(loader, filename);
+    if (sfont == NULL)
+        return -1;
+
     sfont->id = ++synth->sfont_id;
     synth->sfont = fluid_list_prepend(synth->sfont, sfont);
-
-    loader->data = sfont;
-    fluid_sfloader_load(loader, filename);
-    loader->data = NULL;
-
 
     if (reset_presets) {
         fluid_synth_program_reset(synth);
