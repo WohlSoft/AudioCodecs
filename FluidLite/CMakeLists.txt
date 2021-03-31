@@ -57,8 +57,10 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 if(AUDIOCODECS_FLUIDLITE_ENABLE_SF3)
-    set(LIBOGG_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../libogg/include)
-    set(LIBVORBIS_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../libvorbis/include)
+    include_directories(
+        ${CMAKE_CURRENT_SOURCE_DIR}/../libogg/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../libvorbis/include
+    )
     set(LIBVORBIS_LIBRARIES vorbis)
     set(LIBVORBISFILE_LIBRARIES vorbisfile)
     set(LIBOGG_LIBRARIES ogg)
