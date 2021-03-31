@@ -56,6 +56,14 @@ list(APPEND SOURCES
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+if(AUDIOCODECS_FLUIDLITE_ENABLE_SF3)
+    set(LIBOGG_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../libogg/include)
+    set(LIBVORBIS_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../libvorbis/include)
+    set(LIBVORBIS_LIBRARIES vorbis)
+    set(LIBVORBISFILE_LIBRARIES vorbisfile)
+    set(LIBOGG_LIBRARIES ogg)
+endif()
+
 if (ENABLE_SF3 AND STB_VORBIS)
     list(APPEND SOURCES
         stb/stb_vorbis.c)
@@ -167,12 +175,14 @@ if(FLUIDLITE_BUILD_SHARED AND FLUIDLITE_BUILD_STATIC)
     set_target_properties(${PROJECT_NAME}-static PROPERTIES CLEAN_DIRECT_OUTPUT 1)
 endif()
 
-if (ENABLE_SF3)
-    if (STB_VORBIS)
+if (ENABLE_SF3 OR AUDIOCODECS_FLUIDLITE_ENABLE_SF3)
+    if (STB_VORBIS AND NOT AUDIOCODECS_FLUIDLITE_ENABLE_SF3)
         set(SF3_SUPPORT "SF3_STB_VORBIS")
     else()
         set(SF3_SUPPORT "SF3_XIPH_VORBIS")
     endif()
+
+    message("FluidLite: Enabled SF3 support: ${SF3_SUPPORT}")
 
     if(FLUIDLITE_BUILD_SHARED)
         target_compile_definitions(${PROJECT_NAME} PUBLIC SF3_SUPPORT=${SF3_SUPPORT})
