@@ -80,6 +80,7 @@ set(LIBXMP_SRC_LIST_LITE
     src/filter.c
     src/hio.c
     src/lfo.c
+    src/misc.c
     src/load.c
     src/loaders/common.c
     src/loaders/it_load.c

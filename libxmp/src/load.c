@@ -138,13 +138,11 @@ static int decrunch(HIO_HANDLE **h, const char *filename, char **temp)
 	unsigned char b[1024];
 	const char *cmd;
 	FILE *f, *t;
-	int res;
 	int headersize;
 	int i;
 	struct depacker *depacker = NULL;
 
 	cmd = NULL;
-	res = 0;
 	*temp = NULL;
 	f = (*h)->handle.file;
 
@@ -234,7 +232,7 @@ static int decrunch(HIO_HANDLE **h, const char *filename, char **temp)
 	hio_close(*h);
 	*h = hio_open_file2(t);
 
-	return res;
+	return (*h == NULL)? -1 : 0;
 
     err2:
 	fclose(t);
@@ -249,11 +247,6 @@ static void set_md5sum(HIO_HANDLE *f, unsigned char *digest)
 	unsigned char buf[BUFLEN];
 	MD5_CTX ctx;
 	int bytes_read;
-
-	if (hio_size(f) <= 0) {
-		memset(digest, 0, 16);
-		return;
-	}
 
 	hio_seek(f, 0, SEEK_SET);
 
@@ -386,9 +379,9 @@ int xmp_test_module_from_memory(const void *mem, long size, struct xmp_test_info
 	HIO_HANDLE *h;
 	int ret;
 
-	/* Use size < 0 for unknown/undetermined size */
-	if (size == 0)
-		size--;
+	if (size <= 0) {
+		return -XMP_ERROR_INVALID;
+	}
 
 	if ((h = hio_open_mem(mem, size)) == NULL)
 		return -XMP_ERROR_SYSTEM;
@@ -632,9 +625,9 @@ int xmp_load_module_from_memory(xmp_context opaque, const void *mem, long size)
 	HIO_HANDLE *h;
 	int ret;
 
-	/* Use size < 0 for unknown/undetermined size */
-	if (size == 0)
-		size--;
+	if (size <= 0) {
+		return -XMP_ERROR_INVALID;
+	}
 
 	if ((h = hio_open_mem(mem, size)) == NULL)
 		return -XMP_ERROR_SYSTEM;
