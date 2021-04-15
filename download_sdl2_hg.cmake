@@ -64,7 +64,48 @@ if(ANDROID)
     )
 endif()
 
-if(USE_LOCAL_SDL2)
+if(USE_USE_NDK_MAKE)
+    if(CMAKE_BUILD_TYPE_LOWER STREQUAL "Debug")
+        set(SDL2_DEBUG_SUFFIX "d")
+    else()
+        set(SDL2_DEBUG_SUFFIX "")
+    endif()
+    ExternalProject_Add(SDL2_Local_Build
+        PREFIX ${CMAKE_BINARY_DIR}/external/SDL2-NDK
+        DOWNLOAD_COMMAND ""
+        SOURCE_DIR ${CMAKE_SOURCE_DIR}/SDL2/
+        CONFIGURE_COMMAND ""
+        INSTALL_COMMAND ""
+        BUILD_COMMAND ${ANDROID_NDK}/ndk-build -C ${CMAKE_BINARY_DIR}/external/SDL2-NDK/src/SDL2_Local_Build SDL2 SDL2_main hidapi
+        NDK_PROJECT_PATH=null
+        APP_BUILD_SCRIPT=${CMAKE_BINARY_DIR}/external/SDL2-NDK/src/SDL2_Local_Build/Android.mk
+        # NDK_OUT=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/../..
+        NDK_OUT=${CMAKE_BINARY_DIR}/lib-ndk-out/
+        # NDK_LIBS_OUT=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/..
+        NDK_LIBS_OUT=${CMAKE_BINARY_DIR}/lib-ndk-libs-out/
+        APP_ABI=${ANDROID_ABI}
+        NDK_ALL_ABIS=${ANDROID_ABI}
+        APP_PLATFORM=${ANDROID_PLATFORM}
+        BUILD_BYPRODUCTS
+            "${CMAKE_BINARY_DIR}/lib-ndk-out/local/${ANDROID_ABI}/libSDL2.a"
+            "${CMAKE_BINARY_DIR}/lib-ndk-out/local/${ANDROID_ABI}/libSDL2main.a"
+            "${CMAKE_BINARY_DIR}/lib-ndk-out/local/${ANDROID_ABI}/libSDL2.so"
+            "${CMAKE_BINARY_DIR}/lib-ndk-out/local/${ANDROID_ABI}/libhidapi.so"
+            "${CMAKE_BINARY_DIR}/lib-ndk-out/libSDL2.so"
+            "${CMAKE_BINARY_DIR}/lib/libSDL2.so"
+            "${CMAKE_BINARY_DIR}/lib/libhidapi.so"
+    )
+    add_custom_target(SDL2HG ALL
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/include/SDL2"
+        COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_BINARY_DIR}/external/SDL2-NDK/src/SDL2_Local_Build/include/*.h" "${CMAKE_BINARY_DIR}/include/SDL2"
+        COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_BINARY_DIR}/lib-ndk-out/local/${ANDROID_ABI}/libSDL2.a" "${CMAKE_BINARY_DIR}/lib/libSDL2${SDL2_DEBUG_SUFFIX}.a"
+        COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_BINARY_DIR}/lib-ndk-out/local/${ANDROID_ABI}/libSDL2main.a" "${CMAKE_BINARY_DIR}/lib/libSDL2main${SDL2_DEBUG_SUFFIX}.a"
+        COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_BINARY_DIR}/lib-ndk-out/local/${ANDROID_ABI}/libstdc++.a" "${CMAKE_BINARY_DIR}/lib/libstdc++.a"
+        COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_BINARY_DIR}/lib-ndk-out/local/${ANDROID_ABI}/*.so" "${CMAKE_BINARY_DIR}/lib"
+        DEPENDS SDL2_Local_Build
+    )
+
+elseif(USE_LOCAL_SDL2)
     ExternalProject_Add(
         SDL2HG
         PREFIX ${CMAKE_BINARY_DIR}/external/SDL2
@@ -84,6 +125,7 @@ if(USE_LOCAL_SDL2)
             ${APPLE_FLAGS}
             ${ANDROID_FLAGS}
     )
+
 else()
     ExternalProject_Add(
         SDL2HG
@@ -105,6 +147,7 @@ else()
             ${APPLE_FLAGS}
             ${ANDROID_FLAGS}
     )
+
 endif()
 
 

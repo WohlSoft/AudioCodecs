@@ -18,6 +18,9 @@ option(CODECS_BUILD_STATIC "Build static libraries if possible" ON)
 
 option(DOWNLOAD_SDL2_DEPENDENCY "Download, compile, and install SDL2's master branch" OFF)
 option(USE_LOCAL_SDL2 "Build SDL2 from local copy" OFF)
+if(ANDROID)
+    option(USE_USE_NDK_MAKE "Build SDL2 for Android using NDK Make" OFF)
+endif()
 set(SDL2_REPO_PATH "" CACHE PATH "Path to the SDL2")
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
