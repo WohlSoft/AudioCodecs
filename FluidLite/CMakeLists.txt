@@ -12,6 +12,10 @@ set(CMAKE_C_STANDARD 99)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
+if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-pedantic -Wno-unused-variable -Wno-implicit-fallthrough -Wno-unused-but-set-variable -Wno-pointer-to-int-cast")
+endif()
+
 list(APPEND HEADERS
     include/fluidlite.h
 )

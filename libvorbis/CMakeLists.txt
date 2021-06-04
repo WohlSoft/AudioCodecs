@@ -15,6 +15,10 @@ add_definitions(-DFLOAT_LOOKUP -DINT_LOOKUP)
 
 configure_file(config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config/config.h)
 
+if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-function -Wno-unused-variable")
+endif()
+
 if(MSVC)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4244 /wd4267 /wd4305")
 endif()
