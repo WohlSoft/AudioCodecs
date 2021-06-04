@@ -4,7 +4,7 @@ project(libOPUS VERSION 1.3 LANGUAGES C)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
 if(NOT MSVC)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wstrict-prototypes -Wno-unused-variable -Wno-unused-parameter -Wno-incompatible-pointer-types")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wstrict-prototypes -Wno-unused-variable -Wno-unused-parameter -Wno-incompatible-pointer-types -Wno-implicit-fallthrough")
     if(NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "^(Apple)?Clang$")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-but-set-variable")
     endif()
@@ -247,7 +247,7 @@ if(OPUS_X86_ARCHITECTURE)
     set(SUMMARY_INTRUISTIC "")
     list(APPEND SUMMARY_INTRUISTIC "x86")
 
-    if(NOT MSVC AND NOT DISABLE_SSE_BUILD) #Do CPU tests on non-MSVC compilers
+    if(NOT DISABLE_RTCD AND NOT MSVC AND NOT DISABLE_SSE_BUILD) #Do CPU tests on non-MSVC compilers
         # === Detect SSE ===
         try_compile(HAVE_X86_SSE
             ${CMAKE_BINARY_DIR}/compile_tests
@@ -335,61 +335,100 @@ if(OPUS_X86_ARCHITECTURE)
 endif()#Is X86 architecture
 
 if(OPUS_ARM_ARCHITECTURE)
-    #AS_GCC_INLINE_ASSEMBLY(
-    #    [inline_optimization="ARM"],
-    #    [inline_optimization="disabled"]
-    #)
-    #AS_ASM_ARM_EDSP([OPUS_ARM_INLINE_EDSP=1],[OPUS_ARM_INLINE_EDSP=0])
-    #AS_ASM_ARM_MEDIA([OPUS_ARM_INLINE_MEDIA=1],
-    #    [OPUS_ARM_INLINE_MEDIA=0])
-    #AS_ASM_ARM_NEON([OPUS_ARM_INLINE_NEON=1],[OPUS_ARM_INLINE_NEON=0])
+    if(NOT DISABLE_RTCD)
+        set(SUMMARY_RTCD "")
+        list(APPEND SUMMARY_RTCD "ARM")
+    endif()
 
-    if(NOT DISABLE_RTCD AND NOT MSVC AND NOT APPLE)
-#TODO: Implement detector for ASM, EDSP and NEON
-        set(OPUS_ARM_INLINE_ASM 1)
-        set(OPUS_ARM_INLINE_EDSP 1)
-        set(OPUS_ARM_INLINE_NEON 1)
-        check_include_file("arm_neon.h" OPUS_ARM_INLINE_NEON)
-        set(OPUS_ARM_MAY_HAVE_EDSP 1)
+    set(SUMMARY_INTRUISTIC "")
+    list(APPEND SUMMARY_INTRUISTIC "arm")
+
+    if(MSVC)
+        set(OPUS_ARM_PRESUME_EDSP 0)
+    else()
         set(OPUS_ARM_PRESUME_EDSP 1)
-        set(OPUS_ARM_PRESUME_MEDIA 1)
-        set(OPUS_ARM_PRESUME_NEON 1)
-        set(OPUS_ARM_PRESUME_MEDIA 1)
     endif()
 
-#m4_define([DEFAULT_ARM_NEON_INTR_CFLAGS], [-mfpu=neon])
-#m4_define([DEFAULT_ARM_NEON_SOFTFP_INTR_CFLAGS], [-mfpu=neon -mfloat-abi=softfp])
-    try_compile(HAVE_ARM_NE10
-        ${CMAKE_BINARY_DIR}/compile_tests
-        ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/arm/has_ne10.c
-    )
-    if(HAVE_ARM_NE10)
-        set(HAVE_ARM_NE10 1)
-    endif()
+    # AND NOT MSVC AND NOT APPLE // Old workaround, TODO: VERIFY THIS
+    if(NOT DISABLE_RTCD)
+        try_compile(HAVE_ARM_INLINE_NEON
+            ${CMAKE_BINARY_DIR}/compile_tests
+            ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/arm/neon_inline.c
+        )
+        if(HAVE_ARM_INLINE_NEON)
+            set(OPUS_ARM_INLINE_NEON 1)
+            set(OPUS_ARM_MAY_HAVE_NEON 1)
+            set(OPUS_ARM_PRESUME_NEON 1)
+        else()
+            set(OPUS_ARM_MAY_HAVE_NEON 0)
+        endif()
 
-    try_compile(HAVE_ARM_NEON_INTR
-        ${CMAKE_BINARY_DIR}/compile_tests
-        ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/arm/neon_intr.c
-    )
-    if(HAVE_ARM_NEON_INTR)
-        set(OPUS_ARM_MAY_HAVE_NEON_INTR 1)
-        set(OPUS_ARM_PRESUME_NEON_INTR 1)
-    endif()
+        try_compile(HAVE_ARM_INLINE_MEDIA
+            ${CMAKE_BINARY_DIR}/compile_tests
+            ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/arm/arm_inline_media.c
+        )
+        if(HAVE_ARM_INLINE_MEDIA)
+            set(OPUS_ARM_INLINE_MEDIA 1)
+            set(OPUS_ARM_MAY_HAVE_MEDIA 1)
+            set(OPUS_ARM_PRESUME_MEDIA 1)
+        else()
+            set(OPUS_ARM_MAY_HAVE_MEDIA 0)
+        endif()
 
-    try_compile(HAVE_ARM_ARCH64_NEON_INTR
-        ${CMAKE_BINARY_DIR}/compile_tests
-        ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/arm/neon_intr_arch64.c
-    )
-    if(HAVE_ARM_ARCH64_NEON_INTR)
-        set(OPUS_ARM_MAY_HAVE_AARCH64_NEON_INTR 1)
-        set(OPUS_ARM_PRESUME_AARCH64_NEON_INTR 1)
-    endif()
+        try_compile(HAVE_ARM_INLINE_ASM
+            ${CMAKE_BINARY_DIR}/compile_tests
+            ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/arm/arm_inline_asm.c
+        )
+        if(HAVE_ARM_INLINE_ASM)
+            set(OPUS_ARM_INLINE_ASM 1)
+        endif()
 
-    if(FLOAT_POINT)
-        set(OPUS_ARM_ASM 1)
-    endif()
+        try_compile(HAVE_ARM_NEON_EDSP
+            ${CMAKE_BINARY_DIR}/compile_tests
+            ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/arm/neon_edsp.c
+        )
+        if(HAVE_ARM_NEON_EDSP)
+            set(OPUS_ARM_INLINE_EDSP 1)
+            set(OPUS_ARM_MAY_HAVE_EDSP 1)
+        else()
+            set(OPUS_ARM_MAY_HAVE_EDSP 0)
+        endif()
 
-    configure_file(celt/arm/armopts.s.in ${CMAKE_CURRENT_BINARY_DIR}/config/celt/arm/armopts.s)
+    #m4_define([DEFAULT_ARM_NEON_INTR_CFLAGS], [-mfpu=neon])
+    #m4_define([DEFAULT_ARM_NEON_SOFTFP_INTR_CFLAGS], [-mfpu=neon -mfloat-abi=softfp])
+        try_compile(HAVE_ARM_NE10
+            ${CMAKE_BINARY_DIR}/compile_tests
+            ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/arm/has_ne10.c
+        )
+        if(HAVE_ARM_NE10)
+            set(HAVE_ARM_NE10 1)
+        endif()
+
+        try_compile(HAVE_ARM_NEON_INTR
+            ${CMAKE_BINARY_DIR}/compile_tests
+            ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/arm/neon_intr.c
+        )
+        if(HAVE_ARM_NEON_INTR)
+            set(OPUS_ARM_MAY_HAVE_NEON_INTR 1)
+            set(OPUS_ARM_PRESUME_NEON_INTR 1)
+        endif()
+
+        try_compile(HAVE_ARM_ARCH64_NEON_INTR
+            ${CMAKE_BINARY_DIR}/compile_tests
+            ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/arm/neon_intr_arch64.c
+        )
+        if(HAVE_ARM_ARCH64_NEON_INTR)
+            set(OPUS_ARM_MAY_HAVE_AARCH64_NEON_INTR 1)
+            set(OPUS_ARM_PRESUME_AARCH64_NEON_INTR 1)
+        endif()
+
+        if(FLOAT_POINT)
+            set(OPUS_ARM_ASM 1)
+        endif()
+
+        configure_file(celt/arm/armopts.s.in ${CMAKE_CURRENT_BINARY_DIR}/config/celt/arm/armopts.s)
+
+    endif()
 endif()#Is ARM architecture
 
 add_definitions(
