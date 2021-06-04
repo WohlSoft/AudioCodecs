@@ -36,14 +36,20 @@ option(BUILD_GME_STATIC "Build static library of Game-Music-EMU" ON)
 option(BUILD_GME_SHARED "Build shared library of Game-Music-EMU" OFF)
 
 set(GME_YM2612_EMU "MAME" CACHE STRING "Which YM2612 emulator to use: \"Nuked\" (LGPLv2.1+), \"MAME\" (GPLv2+), or \"GENS\" (LGPLv2.1+)")
+option(GME_ENABLE_ZLIB "Enable ZLib support (such as VGZ files and other GZ-packed files)" ON)
 
 add_definitions(
     -DSPC_ISOLATED_ECHO_BUFFER
     -DSPC_MORE_ACCURACY
     -D_REENTRANT
     -D_USE_MATH_DEFINES
-    -DHAVE_ZLIB_H
 )
+
+if(GME_ENABLE_ZLIB)
+    add_definitions(
+        -DHAVE_ZLIB_H
+    )
+endif()
 
 set(libgme_SRCS
     src/Ay_Apu.cpp
@@ -133,7 +139,9 @@ if(BUILD_GME_SHARED)
     add_library(gme_shared SHARED ${libgme_SRCS})
     set_target_properties(gme_shared PROPERTIES OUTPUT_NAME gme)
     target_compile_definitions(gme_shared PRIVATE -DBLARGG_BUILD_DLL)
-    target_link_libraries(gme_shared zlib)
+    if(GME_ENABLE_ZLIB)
+        target_link_libraries(gme_shared zlib)
+    endif()
     target_include_directories(gme_shared PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
     target_include_directories(gme_shared PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
     list(APPEND GME_INSTALL_TARGETS gme_shared)
