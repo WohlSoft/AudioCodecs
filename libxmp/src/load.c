@@ -20,17 +20,8 @@
  * THE SOFTWARE.
  */
 
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
+#include <sys/stat.h>
 #include <errno.h>
-#ifdef __native_client__
-#include <sys/syslimits.h>
-#else
-#include <limits.h>
-#endif
 
 #include "format.h"
 #include "list.h"
@@ -42,8 +33,7 @@
 #if !defined(HAVE_POPEN) && defined(_WIN32)
 #include "win32/ptpopen.h"
 #define HAVE_POPEN 1
-#endif
-#if defined(__WATCOMC__)
+#elif defined(__WATCOMC__)
 #define popen  _popen
 #define pclose _pclose
 #define HAVE_POPEN 1
