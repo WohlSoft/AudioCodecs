@@ -104,7 +104,13 @@ if(ENABLE_CHECK_ASM)
     set(OPUS_CHECK_ASM 1)
 endif()
 
-option(DISABLE_RTCD "Disable run-time CPU capabilities detection" OFF)
+if(OPUS_ARM_ARCHITECTURE AND APPLE)
+    set(DEFAULT_DISABLE_RTCD ON)
+else()
+    set(DEFAULT_DISABLE_RTCD OFF)
+endif()
+
+option(DISABLE_RTCD "Disable run-time CPU capabilities detection" ${DEFAULT_DISABLE_RTCD})
 if(NOT DISABLE_RTCD)
     set(OPUS_HAVE_RTCD 1)
 endif()
@@ -356,9 +362,12 @@ if(OPUS_ARM_ARCHITECTURE)
             set(OPUS_ARM_INLINE_NEON 1)
             set(OPUS_ARM_MAY_HAVE_NEON 1)
             set(OPUS_ARM_PRESUME_NEON 1)
+            message("-- Has inline NEON: YES")
         else()
             set(OPUS_ARM_MAY_HAVE_NEON 0)
+            message("-- Has inline NEON: NO")
         endif()
+
 
         try_compile(HAVE_ARM_INLINE_MEDIA
             ${CMAKE_BINARY_DIR}/compile_tests
@@ -368,9 +377,12 @@ if(OPUS_ARM_ARCHITECTURE)
             set(OPUS_ARM_INLINE_MEDIA 1)
             set(OPUS_ARM_MAY_HAVE_MEDIA 1)
             set(OPUS_ARM_PRESUME_MEDIA 1)
+            message("-- Has inline Media: YES")
         else()
             set(OPUS_ARM_MAY_HAVE_MEDIA 0)
+            message("-- Has inline Media: NO")
         endif()
+
 
         try_compile(HAVE_ARM_INLINE_ASM
             ${CMAKE_BINARY_DIR}/compile_tests
@@ -378,6 +390,9 @@ if(OPUS_ARM_ARCHITECTURE)
         )
         if(HAVE_ARM_INLINE_ASM)
             set(OPUS_ARM_INLINE_ASM 1)
+            message("-- Has inline ASM: YES")
+        else()
+            message("-- Has inline ASM: NO")
         endif()
 
         try_compile(HAVE_ARM_NEON_EDSP
@@ -387,8 +402,10 @@ if(OPUS_ARM_ARCHITECTURE)
         if(HAVE_ARM_NEON_EDSP)
             set(OPUS_ARM_INLINE_EDSP 1)
             set(OPUS_ARM_MAY_HAVE_EDSP 1)
+            message("-- Has NEON EDSP: YES")
         else()
             set(OPUS_ARM_MAY_HAVE_EDSP 0)
+            message("-- Has NEON EDSP: NO")
         endif()
 
     #m4_define([DEFAULT_ARM_NEON_INTR_CFLAGS], [-mfpu=neon])
@@ -399,6 +416,9 @@ if(OPUS_ARM_ARCHITECTURE)
         )
         if(HAVE_ARM_NE10)
             set(HAVE_ARM_NE10 1)
+            message("-- Has ARM NE10: YES")
+        else()
+            message("-- Has ARM NE10: NO")
         endif()
 
         try_compile(HAVE_ARM_NEON_INTR
@@ -408,6 +428,9 @@ if(OPUS_ARM_ARCHITECTURE)
         if(HAVE_ARM_NEON_INTR)
             set(OPUS_ARM_MAY_HAVE_NEON_INTR 1)
             set(OPUS_ARM_PRESUME_NEON_INTR 1)
+            message("-- Has NEON INTR: YES")
+        else()
+            message("-- Has NEON INTR: NO")
         endif()
 
         try_compile(HAVE_ARM_ARCH64_NEON_INTR
@@ -417,6 +440,9 @@ if(OPUS_ARM_ARCHITECTURE)
         if(HAVE_ARM_ARCH64_NEON_INTR)
             set(OPUS_ARM_MAY_HAVE_AARCH64_NEON_INTR 1)
             set(OPUS_ARM_PRESUME_AARCH64_NEON_INTR 1)
+            message("-- Has AARCH_NEON_INTR: YES")
+        else()
+            message("-- Has AARCH_NEON_INTR: NO")
         endif()
 
         if(FLOAT_POINT)
@@ -523,6 +549,7 @@ elseif(OPUS_ARM_ARCHITECTURE)
         celt/arm/armcpu.c
         celt/arm/arm_celt_map.c
     )
+
     if(OPUS_ARM_ASM)
         list(APPEND OPUS_SRC
             celt/arm/celt_pitch_xcorr_arm.s
@@ -546,6 +573,7 @@ elseif(OPUS_ARM_ARCHITECTURE)
             )
         endif()
     endif()
+
     if(HAVE_ARM_NE10)
         list(APPEND OPUS_SRC
             celt/arm/celt_fft_ne10.c
