@@ -117,6 +117,7 @@ set(LIBXMP_SRC_LIST_FULL
     src/loaders/asif.c
     src/loaders/asylum_load.c
     src/loaders/chip_load.c
+    src/loaders/coco_load.c
     src/loaders/dbm_load.c
     src/loaders/digi_load.c
     src/loaders/dt_load.c
