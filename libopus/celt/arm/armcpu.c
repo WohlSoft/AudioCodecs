@@ -146,6 +146,38 @@ opus_uint32 opus_cpu_capabilities(void)
   }
   return flags;
 }
+#elif defined(__APPLE__)
+#include <sys/types.h>
+#include <sys/sysctl.h>
+/* macOS based */
+opus_uint32 opus_cpu_capabilities(void)
+{
+  opus_uint32 flags = 0;
+  opus_uint64 neon = 0;
+  size_t neon_size = sizeof(opus_uint64);
+
+  /* FIXME: Ensure this is a correct code for Apple M1 and newer processors */
+  if(sysctlbyname("hw.optional.neon", &neon, &neon_size, NULL, 0) >= 0 && neon >= 1)
+  {
+# if defined(OPUS_ARM_MAY_HAVE_EDSP) || defined(OPUS_ARM_MAY_HAVE_MEDIA) \
+ || defined(OPUS_ARM_MAY_HAVE_NEON) || defined(OPUS_ARM_MAY_HAVE_NEON_INTR)
+    /* Search for edsp and neon flag */
+    flags |= OPUS_CPU_ARM_EDSP_FLAG;
+
+#  if defined(OPUS_ARM_MAY_HAVE_NEON) || defined(OPUS_ARM_MAY_HAVE_NEON_INTR)
+    flags |= OPUS_CPU_ARM_NEON_FLAG;
+#  endif
+
+# endif
+
+# if defined(OPUS_ARM_MAY_HAVE_MEDIA) \
+ || defined(OPUS_ARM_MAY_HAVE_NEON) || defined(OPUS_ARM_MAY_HAVE_NEON_INTR)
+    /* No need on Apple M1 and newer, architecture >=6 apriori! */
+    flags |= OPUS_CPU_ARM_MEDIA_FLAG;
+# endif
+  }
+  return flags;
+}
 #else
 /* The feature registers which can tell us what the processor supports are
  * accessible in priveleged modes only, so we can't have a general user-space

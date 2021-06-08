@@ -104,11 +104,12 @@ if(ENABLE_CHECK_ASM)
     set(OPUS_CHECK_ASM 1)
 endif()
 
-if(OPUS_ARM_ARCHITECTURE AND APPLE)
-    set(DEFAULT_DISABLE_RTCD ON)
-else()
-    set(DEFAULT_DISABLE_RTCD OFF)
-endif()
+#if(OPUS_ARM_ARCHITECTURE AND APPLE)
+#    set(DEFAULT_DISABLE_RTCD ON)
+#else()
+#    set(DEFAULT_DISABLE_RTCD OFF)
+#endif()
+set(DEFAULT_DISABLE_RTCD OFF)
 
 option(DISABLE_RTCD "Disable run-time CPU capabilities detection" ${DEFAULT_DISABLE_RTCD})
 if(NOT DISABLE_RTCD)
@@ -352,7 +353,6 @@ if(OPUS_ARM_ARCHITECTURE)
         set(OPUS_ARM_PRESUME_EDSP 1)
     endif()
 
-    # AND NOT MSVC AND NOT APPLE // Old workaround, TODO: VERIFY THIS
     if(NOT DISABLE_RTCD)
         try_compile(HAVE_ARM_INLINE_NEON
             ${CMAKE_BINARY_DIR}/compile_tests
