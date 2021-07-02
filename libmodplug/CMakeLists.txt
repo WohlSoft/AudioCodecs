@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.2)
-project(libmodplug VERSION 0.8.10.0 LANGUAGES CXX)
+project(libmodplug VERSION 0.8.10.0 LANGUAGES C CXX)
 
 set(VERSION "0.8.10.0")
 
@@ -139,6 +139,7 @@ set(MODPLUG_SRCS
     src/load_dmf.cpp
     src/load_dsm.cpp
     src/load_far.cpp
+    src/load_gdm.cpp
     src/load_it.cpp
     src/load_mdl.cpp
     src/load_med.cpp

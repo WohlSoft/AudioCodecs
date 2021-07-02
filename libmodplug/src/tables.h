@@ -5,12 +5,12 @@
  */
 
 #include "libmodplug/stdafx.h"
-#include "libmodplug/sndfile.h"
 
 #ifndef MODPLUG_FASTSOUNDLIB
 //#pragma data_seg(".tables")
 #endif
 
+#ifdef SNDFX_C
 static const BYTE ImpulseTrackerPortaVolCmd[16] =
 {
 	0x00, 0x01, 0x04, 0x08, 0x10, 0x20, 0x40, 0x60,
@@ -65,8 +65,10 @@ static const WORD S3MFineTuneTable[16] =
 	7895,7941,7985,8046,8107,8169,8232,8280,
 	8363,8413,8463,8529,8581,8651,8723,8757,	// 8363*2^((i-8)/(12*8))
 };
+#endif
 
 
+#ifdef SNDMIX_C
 // Sinus table
 static const int16_t ModSinusTable[64] =
 {
@@ -102,8 +104,10 @@ static const int16_t ModRandomTable[64] =
 	-23,88,21,-94,8,106,21,-112,6,109,20,-88,-30,9,-127,118,
 	42,-34,89,-4,-51,-72,21,-29,112,123,84,-101,-92,98,-54,-95
 };
+#endif
 
 
+#ifdef SNDFX_C
 // volume fade tables for Retrig Note:
 static const int8_t retrigTable1[16] =
 { 0, 0, 0, 0, 0, 0, 10, 8, 0, 0, 0, 0, 0, 0, 24, 32 };
@@ -225,8 +229,10 @@ static const uint32_t XMLinearTable[768] =
 	271508,271263,271018,270774,270530,270286,270042,269798,
 	269555,269312,269069,268826,268583,268341,268099,267857 
 };
+#endif
 
 
+#ifdef SNDMIX_C
 static const int8_t ft2VibratoTable[256] = 
 {
 	0,-2,-3,-5,-6,-8,-9,-11,-12,-14,-16,-17,-19,-20,-22,-23,
@@ -248,6 +254,7 @@ static const int8_t ft2VibratoTable[256] =
 };
 
 
+#endif
 
 static const DWORD FineLinearSlideUpTable[16] =
 {
@@ -338,6 +345,7 @@ static const DWORD LinearSlideDownTable[256] =
 };
 
 
+#if 0
 static const int SpectrumSinusTable[256*2] = 
 {
 	0, 1, 1, 2, 3, 3, 4, 5, 6, 7, 7, 8, 9, 10, 10, 11, 
@@ -373,4 +381,5 @@ static const int SpectrumSinusTable[256*2] =
 	-24, -23, -22, -22, -21, -20, -20, -19, -18, -17, -17, -16, -15, -14, -14, -13, 
 	-12, -11, -10, -10, -9, -8, -7, -7, -6, -5, -4, -3, -3, -2, -1, 0, 
 };
+#endif
 

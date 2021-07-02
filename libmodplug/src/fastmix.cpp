@@ -1491,13 +1491,13 @@ UINT CSoundFile::CreateStereoMix(int count)
 	{
 		const LPMIXINTERFACE *pMixFuncTable;
 		MODCHANNEL * const pChannel = &Chn[ChnMix[nChn]];
-		UINT nFlags, nMasterCh;
+		UINT nFlags;//, nMasterCh
 		LONG nSmpCount;
 		int nsamples;
 		int *pbuffer;
 
 		if (!pChannel->pCurrentSample) continue;
-		nMasterCh = (ChnMix[nChn] < m_nChannels) ? ChnMix[nChn]+1 : pChannel->nMasterChn;
+		//nMasterCh = (ChnMix[nChn] < m_nChannels) ? ChnMix[nChn]+1 : pChannel->nMasterChn;
 		pOfsR = &gnDryROfsVol;
 		pOfsL = &gnDryLOfsVol;
 		nFlags = 0;
@@ -1893,13 +1893,13 @@ DWORD MPPASMCALL X86_Convert32To24(LPVOID lp16, int *pBuffer, DWORD lSampleCount
 			vumax = n;
 		p = n >> (8-MIXING_ATTENUATION) ; // 24-bit signed
 #ifdef WORDS_BIGENDIAN
-		buf[i*3+0] = p & 0xFF0000 >> 24;
-		buf[i*3+1] = p & 0x00FF00 >> 16 ;
-		buf[i*3+2] = p & 0x0000FF ;
+		buf[i*3+0] = (p >> 16) & 0xFF;
+		buf[i*3+1] = (p >> 8)  & 0xFF;
+		buf[i*3+2] = (p >> 0)  & 0xFF;
 #else
-		buf[i*3+0] = p & 0x0000FF ;
-		buf[i*3+1] = p & 0x00FF00 >> 16;
-		buf[i*3+2] = p & 0xFF0000 >> 24;
+		buf[i*3+0] = (p >> 0)  & 0xFF;
+		buf[i*3+1] = (p >> 8)  & 0xFF;
+		buf[i*3+2] = (p >> 16) & 0xFF;
 #endif
 	}
 	*lpMin = vumin;
