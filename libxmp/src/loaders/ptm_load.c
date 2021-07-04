@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -137,6 +137,9 @@ static int ptm_load(struct module_data *m, HIO_HANDLE *f, const int start)
 	hio_read(pfh.order, 256, 1, f);	/* Orders */
 	for (i = 0; i < 128; i++)
 		pfh.patseg[i] = hio_read16l(f);
+
+	if (hio_error(f))
+		return -1;
 
 	mod->len = pfh.ordnum;
 	mod->ins = pfh.insnum;
@@ -357,7 +360,7 @@ static int ptm_load(struct module_data *m, HIO_HANDLE *f, const int start)
 			return -1;
 	}
 
-	m->vol_table = (int *)ptm_vol;
+	m->vol_table = ptm_vol;
 
 	for (i = 0; i < mod->chn; i++)
 		mod->xxc[i].pan = pfh.chset[i] << 4;

@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -255,7 +255,7 @@ void libxmp_c2spd_to_note(int c2spd, int *n, int *f)
 {
 	int c;
 
-	if (c2spd == 0) {
+	if (c2spd <= 0) {
 		*n = *f = 0;
 		return;
 	}

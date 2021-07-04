@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -143,6 +143,17 @@ void fix_effect(uint8 *fxt, uint8 *fxp)
 		break;
 	case 0x1e:			/* special misc */
 		switch (MSN(*fxp)) {
+		case 0x0:		/* sample control */
+			if (LSN(*fxp) == 1) { /* enable surround */
+				/* This is the only sample control effect
+				 * that 2GDM emits. BWSB ignores it,
+				 * but supporting it is harmless. */
+				*fxt = FX_SURROUND;
+				*fxp = 1;
+			} else {
+				*fxt = *fxp = 0;
+			}
+			break;
 		case 0x8:		/* set pan position */
 			*fxt = FX_EXTENDED;
 			break;
@@ -191,7 +202,10 @@ static int gdm_load(struct module_data *m, HIO_HANDLE *f, const int start)
 					vermaj, vermin, tvmaj, tvmin);
 	}
 
-	hio_read(panmap, 32, 1, f);
+	if (hio_read(panmap, 32, 1, f) == 0) {
+		D_(D_CRIT "error reading header");
+		return -1;
+	}
 	for (i = 0; i < 32; i++) {
 		if (panmap[i] == 255) {
 			panmap[i] = 8;

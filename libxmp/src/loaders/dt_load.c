@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -176,7 +176,9 @@ static int get_inst(struct module_data *m, int size, HIO_HANDLE *f, void *parm)
 		mod->xxs[i].lpe = mod->xxs[i].lps + replen - 1;
 		mod->xxs[i].flg = replen > 2 ?  XMP_SAMPLE_LOOP : 0;
 
-		hio_read(name, 22, 1, f);
+		if (hio_read(name, 22, 1, f) == 0)
+			return -1;
+
 		libxmp_instrument_name(mod, i, name, 22);
 
 		flag = hio_read16b(f);	/* bit 0-7:resol 8:stereo */

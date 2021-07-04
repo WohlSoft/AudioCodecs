@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -26,8 +26,6 @@
 
 
 #ifndef LIBXMP_CORE_PLAYER
-
-#include "xfnmatch.h"
 
 /*
  * Handle special "module quirks" that can't be detected automatically
@@ -120,36 +118,6 @@ static void module_quirks(struct context_data *ctx)
 			p->mode = mq[i].mode;
 		}
 	}
-}
-
-/*
- * Check whether the given string matches one of the blacklisted glob
- * patterns. Used to filter file names stored in archive files.
- */
-int libxmp_exclude_match(const char *name)
-{
-	int i;
-
-	static const char *const exclude[] = {
-		"README", "readme",
-		"*.DIZ", "*.diz",
-		"*.NFO", "*.nfo",
-		"*.DOC", "*.Doc", "*.doc",
-		"*.INFO", "*.info", "*.Info",
-		"*.TXT", "*.txt",
-		"*.EXE", "*.exe",
-		"*.COM", "*.com",
-		"*.README", "*.readme", "*.Readme", "*.ReadMe",
-		NULL
-	};
-
-	for (i = 0; exclude[i] != NULL; i++) {
-		if (fnmatch(exclude[i], name, 0) == 0) {
-			return 1;
-		}
-	}
-
-	return 0;
 }
 
 #endif /* LIBXMP_CORE_PLAYER */
@@ -341,6 +309,7 @@ int libxmp_prepare_scan(struct context_data *ctx)
 
 void libxmp_free_scan(struct context_data *ctx)
 {
+	struct player_data *p = &ctx->p;
 	struct module_data *m = &ctx->m;
 	struct xmp_module *mod = &m->mod;
 	int i;
@@ -352,6 +321,9 @@ void libxmp_free_scan(struct context_data *ctx)
 		free(m->scan_cnt);
 		m->scan_cnt = NULL;
 	}
+
+	free(p->scan);
+	p->scan = NULL;
 }
 
 /* Process player personality flags */

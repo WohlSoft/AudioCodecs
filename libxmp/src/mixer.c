@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -463,13 +463,13 @@ void libxmp_mixer_softmixer(struct context_data *ctx)
 				samples = 0;
 				usmp = 1;
 			} else {
-				int s = ceil(((double)vi->end - vi->pos) / step);
+				int c = ceil(((double)vi->end - vi->pos) / step);
 				/* ...inside the tick boundaries */
-				if (s > size) {
-					s = size;
+				if (c > size) {
+					c = size;
 				}
 
-				samples = s;
+				samples = c;
 				if (samples > 0) {
 					usmp = 0;
 				}

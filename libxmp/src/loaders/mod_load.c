@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -545,14 +545,15 @@ static int mod_load(struct module_data *m, HIO_HANDLE *f, const int start)
 
     if (0x43c + mod->pat * 4 * mod->chn * 0x40 + smp_size < m->size) {
 	int pos = hio_tell(f);
+	int num_read;
         if (pos < 0) {
            return -1;
         }
 	hio_seek(f, start + 0x43c + mod->pat * 4 * mod->chn * 0x40 + smp_size, SEEK_SET);
-	hio_read(idbuffer, 1, 4, f);
+	num_read = hio_read(idbuffer, 1, 4, f);
 	hio_seek(f, start + pos, SEEK_SET);
 
-	if (!memcmp(idbuffer, "FLEX", 4)) {
+	if (num_read == 4 && !memcmp(idbuffer, "FLEX", 4)) {
 	    tracker_id = TRACKER_FLEXTRAX;
 	    goto skip_test;
 	}

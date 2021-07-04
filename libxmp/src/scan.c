@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -73,7 +73,7 @@ static int scan_module(struct context_data *ctx, int ep, int chain)
 	return 0;
 
     for (i = 0; i < mod->len; i++) {
-	int pat = mod->xxo[i];
+	pat = mod->xxo[i];
 	memset(m->scan_cnt[i], 0, pat >= mod->pat ? 1 :
 			mod->xxp[pat]->rows ? mod->xxp[pat]->rows : 1);
     }
@@ -525,9 +525,17 @@ int libxmp_scan_sequences(struct context_data *ctx)
 	struct player_data *p = &ctx->p;
 	struct module_data *m = &ctx->m;
 	struct xmp_module *mod = &m->mod;
+	struct scan_data *s;
 	int i, ep;
 	int seq;
 	unsigned char temp_ep[XMP_MAX_MOD_LENGTH];
+
+	s = realloc(p->scan, MAX(1, mod->len) * sizeof(struct scan_data));
+	if (!s) {
+		D_(D_CRIT "failed to allocate scan data");
+		return -1;
+	}
+	p->scan = s;
 
 	/* Initialize order data to prevent overwrite when a position is used
 	 * multiple times at different starting points (see janosik.xm).
@@ -567,6 +575,12 @@ int libxmp_scan_sequences(struct context_data *ctx)
 		}
 	}
 
+	if (seq < mod->len) {
+		s = realloc(p->scan, seq * sizeof(struct scan_data));
+		if (s != NULL) {
+			p->scan = s;
+		}
+	}
 	m->num_sequences = seq;
 
 	/* Now place entry points in the public accessible array */

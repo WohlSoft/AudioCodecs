@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -30,15 +30,9 @@
 #include "loaders/loader.h"
 
 #ifndef LIBXMP_NO_DEPACKERS
-#if !defined(HAVE_POPEN) && defined(_WIN32)
-#include "win32/ptpopen.h"
-#define HAVE_POPEN 1
-#elif defined(__WATCOMC__)
-#define popen  _popen
-#define pclose _pclose
-#define HAVE_POPEN 1
+#include "depackers/depacker.h"
 #endif
-#endif
+
 #ifndef LIBXMP_CORE_PLAYER
 #include "md5.h"
 #include "extras.h"
@@ -54,182 +48,6 @@ int  libxmp_prepare_scan(struct context_data *);
 #ifndef LIBXMP_CORE_PLAYER
 #define BUFLEN 16384
 #endif
-
-#ifndef LIBXMP_NO_DEPACKERS
-
-#include "depacker.h"
-
-static struct depacker *depacker_list[] = {
-#if defined LIBXMP_AMIGA && !defined __AROS__
-	&libxmp_depacker_xfd,
-#endif
-	&libxmp_depacker_zip,
-	&libxmp_depacker_lha,
-	&libxmp_depacker_gzip,
-	&libxmp_depacker_bzip2,
-	&libxmp_depacker_xz,
-	&libxmp_depacker_compress,
-	&libxmp_depacker_pp,
-	&libxmp_depacker_sqsh,
-	&libxmp_depacker_arcfs,
-	&libxmp_depacker_mmcmp,
-	&libxmp_depacker_muse,
-	&libxmp_depacker_lzx,
-	&libxmp_depacker_s404,
-	&libxmp_depacker_arc,
-	NULL
-};
-
-int test_oxm		(FILE *);
-
-#ifndef HAVE_POPEN
-static int execute_command(const char *cmd, const char *filename, FILE *t) {
-	return -1;
-}
-#else
-static int execute_command(const char *cmd, const char *filename, FILE *t)
-{
-	char line[1024], buf[BUFLEN];
-	FILE *p;
-	int n;
-
-	snprintf(line, 1024, cmd, filename);
-
-#if defined(_WIN32) || defined(__OS2__) || defined(__EMX__)
-	/* Note: The _popen function returns an invalid file opaque, if
-	 * used in a Windows program, that will cause the program to hang
-	 * indefinitely. _popen works properly in a Console application.
-	 * To create a Windows application that redirects input and output,
-	 * read the section "Creating a Child Process with Redirected Input
-	 * and Output" in the Win32 SDK. -- Mirko
-	 */
-	p = popen(line, "rb");
-#else
-	/* Linux popen fails with "rb" */
-	p = popen(line, "r");
-#endif
-
-	if (p == NULL) {
-	    return -1;
-	}
-
-	while ((n = fread(buf, 1, BUFLEN, p)) > 0) {
-	    fwrite(buf, 1, n, t);
-	}
-
-	pclose (p);
-
-	return 0;
-}
-#endif
-
-static int decrunch(HIO_HANDLE **h, const char *filename, char **temp)
-{
-	unsigned char b[1024];
-	const char *cmd;
-	FILE *f, *t;
-	int headersize;
-	int i;
-	struct depacker *depacker = NULL;
-
-	cmd = NULL;
-	*temp = NULL;
-	f = (*h)->handle.file;
-
-	headersize = fread(b, 1, 1024, f);
-	if (headersize < 100) {	/* minimum valid file size */
-		return 0;
-	}
-
-	/* Check built-in depackers */
-	for (i = 0; depacker_list[i] != NULL; i++) {
-		if (depacker_list[i]->test(b)) {
-			depacker = depacker_list[i];
-			D_(D_INFO "Use depacker %d", i);
-			break;
-		}
-	}
-
-	/* Check external commands */
-	if (depacker == NULL) {
-		if (b[0] == 'M' && b[1] == 'O' && b[2] == '3') {
-			/* MO3 */
-			D_(D_INFO "mo3");
-			cmd = "unmo3 -s \"%s\" STDOUT";
-		} else if (memcmp(b, "Rar", 3) == 0) {
-			/* rar */
-			D_(D_INFO "rar");
-			cmd = "unrar p -inul -xreadme -x*.diz -x*.nfo -x*.txt "
-			    "-x*.exe -x*.com \"%s\"";
-		} else if (test_oxm(f) == 0) {
-			/* oggmod */
-			D_(D_INFO "oggmod");
-			depacker = &libxmp_depacker_oxm;
-		}
-	}
-
-	if (fseek(f, 0, SEEK_SET) < 0) {
-		goto err;
-	}
-
-	if (depacker == NULL && cmd == NULL) {
-		D_(D_INFO "Not packed");
-		return 0;
-	}
-
-#if defined __ANDROID__ || defined __native_client__
-	/* Don't use external helpers in android */
-	if (cmd) {
-		return 0;
-	}
-#endif
-
-	/* When the filename is unknown (because it is a stream) don't use
-	 * external helpers
-	 */
-	if (cmd && filename == NULL) {
-		return 0;
-	}
-
-	D_(D_WARN "Depacking file... ");
-
-	if ((t = make_temp_file(temp)) == NULL) {
-		goto err;
-	}
-
-	/* Depack file */
-	if (cmd) {
-		D_(D_INFO "External depacker: %s", cmd);
-		if (execute_command(cmd, filename, t) < 0) {
-			D_(D_CRIT "failed");
-			goto err2;
-		}
-	} else if (depacker) {
-		D_(D_INFO "Internal depacker");
-		if (depacker->depack(f, t) < 0) {
-			D_(D_CRIT "failed");
-			goto err2;
-		}
-	}
-
-	D_(D_INFO "done");
-
-	if (fseek(t, 0, SEEK_SET) < 0) {
-		D_(D_CRIT "fseek error");
-		goto err2;
-	}
-
-	hio_close(*h);
-	*h = hio_open_file2(t);
-
-	return (*h == NULL)? -1 : 0;
-
-    err2:
-	fclose(t);
-    err:
-	return -1;
-}
-#endif /* LIBXMP_NO_DEPACKERS */
 
 #ifndef LIBXMP_CORE_PLAYER
 static void set_md5sum(HIO_HANDLE *f, unsigned char *digest)
@@ -250,11 +68,11 @@ static void set_md5sum(HIO_HANDLE *f, unsigned char *digest)
 static char *get_dirname(const char *name)
 {
 	char *dirname;
-	const char *div;
+	const char *p;
 	ptrdiff_t len;
 
-	if ((div = strrchr(name, '/')) != NULL) {
-		len = div - name + 1;
+	if ((p = strrchr(name, '/')) != NULL) {
+		len = p - name + 1;
 		dirname = malloc(len + 1);
 		if (dirname != NULL) {
 			memcpy(dirname, name, len);
@@ -269,11 +87,11 @@ static char *get_dirname(const char *name)
 
 static char *get_basename(const char *name)
 {
-	const char *div;
+	const char *p;
 	char *basename;
 
-	if ((div = strrchr(name, '/')) != NULL) {
-		basename = strdup(div + 1);
+	if ((p = strrchr(name, '/')) != NULL) {
+		basename = strdup(p + 1);
 	} else {
 		basename = strdup(name);
 	}
@@ -340,14 +158,8 @@ int xmp_test_module(const char *path, struct xmp_test_info *info)
 		return -XMP_ERROR_SYSTEM;
 
 #ifndef LIBXMP_NO_DEPACKERS
-	if (decrunch(&h, path, &temp) < 0) {
+	if (libxmp_decrunch(&h, path, &temp) < 0) {
 		ret = -XMP_ERROR_DEPACK;
-		goto err;
-	}
-
-	/* get size after decrunch */
-	if (hio_size(h) < 256) {	/* set minimum valid module size */
-		ret = -XMP_ERROR_FORMAT;
 		goto err;
 	}
 #endif
@@ -394,14 +206,8 @@ int xmp_test_module_from_file(void *file, struct xmp_test_info *info)
 		return -XMP_ERROR_SYSTEM;
 
 #ifndef LIBXMP_NO_DEPACKERS
-	if (decrunch(&h, NULL, &temp) < 0) {
+	if (libxmp_decrunch(&h, NULL, &temp) < 0) {
 		ret = -XMP_ERROR_DEPACK;
-		goto err;
-	}
-
-	/* get size after decrunch */
-	if (hio_size(h) < 256) {	/* set minimum valid module size */
-		ret = -XMP_ERROR_FORMAT;
 		goto err;
 	}
 #endif
@@ -415,6 +221,21 @@ int xmp_test_module_from_file(void *file, struct xmp_test_info *info)
 #else
 	hio_close(h);
 #endif
+	return ret;
+}
+
+int xmp_test_module_from_callbacks(void *priv, struct xmp_callbacks callbacks,
+				struct xmp_test_info *info)
+{
+	HIO_HANDLE *h;
+	int ret;
+
+	if ((h = hio_open_callbacks(priv, callbacks)) == NULL)
+		return -XMP_ERROR_SYSTEM;
+
+	ret = test_module(info, h);
+
+	hio_close(h);
 	return ret;
 }
 
@@ -525,7 +346,6 @@ int xmp_load_module(xmp_context opaque, const char *path)
 	struct context_data *ctx = (struct context_data *)opaque;
 #ifndef LIBXMP_CORE_PLAYER
 	struct module_data *m = &ctx->m;
-	long size;
 #endif
 #ifndef LIBXMP_NO_DEPACKERS
 	char *temp_name;
@@ -551,16 +371,8 @@ int xmp_load_module(xmp_context opaque, const char *path)
 
 #ifndef LIBXMP_NO_DEPACKERS
 	D_(D_INFO "decrunch");
-	if (decrunch(&h, path, &temp_name) < 0) {
+	if (libxmp_decrunch(&h, path, &temp_name) < 0) {
 		ret = -XMP_ERROR_DEPACK;
-		goto err;
-	}
-#endif
-
-#ifndef LIBXMP_CORE_PLAYER
-	size = hio_size(h);
-	if (size < 256) {		/* get size after decrunch */
-		ret = -XMP_ERROR_FORMAT;
 		goto err;
 	}
 #endif
@@ -582,7 +394,7 @@ int xmp_load_module(xmp_context opaque, const char *path)
 	}
 
 	m->filename = path;	/* For ALM, SSMT, etc */
-	m->size = size;
+	m->size = hio_size(h);
 #else
 	ctx->m.filename = NULL;
 	ctx->m.dirname = NULL;
@@ -645,6 +457,32 @@ int xmp_load_module_from_file(xmp_context opaque, void *file, long size)
 	int ret;
 
 	if ((h = hio_open_file((FILE *)file)) == NULL)
+		return -XMP_ERROR_SYSTEM;
+
+	if (ctx->state > XMP_STATE_UNLOADED)
+		xmp_release_module(opaque);
+
+	m->filename = NULL;
+	m->basename = NULL;
+	m->dirname = NULL;
+	m->size = hio_size(h);
+
+	ret = load_module(opaque, h);
+
+	hio_close(h);
+
+	return ret;
+}
+
+int xmp_load_module_from_callbacks(xmp_context opaque, void *priv,
+				struct xmp_callbacks callbacks)
+{
+	struct context_data *ctx = (struct context_data *)opaque;
+	struct module_data *m = &ctx->m;
+	HIO_HANDLE *h;
+	int ret;
+
+	if ((h = hio_open_callbacks(priv, callbacks)) == NULL)
 		return -XMP_ERROR_SYSTEM;
 
 	if (ctx->state > XMP_STATE_UNLOADED)

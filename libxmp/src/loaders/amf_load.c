@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -78,7 +78,9 @@ static int amf_load(struct module_data *m, HIO_HANDLE *f, const int start)
 	hio_read(buf, 1, 3, f);
 	ver = hio_read8(f);
 
-	hio_read(buf, 1, 32, f);
+	if (hio_read(buf, 1, 32, f) != 32)
+		return -1;
+
 	memcpy(mod->name, buf, 32);
 	mod->name[32] = '\0';
 	libxmp_set_type(m, "DSMI %d.%d AMF", ver / 10, ver % 10);
@@ -105,7 +107,9 @@ static int amf_load(struct module_data *m, HIO_HANDLE *f, const int start)
 		hio_read(buf, 1, 16, f);	/* channel remap table */
 
 	if (ver >= 0x0d) {
-		hio_read(buf, 1, 32, f);	/* panning table */
+		if (hio_read(buf, 1, 32, f) != 32)	/* panning table */
+			return -1;
+
 		for (i = 0; i < 32; i++) {
 			mod->xxc->pan = 0x80 + 2 * (int8)buf[i];
 		}
@@ -176,7 +180,7 @@ static int amf_load(struct module_data *m, HIO_HANDLE *f, const int start)
 	 */
 	if (ver == 0x0a) {
 		uint8 b;
-		uint32 len, start, end;
+		uint32 len, val;
 		long pos = hio_tell(f);
 		if (pos < 0) {
 			return -1;
@@ -205,13 +209,13 @@ static int amf_load(struct module_data *m, HIO_HANDLE *f, const int start)
 				no_loopend = 1;
 				break;
 			}
-			start = hio_read32l(f);
-			if (start > len) {		/* check loop start */
+			val = hio_read32l(f);		/* check loop start */
+			if (val > len) {
 				no_loopend = 1;
 				break;
 			}
-			end = hio_read32l(f);
-			if (end > len) {		/* check loop end */
+			val = hio_read32l(f);		/* check loop end */
+			if (val > len) {
 				no_loopend = 1;
 				break;
 			}
