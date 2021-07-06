@@ -167,7 +167,6 @@ set(LIBXMP_SRC_LIST_FULL
     src/mix_paula.c
     src/mkstemp.c
     src/tempfile.c
-    src/xfnmatch.c
 )
 
 set(LIBXMP_SRC_LIST_PROWIZARD
@@ -234,6 +233,7 @@ set(LIBXMP_SRC_LIST_DEPACKERS
     src/depackers/unxz.c
     src/depackers/unzip.c
     src/depackers/vorbis.c
+    src/depackers/xfnmatch.c
     src/depackers/xz_dec_lzma2.c
     src/depackers/xz_dec_stream.c
 )
