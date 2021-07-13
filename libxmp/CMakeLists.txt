@@ -35,14 +35,76 @@ if(CMAKE_BUILD_TYPE_LOWER STREQUAL "debug")
     add_definitions(-DDEBUG -D_DEBUG)
 endif()
 
-check_symbol_exists(round "math.h;tgmath.h" HAVE_ROUND_FUNCTION)
-if(HAVE_ROUND_FUNCTION)
-    add_definitions(-DHAVE_ROUND=1)
+
+check_include_file(alloca.h HAVE_ALLOCA_H)
+if(HAVE_ALLOCA_H)
+    add_definitions(-DHAVE_ALLOCA_H=1)
 endif()
 
-check_symbol_exists(powf "math.h;tgmath.h" HAVE_POWF_FUNCTION)
+check_symbol_exists(powf "math.h" HAVE_POWF_FUNCTION)
 if(HAVE_POWF_FUNCTION)
     add_definitions(-DHAVE_POWF=1)
+endif()
+
+check_function_exists(popen HAVE_POPEN_F)
+check_symbol_exists(popen "stdio.h" HAVE_POPEN)
+if(HAVE_POPEN AND HAVE_POPEN_F)
+    add_definitions(-DHAVE_POPEN=1)
+endif()
+
+check_function_exists(fnmatch HAVE_FNMATCH_F)
+check_symbol_exists(fnmatch "fnmatch.h" HAVE_FNMATCH)
+if(HAVE_FNMATCH AND HAVE_FNMATCH_F)
+    add_definitions(-DHAVE_FNMATCH=1)
+endif()
+
+check_function_exists(umask HAVE_UMASK_F)
+check_symbol_exists(umask "sys/stat.h" HAVE_UMASK)
+if(HAVE_UMASK AND HAVE_UMASK_F)
+    add_definitions(-DHAVE_UMASK=1)
+endif()
+
+check_function_exists(wait HAVE_WAIT_F)
+check_symbol_exists(wait "sys/wait.h" HAVE_WAIT)
+if(HAVE_WAIT AND HAVE_WAIT_F)
+    add_definitions(-DHAVE_WAIT=1)
+endif()
+
+check_function_exists(pipe HAVE_PIPE_F)
+check_symbol_exists(pipe "unistd.h" HAVE_PIPE)
+if(HAVE_PIPE AND HAVE_PIPE_F)
+    add_definitions(-DHAVE_PIPE=1)
+endif()
+
+check_function_exists(fork HAVE_FORK_F)
+check_symbol_exists(fork "unistd.h" HAVE_FORK)
+if(HAVE_FORK AND HAVE_FORK_F)
+    add_definitions(-DHAVE_FORK=1)
+endif()
+
+check_function_exists(execvp HAVE_EXECVP_F)
+check_symbol_exists(execvp "unistd.h" HAVE_EXECVP)
+if(HAVE_EXECVP AND HAVE_EXECVP_F)
+    add_definitions(-DHAVE_EXECVP=1)
+endif()
+
+check_function_exists(dup2 HAVE_DUP2_F)
+check_symbol_exists(dup2 "unistd.h" HAVE_DUP2)
+if(HAVE_DUP2 AND HAVE_DUP2_F)
+    add_definitions(-DHAVE_DUP2=1)
+endif()
+
+check_function_exists(mkstemp HAVE_MKSTEMP_F)
+check_symbol_exists(mkstemp "stdlib.h" HAVE_MKSTEMP)
+if(HAVE_MKSTEMP AND HAVE_MKSTEMP_F)
+    add_definitions(-DHAVE_MKSTEMP=1)
+endif()
+
+check_symbol_exists(opendir "dirent.h" HAVE_DIRENT)
+check_function_exists(opendir HAVE_OPENDIR)
+check_function_exists(readdir HAVE_READDIR)
+if(HAVE_DIRENT AND HAVE_OPENDIR AND HAVE_READDIR)
+    add_definitions(-DHAVE_DIRENT=1)
 endif()
 
 if("${CMAKE_CXX_COMPILER_ID}" MATCHES "^(Apple)?Clang$")
@@ -61,7 +123,7 @@ else()
     string(REGEX REPLACE "-pedantic" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 endif()
 
-set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD 90)
 
 set(LIBXMP_SRC_LITE)
 set(LIBXMP_SRC_FULL)
@@ -161,7 +223,6 @@ set(LIBXMP_SRC_LIST_FULL
     src/loaders/ult_load.c
     src/loaders/umx_load.c
     src/loaders/voltable.c
-    src/lutgen.c
     src/md5.c
     src/med_extras.c
     src/mix_paula.c
@@ -294,15 +355,11 @@ if(LIBXMP_BUILD_FULL AND BUILD_STATIC)
     target_compile_definitions(xmp_static PRIVATE ${LIBXMP_DEFINES} -DBUILDING_STATIC)
 
     if(MSVC)
-        target_compile_definitions(xmp_static PRIVATE -DPATH_MAX=260 -DCLIB_DECL=__stdcall)
+        target_compile_definitions(xmp_static PRIVATE -DPATH_MAX=260)
     endif()
 
     target_include_directories(xmp_static PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
     target_include_directories(xmp_static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-
-    if(MSVC) # WORKAROUND for MSVC
-        target_include_directories(xmp_static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/win32)
-    endif()
 endif()
 
 if(LIBXMP_BUILD_FULL AND BUILD_SHARED)
@@ -317,15 +374,11 @@ if(LIBXMP_BUILD_FULL AND BUILD_SHARED)
     target_compile_definitions(xmp_shared PRIVATE ${LIBXMP_DEFINES} -DBUILDING_DLL)
 
     if(MSVC)
-        target_compile_definitions(xmp_shared PRIVATE -DPATH_MAX=260 -DCLIB_DECL=__stdcall)
+        target_compile_definitions(xmp_shared PRIVATE -DPATH_MAX=260)
     endif()
 
     target_include_directories(xmp_shared PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
     target_include_directories(xmp_shared PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-
-    if(MSVC) # WORKAROUND for MSVC
-        target_include_directories(xmp_shared PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include_msvc)
-    endif()
 
     set_target_properties(xmp_shared PROPERTIES VERSION ${libxmp_VERSION} SOVERSION ${libxmp_VERSION_MAJOR})
 endif()
@@ -352,7 +405,7 @@ if(LIBXMP_BUILD_LITE AND BUILD_STATIC)
     target_compile_definitions(xmp_lite_static PRIVATE ${LIBXMP_DEFINES} ${LIBXMP_LITE_DEFINES} -DBUILDING_STATIC)
 
     if(MSVC)
-        target_compile_definitions(xmp_lite_static PRIVATE -DPATH_MAX=260 -DCLIB_DECL=__stdcall)
+        target_compile_definitions(xmp_lite_static PRIVATE -DPATH_MAX=260)
     endif()
 
     target_include_directories(xmp_lite_static PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -361,9 +414,6 @@ if(LIBXMP_BUILD_LITE AND BUILD_STATIC)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/loaders
     )
 
-    if(MSVC) # WORKAROUND for MSVC
-        target_include_directories(xmp_lite_static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include_msvc)
-    endif()
 endif()
 
 if(LIBXMP_BUILD_LITE AND BUILD_SHARED)
@@ -378,7 +428,7 @@ if(LIBXMP_BUILD_LITE AND BUILD_SHARED)
     target_compile_definitions(xmp_lite_shared PRIVATE ${LIBXMP_DEFINES} ${LIBXMP_LITE_DEFINES} -DBUILDING_DLL)
 
     if(MSVC)
-        target_compile_definitions(xmp_lite_shared PRIVATE -DPATH_MAX=260 -DCLIB_DECL=__stdcall)
+        target_compile_definitions(xmp_lite_shared PRIVATE -DPATH_MAX=260)
     endif()
 
     target_include_directories(xmp_lite_shared PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -386,10 +436,6 @@ if(LIBXMP_BUILD_LITE AND BUILD_SHARED)
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/src/loaders
     )
-
-    if(MSVC) # WORKAROUND for MSVC
-        target_include_directories(xmp_lite_shared PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include_msvc)
-    endif()
 
     set_target_properties(xmp_lite_shared PROPERTIES VERSION ${libxmp_VERSION} SOVERSION ${libxmp_VERSION_MAJOR})
 endif()
