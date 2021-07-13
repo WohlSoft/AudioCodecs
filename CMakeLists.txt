@@ -47,6 +47,10 @@ if(SDL2_REPO_PATH)
     message("SDL2 Repo folder is ${SDL2_REPO_PATH}")
 endif()
 
+if(NOT WIN32 AND NOT VITA)
+    option(ENABLE_FPIC "Build static libraries as position independent code" ON)
+endif()
+
 # --- TODO: implement building or usage of pre-built libSDL here ---
 # set(SNDIO OFF) # Disable sndio that is not needed to us
 # add_subdirectory(libSDL2)
