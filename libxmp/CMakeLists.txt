@@ -23,7 +23,7 @@ if(NOT LIBXMP_BUILD_LITE AND NOT LIBXMP_BUILD_FULL)
 endif()
 
 option(LIBXMP_DISABLE_IT   "Disable IT support at libXMP-Lite" OFF)
-option(LIBXMP_DISABLE_DEPACKERS     "Disable archive depackers at libXMP" ON)
+option(LIBXMP_DISABLE_DEPACKERS     "Disable archive depackers at libXMP" OFF)
 option(LIBXMP_DISABLE_PROWIZARD     "Disable the ProWizard at libXMP" OFF)
 
 TEST_BIG_ENDIAN(WORDS_BIGENDIAN)
