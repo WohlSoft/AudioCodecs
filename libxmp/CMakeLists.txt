@@ -277,6 +277,7 @@ set(LIBXMP_SRC_LIST_DEPACKERS
     src/depackers/arcfs.c
     src/depackers/bunzip2.c
     src/depackers/crc32.c
+    src/depackers/depacker.c
     src/depackers/gunzip.c
     src/depackers/inflate.c
     src/depackers/mmcmp.c
