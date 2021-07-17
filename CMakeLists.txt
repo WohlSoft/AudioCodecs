@@ -13,8 +13,13 @@ if(POLICY CMP0077) # Cache variables override since 3.12
     cmake_policy(SET CMP0077 NEW)
 endif()
 
-option(CODECS_BUILD_SHARED "Build shared libraries if possible" OFF)
-option(CODECS_BUILD_STATIC "Build static libraries if possible" ON)
+if(NOT EMSCRIPTEN AND NOT VITA)
+    option(CODECS_BUILD_SHARED "Build shared libraries if possible" OFF)
+    option(CODECS_BUILD_STATIC "Build static libraries if possible" ON)
+else()
+    set(CODECS_BUILD_SHARED OFF)
+    set(CODECS_BUILD_STATIC ON)
+endif()
 
 option(DOWNLOAD_SDL2_DEPENDENCY "Download, compile, and install SDL2's master branch" OFF)
 option(USE_LOCAL_SDL2 "Build SDL2 from local copy" OFF)
@@ -31,8 +36,13 @@ endif()
 if(NOT SDL2_REPO_PATH)
     # Try to resolve sqlite dependency
     if(DOWNLOAD_SDL2_DEPENDENCY OR USE_LOCAL_SDL2)
-        option(BUILD_SDL2_SHARED "Enable shared build of SDL2" ON)
-        option(BUILD_SDL2_STATIC "Enable static build of SDL2" ON)
+        if(NOT EMSCRIPTEN AND NOT VITA)
+            option(BUILD_SDL2_SHARED "Enable shared build of SDL2" ON)
+            option(BUILD_SDL2_STATIC "Enable static build of SDL2" ON)
+        else()
+            set(BUILD_SDL2_SHARED OFF)
+            set(BUILD_SDL2_STATIC ON)
+        endif()
         # Download and configure SDL2 dependency
         include(download_sdl2_hg.cmake)
         set(SDL2_REPO_PATH ${SDL2_INSTALL_DIR})
@@ -47,8 +57,10 @@ if(SDL2_REPO_PATH)
     message("SDL2 Repo folder is ${SDL2_REPO_PATH}")
 endif()
 
-if(NOT WIN32 AND NOT VITA)
+if(NOT WIN32 AND NOT VITA AND NOT EMSCRIPTEN)
     option(ENABLE_FPIC "Build static libraries as position independent code" ON)
+else()
+    set(ENABLE_FPIC OFF)
 endif()
 
 # --- TODO: implement building or usage of pre-built libSDL here ---

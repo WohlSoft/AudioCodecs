@@ -359,6 +359,10 @@ if(LIBXMP_BUILD_FULL AND BUILD_STATIC)
         target_compile_definitions(xmp_static PRIVATE -DPATH_MAX=260)
     endif()
 
+    if(VITA)
+        target_compile_definitions(xmp_static PRIVATE -DPATH_MAX=1024)
+    endif()
+
     target_include_directories(xmp_static PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
     target_include_directories(xmp_static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 endif()
@@ -376,6 +380,10 @@ if(LIBXMP_BUILD_FULL AND BUILD_SHARED)
 
     if(MSVC)
         target_compile_definitions(xmp_shared PRIVATE -DPATH_MAX=260)
+    endif()
+
+    if(VITA)
+        target_compile_definitions(xmp_shared PRIVATE -DPATH_MAX=1024)
     endif()
 
     target_include_directories(xmp_shared PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -409,6 +417,10 @@ if(LIBXMP_BUILD_LITE AND BUILD_STATIC)
         target_compile_definitions(xmp_lite_static PRIVATE -DPATH_MAX=260)
     endif()
 
+    if(VITA)
+        target_compile_definitions(xmp_lite_static PRIVATE -DPATH_MAX=1024)
+    endif()
+
     target_include_directories(xmp_lite_static PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
     target_include_directories(xmp_lite_static PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -430,6 +442,10 @@ if(LIBXMP_BUILD_LITE AND BUILD_SHARED)
 
     if(MSVC)
         target_compile_definitions(xmp_lite_shared PRIVATE -DPATH_MAX=260)
+    endif()
+
+    if(VITA)
+        target_compile_definitions(xmp_lite_shared PRIVATE -DPATH_MAX=1024)
     endif()
 
     target_include_directories(xmp_lite_shared PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
