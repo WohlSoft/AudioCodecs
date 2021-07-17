@@ -6,7 +6,7 @@ This is a set of dependencies required for SDL Mixer X audio library, except of 
 
 This set of libraries is designed to be buildable through QMake and CMake building systems.
 
-Note: to build libid3tag, and libtimidity, you need have latest libSDL2 be installed! (those libraries are modified to support files through SDL_RWops() API)
+Note: to build libtimidity, you need have latest libSDL2 be installed! (this library was modified to support files through SDL_RWops() API)
 
 # CI Badges
 
@@ -136,7 +136,6 @@ rem Tip: instead of "release" you can have "debug" to build debug versions. Inst
 * **libFLAC:** Multiple: BSD 3-clause "New" or "Revised" License (libFLAC, libFLAC++), GNU GPL (extra plugins and tools)
 * **libFluidLite:** GNU LGPLv2.1+
 * **libGME:** GNU LGPLv2.1+
-* **libID3Tag-SDL:** GNU GPLv2+ (a.k.a. v2 or any later version)
 * **libMAD:** GNU GPLv2+ (a.k.a. v2 or any later version)
 * **libMikMod:** GNU LGPLv2+
 * **libModPlug:** Public Domain
