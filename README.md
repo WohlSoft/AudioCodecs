@@ -6,7 +6,7 @@ This is a set of dependencies required for SDL Mixer X audio library, except of 
 
 This set of libraries is designed to be buildable through QMake and CMake building systems.
 
-Note: to build libid3tag, SMPEG, and libtimidity, you need have latest libSDL2 be installed! (those libraries are modified to support files through SDL_RWops() API, and SMPEG widely uses SDL2 internally)
+Note: to build libid3tag, and libtimidity, you need have latest libSDL2 be installed! (those libraries are modified to support files through SDL_RWops() API)
 
 # CI Badges
 
@@ -145,7 +145,6 @@ rem Tip: instead of "release" you can have "debug" to build debug versions. Inst
 * **libOPNMIDI:** GNU LGPLv3+ or GNU GPLv3+
 * **libOpus:** BSD 3-clause "New" or "Revised" License
 * **libSDL2:** ZLib
-* **libSMPEG:** GNU LGPLv2+
 * **libTimidity-SDL:** The "Artistic License"
 * **libVorbis:** BSD 3-clause "New" or "Revised" License
 * **libXMP:** GNU LGPLv2+, partially MIT
@@ -176,7 +175,6 @@ rem Tip: instead of "release" you can have "debug" to build debug versions. Inst
 * libOpenMPT
 * libOpus
 * libSDL2
-* libSMPEG
 * libTimidity
 * libVorbis
 * libXMP
