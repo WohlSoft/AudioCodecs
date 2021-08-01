@@ -13,7 +13,7 @@ if(APPLE)
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
     set(LINK_FLAGS_RELEASE  "${LINK_FLAGS_RELEASE} -dead_strip")
 
-    # Unify visibility to meet llvm's default.
+    # Unify visibility to meet llvm's default (C++-only)
     include(CheckCXXCompilerFlag)
     check_cxx_compiler_flag("-fvisibility-inlines-hidden" SUPPORTS_FVISIBILITY_INLINES_HIDDEN_FLAG)
     if(SUPPORTS_FVISIBILITY_INLINES_HIDDEN_FLAG)
@@ -62,9 +62,8 @@ endif()
 
 string(TOLOWER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_LOWER)
 
-if(CMAKE_BUILD_TYPE_LOWER STREQUAL "release")
-    add_definitions(-DNDEBUG)
-endif()
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG")
 
 if(MSVC)
     # Force to always compile with W4
@@ -75,9 +74,13 @@ if(MSVC)
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W4")
     endif()
 elseif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-    # Update if necessary
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -pedantic")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+    
+    if(NOT NOPEDANTIC)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pedantic")
+    endif()
 endif()
 
 # Disable bogus MSVC warnings
@@ -96,4 +99,3 @@ endif()
 if(WIN32)
     set(CMAKE_SHARED_LIBRARY_PREFIX "")
 endif()
-
