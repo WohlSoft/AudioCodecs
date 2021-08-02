@@ -22,7 +22,7 @@
 
 #include "med.h"
 #include "loader.h"
-#include "med_extras.h"
+#include "../med_extras.h"
 
 static int mmd3_test (HIO_HANDLE *, char *, const int);
 static int mmd3_load (struct module_data *, HIO_HANDLE *, const int);
@@ -217,7 +217,8 @@ static int mmd3_load(struct module_data *m, HIO_HANDLE *f, const int start)
 	 * Read smplarr
 	 */
 	D_(D_WARN "read smplarr");
-	if ((smplarr = malloc(mod->ins * sizeof(uint32))) == NULL) {
+	smplarr = (uint32 *) malloc(mod->ins * sizeof(uint32));
+	if (smplarr == NULL) {
 		return -1;
 	}
 	if (hio_seek(f, start + smplarr_offset, SEEK_SET) != 0) {
@@ -323,7 +324,8 @@ static int mmd3_load(struct module_data *m, HIO_HANDLE *f, const int start)
 	 * Read blockarr.
 	 */
 	D_(D_WARN "read blockarr");
-	if ((blockarr = malloc(mod->pat * sizeof(uint32))) == NULL) {
+	blockarr = (uint32 *) malloc(mod->pat * sizeof(uint32));
+	if (blockarr == NULL) {
 		goto err_cleanup;
 	}
 	if (hio_seek(f, start + blockarr_offset, SEEK_SET) != 0) {
@@ -463,7 +465,8 @@ static int mmd3_load(struct module_data *m, HIO_HANDLE *f, const int start)
 	D_(D_INFO "Instruments: %d", mod->ins);
 
 	/* Instrument extras */
-	if ((exp_smp = calloc(mod->ins, sizeof(struct InstrExt))) == NULL) {
+	exp_smp = (struct InstrExt *) calloc(mod->ins, sizeof(struct InstrExt));
+	if (exp_smp == NULL) {
 		goto err_cleanup;
 	}
 

@@ -127,7 +127,7 @@ char *libxmp_adjust_string(char *s)
 	int i;
 
 	for (i = 0; i < strlen(s); i++) {
-		if (!isprint((int)s[i]) || ((uint8) s[i] > 127))
+		if (!isprint((unsigned char)s[i]) || ((uint8) s[i] > 127))
 			s[i] = ' ';
 	}
 
@@ -283,7 +283,7 @@ int libxmp_prepare_scan(struct context_data *ctx)
 		return 0;
 	}
 
-	m->scan_cnt = (uint8 **)calloc(sizeof (uint8 *), mod->len);
+	m->scan_cnt = (uint8 **) calloc(mod->len, sizeof(uint8 *));
 	if (m->scan_cnt == NULL)
 		return -XMP_ERROR_SYSTEM;
 
@@ -299,7 +299,7 @@ int libxmp_prepare_scan(struct context_data *ctx)
 		}
 
 		pat = pat_idx >= mod->pat ? NULL : mod->xxp[pat_idx];
-		m->scan_cnt[i] = (uint8 *)calloc(1, pat && pat->rows ? pat->rows : 1);
+		m->scan_cnt[i] = (uint8 *) calloc(1, (pat && pat->rows)? pat->rows : 1);
 		if (m->scan_cnt[i] == NULL)
 			return -XMP_ERROR_SYSTEM;
 	}

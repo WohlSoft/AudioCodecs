@@ -21,32 +21,11 @@
  */
 
 #include <ctype.h>
-
-#include "../common.h"
-
-#ifndef LIBXMP_CORE_PLAYER
-#if defined(_WIN32)
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
-#include <limits.h>
-#elif defined(__OS2__) || defined(__EMX__)
-#define INCL_DOS
-#define INCL_DOSERRORS
-#include <os2.h>
-#elif defined(__DJGPP__)
-#include <dos.h>
-#include <io.h>
-#elif defined(LIBXMP_AMIGA)
-#ifdef __amigaos4__
-#define __USE_INLINE__
-#endif
-#include <proto/dos.h>
-#elif defined(HAVE_DIRENT)
+#if defined(HAVE_DIRENT)
 #include <dirent.h>
 #endif
-#endif /* LIBXMP_CORE_PLAYER */
+
+#include "../common.h"
 
 #include "xmp.h"
 #include "../period.h"
@@ -57,7 +36,7 @@ int libxmp_init_instrument(struct module_data *m)
 	struct xmp_module *mod = &m->mod;
 
 	if (mod->ins > 0) {
-		mod->xxi = (struct xmp_instrument *)calloc(sizeof (struct xmp_instrument), mod->ins);
+		mod->xxi = (struct xmp_instrument *) calloc(mod->ins, sizeof(struct xmp_instrument));
 		if (mod->xxi == NULL)
 			return -1;
 	}
@@ -71,10 +50,10 @@ int libxmp_init_instrument(struct module_data *m)
 			return -1;
 		}
 
-		mod->xxs = (struct xmp_sample *)calloc(sizeof (struct xmp_sample), mod->smp);
+		mod->xxs = (struct xmp_sample *) calloc(mod->smp, sizeof(struct xmp_sample));
 		if (mod->xxs == NULL)
 			return -1;
-		m->xtra = (struct extra_sample_data *)calloc(sizeof (struct extra_sample_data), mod->smp);
+		m->xtra = (struct extra_sample_data *) calloc(mod->smp, sizeof(struct extra_sample_data));
 		if (m->xtra == NULL)
 			return -1;
 
@@ -109,12 +88,12 @@ int libxmp_realloc_samples(struct module_data *m, int new_size)
 		return 0;
 	}
 
-	xxs = (struct xmp_sample *)realloc(mod->xxs, sizeof(struct xmp_sample) * new_size);
+	xxs = (struct xmp_sample *) realloc(mod->xxs, sizeof(struct xmp_sample) * new_size);
 	if (xxs == NULL)
 		return -1;
 	mod->xxs = xxs;
 
-	xtra = (struct extra_sample_data *)realloc(m->xtra, sizeof(struct extra_sample_data) * new_size);
+	xtra = (struct extra_sample_data *) realloc(m->xtra, sizeof(struct extra_sample_data) * new_size);
 	if (xtra == NULL)
 		return -1;
 	m->xtra = xtra;
@@ -139,7 +118,7 @@ int libxmp_alloc_subinstrument(struct xmp_module *mod, int i, int num)
 	if (num == 0)
 		return 0;
 
-	mod->xxi[i].sub = (struct xmp_subinstrument *)calloc(sizeof (struct xmp_subinstrument), num);
+	mod->xxi[i].sub = (struct xmp_subinstrument *) calloc(num, sizeof(struct xmp_subinstrument));
 	if (mod->xxi[i].sub == NULL)
 		return -1;
 
@@ -148,11 +127,11 @@ int libxmp_alloc_subinstrument(struct xmp_module *mod, int i, int num)
 
 int libxmp_init_pattern(struct xmp_module *mod)
 {
-	mod->xxt = (struct xmp_track **)calloc(sizeof (struct xmp_track *), mod->trk);
+	mod->xxt = (struct xmp_track **) calloc(mod->trk, sizeof(struct xmp_track *));
 	if (mod->xxt == NULL)
 		return -1;
 
-	mod->xxp = (struct xmp_pattern **)calloc(sizeof (struct xmp_pattern *), mod->pat);
+	mod->xxp = (struct xmp_pattern **) calloc(mod->pat, sizeof(struct xmp_pattern *));
 	if (mod->xxp == NULL)
 		return -1;
 
@@ -165,8 +144,8 @@ int libxmp_alloc_pattern(struct xmp_module *mod, int num)
 	if (num < 0 || num >= mod->pat || mod->xxp[num] != NULL)
 		return -1;
 
-	mod->xxp[num] = (struct xmp_pattern *)calloc(1, sizeof (struct xmp_pattern) +
-        				sizeof (int) * (mod->chn - 1));
+	mod->xxp[num] = (struct xmp_pattern *) calloc(1, sizeof(struct xmp_pattern) +
+							 sizeof(int) * (mod->chn - 1));
 	if (mod->xxp[num] == NULL)
 		return -1;
 
@@ -179,8 +158,8 @@ int libxmp_alloc_track(struct xmp_module *mod, int num, int rows)
 	if (num < 0 || num >= mod->trk || mod->xxt[num] != NULL || rows <= 0)
 		return -1;
 
-	mod->xxt[num] = (struct xmp_track *)calloc(sizeof (struct xmp_track) +
-			       sizeof (struct xmp_event) * (rows - 1), 1);
+	mod->xxt[num] = (struct xmp_track *) calloc(1,  sizeof(struct xmp_track) +
+							sizeof(struct xmp_event) * (rows - 1));
 	if (mod->xxt[num] == NULL)
 		return -1;
 
@@ -259,7 +238,7 @@ char *libxmp_copy_adjust(char *s, uint8 *r, int n)
 	strncpy(s, (char *)r, n);
 
 	for (i = 0; s[i] && i < n; i++) {
-		if (!isprint((int)s[i]) || ((uint8)s[i] > 127))
+		if (!isprint((unsigned char)s[i]) || ((uint8)s[i] > 127))
 			s[i] = '.';
 	}
 
@@ -281,7 +260,7 @@ void libxmp_read_title(HIO_HANDLE *f, char *t, int s)
 
 	memset(t, 0, s + 1);
 
-	hio_read(buf, 1, s, f);		/* coverity[check_return] */
+	s = hio_read(buf, 1, s, f);
 	buf[s] = 0;
 	libxmp_copy_adjust(t, buf, s);
 }
@@ -375,7 +354,7 @@ int libxmp_copy_name_for_fopen(char *dest, const char *name, int n)
  * module players erroneously interpret as "newer-version-trackers commands".
  * Which they aren't.
  */
-void libxmp_decode_noisetracker_event(struct xmp_event *event, uint8 *mod_event)
+void libxmp_decode_noisetracker_event(struct xmp_event *event, const uint8 *mod_event)
 {
 	int fxt;
 
@@ -393,7 +372,7 @@ void libxmp_decode_noisetracker_event(struct xmp_event *event, uint8 *mod_event)
 }
 #endif
 
-void libxmp_decode_protracker_event(struct xmp_event *event, uint8 *mod_event)
+void libxmp_decode_protracker_event(struct xmp_event *event, const uint8 *mod_event)
 {
 	int fxt = LSN(mod_event[2]);
 
@@ -435,72 +414,23 @@ void libxmp_disable_continue_fx(struct xmp_event *event)
 /* libxmp_check_filename_case(): */
 /* Given a directory, see if file exists there, ignoring case */
 
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__DJGPP__)  || \
+    defined(__OS2__) || defined(__EMX__)   || \
+    defined(_DOS) || defined(LIBXMP_AMIGA) || \
+    defined(__riscos__) || \
+    /* case-insensitive file system: directly probe the file */\
+    \
+   !defined(HAVE_DIRENT) /* or, target does not have dirent. */
 int libxmp_check_filename_case(const char *dir, const char *name, char *new_name, int size)
 {
-	char path[_MAX_PATH];
-	DWORD rc;
-	/* win32 is case-insensitive: directly probe the file. */
+	char path[XMP_MAXPATH];
 	snprintf(path, sizeof(path), "%s/%s", dir, name);
-	rc = GetFileAttributesA(path);
-	if (rc == (DWORD)(-1)) return 0;
-	if (rc & FILE_ATTRIBUTE_DIRECTORY) return 0;
+	if (! (libxmp_get_filetype(path) & XMP_FILETYPE_FILE))
+		return 0;
 	strncpy(new_name, name, size);
 	return 1;
 }
-#elif defined(__OS2__) || defined(__EMX__)
-int libxmp_check_filename_case(const char *dir, const char *name, char *new_name, int size)
-{
-	char path[CCHMAXPATH];
-	FILESTATUS3 fs;
-	/* os/2 is case-insensitive: directly probe the file. */
-	snprintf(path, sizeof(path), "%s/%s", dir, name);
-	if (DosQueryPathInfo(path, FIL_STANDARD, &fs, sizeof(fs)) != NO_ERROR) return 0;
-	if (fs.attrFile & FILE_DIRECTORY) return 0;
-	strncpy(new_name, name, size);
-	return 1;
-}
-#elif defined(__DJGPP__)
-int libxmp_check_filename_case(const char *dir, const char *name, char *new_name, int size)
-{
-	char path[256];
-	int attr;
-	/* dos is case-insensitive: directly probe the file. */
-	snprintf(path, sizeof(path), "%s/%s", dir, name);
-	attr = _chmod(path, 0);
-	if (attr == -1) return 0;
-	if (attr & (_A_SUBDIR|_A_VOLID)) return 0;
-	strncpy(new_name, name, size);
-	return 1;
-}
-#elif defined(LIBXMP_AMIGA)
-#ifdef __amigaos4__
-#include <dos/obsolete.h>
-#endif
-int libxmp_check_filename_case(const char *dir, const char *name, char *new_name, int size)
-{
-	char path[256]; BPTR lock;
-	struct FileInfoBlock *fib;
-	int found = 0;
-	/* amigados is case-insensitive: directly probe the file. */
-	snprintf(path, sizeof(path), "%s/%s", dir, name);
-	lock = Lock((const STRPTR)path, ACCESS_READ);
-	if (lock) {
-		fib = (struct FileInfoBlock*) AllocDosObject(DOS_FIB, NULL);
-		if (fib != NULL) {
-		    if (Examine(lock, fib)) {
-			if (fib->fib_DirEntryType < 0) {
-				found = 1;
-				strncpy(new_name, name, size);
-			}
-		    }
-		    FreeDosObject(DOS_FIB, fib);
-		}
-		UnLock(lock);
-	}
-	return found;
-}
-#elif defined(HAVE_DIRENT)
+#else /* target has dirent */
 int libxmp_check_filename_case(const char *dir, const char *name, char *new_name, int size)
 {
 	int found = 0;
@@ -522,11 +452,6 @@ int libxmp_check_filename_case(const char *dir, const char *name, char *new_name
 	closedir(dirp);
 
 	return found;
-}
-#else
-int libxmp_check_filename_case(const char *dir, const char *name, char *new_name, int size)
-{
-	return 0;
 }
 #endif
 

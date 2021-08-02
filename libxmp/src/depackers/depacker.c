@@ -22,10 +22,10 @@
 
 #include <errno.h>
 
-#include "common.h"
+#include "../common.h"
 #include "depacker.h"
-#include "hio.h"
-#include "tempfile.h"
+#include "../hio.h"
+#include "../tempfile.h"
 #include "xfnmatch.h"
 
 #ifdef _WIN32
@@ -38,7 +38,7 @@
  *
  * This popen reimplementation uses CreateProcess instead and should be safe.
  */
-#include "win32/ptpopen.h"
+#include "ptpopen.h"
 #ifndef HAVE_POPEN
 #define HAVE_POPEN 1
 #endif
@@ -79,9 +79,11 @@ int test_oxm		(FILE *);
 #if defined(HAVE_FORK) && defined(HAVE_PIPE) && defined(HAVE_EXECVP) && \
     defined(HAVE_DUP2) && defined(HAVE_WAIT)
 #define DECRUNCH_USE_FORK
+
 #elif defined(HAVE_POPEN) && \
     (defined(_WIN32) || defined(__OS2__) || defined(__EMX__) || defined(__DJGPP__) || defined(__riscos__))
 #define DECRUNCH_USE_POPEN
+
 #else
 static int execute_command(const char * const cmd[], FILE *t) {
 	return -1;
@@ -270,7 +272,7 @@ int libxmp_decrunch(HIO_HANDLE **h, const char *filename, char **temp)
 
 #if defined __ANDROID__ || defined __native_client__
 	/* Don't use external helpers in android */
-	if (cmd) {
+	if (cmd[0]) {
 		return 0;
 	}
 #endif
@@ -297,7 +299,7 @@ int libxmp_decrunch(HIO_HANDLE **h, const char *filename, char **temp)
 		}
 	} else if (depacker) {
 		D_(D_INFO "Internal depacker");
-		if (depacker->depack(f, t) < 0) {
+		if (depacker->depack(f, t, hio_size(*h)) < 0) {
 			D_(D_CRIT "failed");
 			goto err2;
 		}

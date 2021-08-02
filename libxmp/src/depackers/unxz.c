@@ -17,7 +17,7 @@ static int test_xz(unsigned char *b)
 	return b[0] == 0xfd && b[3] == 'X' && b[4] == 'Z' && b[5] == 0x00;
 }
 
-static int decrunch_xz(FILE *in, FILE *out)
+static int decrunch_xz(FILE *in, FILE *out, long inlen)
 {
 	struct xz_buf b;
 	struct xz_dec *state;
@@ -27,7 +27,7 @@ static int decrunch_xz(FILE *in, FILE *out)
 	libxmp_crc32_init_A();
 
 	memset(&b, 0, sizeof(b));
-	if ((membuf = malloc(2 * BUFFER_SIZE)) == NULL)
+	if ((membuf = (unsigned char *)malloc(2 * BUFFER_SIZE)) == NULL)
 		return -1;
 
 	b.in = membuf;

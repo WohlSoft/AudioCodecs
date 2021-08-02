@@ -17,8 +17,11 @@
 
 #include "readrle.h"
 
-#include "common.h"
+#include "../common.h"
 #include "readlzw.h"
+
+/* Arbitrary limit to prevent high RAM usage from this depacker. */
+#define LIBXMP_MAX_LZW_OUTPUT (1<<28)
 
 
 struct local_data {
@@ -59,8 +62,8 @@ static void code_resync(int old, struct local_data *);
 static void inittable(int orgcsize, struct local_data *);
 static int addstring(int oldcode,int chr, struct local_data *);
 static int readcode(int *newcode,int numbits, struct local_data *);
-static void outputstring(int code, struct local_data *);
-static void outputchr(int chr, struct local_data *);
+static int outputstring(int code, struct local_data *);
+static int outputchr(int chr, struct local_data *);
 static int findfirstchr(int code, struct local_data *);
 
 
@@ -83,8 +86,12 @@ static unsigned char *convert_lzw_dynamic(unsigned char *data_in,
 	if (data->maxstr > REALMAXSTR) {
 	    return NULL;
 	}
+	if (orig_len > LIBXMP_MAX_LZW_OUTPUT) {
+		return NULL;
+	}
 
-	if ((data_out = calloc(1, orig_len)) == NULL) {
+	data_out = (unsigned char *) calloc(1, orig_len);
+	if (data_out == NULL) {
 	/*  fprintf(stderr,"nomarch: out of memory!\n");*/
 	    return NULL;
 	}
@@ -225,7 +232,8 @@ unsigned char *libxmp_convert_lzw_dynamic(unsigned char *data_in,
 	struct local_data *data;
 	unsigned char *d;
 
-	if ((data = malloc(sizeof (struct local_data))) == NULL) {
+	data = (struct local_data *) malloc(sizeof(struct local_data));
+	if (data == NULL) {
 		goto err;
 	}
 
@@ -249,50 +257,6 @@ err2:	free(data);
 err:	return NULL;
 }
 
-unsigned char *libxmp_read_lzw_dynamic(FILE *f, uint8 *buf, int max_bits,int use_rle,
-			unsigned long in_len, unsigned long orig_len, int q)
-{
-	uint8 *buf2, *b;
-	int pos;
-	int size;
-	struct local_data *data;
-	size_t read_len;
-
-	if ((data = malloc(sizeof (struct local_data))) == NULL) {
-		goto err;
-	}
-
-	if ((buf2 = malloc(in_len)) == NULL) {
-		//perror("read_lzw_dynamic");
-		goto err2;
-	}
-
-	pos = ftell(f);
-	if ((read_len = fread(buf2, 1, in_len, f)) != in_len) {
-		if (~q & XMP_LZW_QUIRK_DSYM) {
-			goto err3;
-		}
-		in_len = read_len;
-	}
-	b = convert_lzw_dynamic(buf2, max_bits, use_rle, in_len, orig_len, q, data);
-	memcpy(buf, b, orig_len);
-	size = q & NOMARCH_QUIRK_ALIGN4 ? ALIGN4(data->nomarch_input_size) :
-						data->nomarch_input_size;
-	if (fseek(f, pos + size, SEEK_SET) < 0) {
-		goto err4;
-	}
-	free(b);
-	free(buf2);
-	free(data);
-
-	return buf;
-
-err4:	free(b);
-err3:	free(buf2);
-err2:	free(data);
-err:	return NULL;
-}
-
 /* uggghhhh, this is agonisingly painful. It turns out that
  * the original program bunched up codes into groups of 8, so we have
  * to waste on average about 5 or 6 bytes when we increase code size.
@@ -312,7 +276,6 @@ static void code_resync(int old, struct local_data *data)
 		break;
 	}
 }
-
 
 static void inittable(int orgcsize, struct local_data *data)
 {
@@ -346,7 +309,6 @@ static void inittable(int orgcsize, struct local_data *data)
 	    }
 	}
 }
-
 
 /* required for finding true table index in ver 1.x files */
 static int oldver_getidx(int oldcode,int chr, struct local_data *data)
@@ -404,7 +366,6 @@ static int oldver_getidx(int oldcode,int chr, struct local_data *data)
 	return hashval;
 }
 
-
 /* add a string specified by oldstring + chr to string table */
 int addstring(int oldcode,int chr, struct local_data *data)
 {
@@ -446,7 +407,6 @@ int addstring(int oldcode,int chr, struct local_data *data)
 
 	return 1;
 }
-
 
 /* read a code of bitlength numbits */
 static int readcode(int *newcode, int numbits, struct local_data *data)
@@ -506,8 +466,7 @@ static int readcode(int *newcode, int numbits, struct local_data *data)
 	return 1;
 }
 
-
-static void outputstring(int code, struct local_data *data)
+static int outputstring(int code, struct local_data *data)
 {
 	int *ptr = data->outputstring_buf;
 
@@ -516,33 +475,35 @@ static void outputstring(int code, struct local_data *data)
 	    code   = data->st_ptr[code];
 	}
 
-	outputchr(data->st_chr[code], data);
+	if (outputchr(data->st_chr[code], data) != 0)
+		return -1;
 	while (ptr > data->outputstring_buf) {
-	    outputchr(*--ptr, data);
+	    if (outputchr(*--ptr, data) != 0)
+		return -1;
 	}
+	return 0;
 }
 
-
-static void rawoutput(int byte, struct data_in_out *io)
+static int rawoutput(int byte, struct data_in_out *io)
 {
 	//static int i = 0;
-	if (io->data_out_point < io->data_out_max) {
-	    *io->data_out_point++ = byte;
+	if (io->data_out_point >= io->data_out_max) {
+	    return -1;
 	}
+	*io->data_out_point++ = byte;
 	//printf(" output = %02x <================ %06x\n", byte, i++);
+	return 0;
 }
 
-
-static void outputchr(int chr, struct local_data *data)
+static int outputchr(int chr, struct local_data *data)
 {
 	if (data->global_use_rle) {
-	    libxmp_outputrle(chr,rawoutput,&data->rd,&data->io);
+	    return libxmp_outputrle(chr,rawoutput,&data->rd,&data->io);
 	}
 	else {
-	    rawoutput(chr,&data->io);
+	    return rawoutput(chr,&data->io);
 	}
 }
-
 
 static int findfirstchr(int code, struct local_data *data)
 {

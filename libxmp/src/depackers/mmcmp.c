@@ -23,7 +23,7 @@
  * THE SOFTWARE.
  */
 
-#include "common.h"
+#include "../common.h"
 #include "depacker.h"
 
 #define MMCMP_COMP	0x0001
@@ -263,7 +263,7 @@ static int test_mmcmp(unsigned char *b)
 	return memcmp(b, "ziRCONia", 8) == 0;
 }
 
-static int decrunch_mmcmp(FILE *in, FILE *out)
+static int decrunch_mmcmp(FILE *in, FILE *out, long inlen)
 {
 	struct header h;
 	uint32 *table;
@@ -300,7 +300,8 @@ static int decrunch_mmcmp(FILE *in, FILE *out)
 		goto err;
 	}
 
-	if ((table = malloc(h.nblocks * 4)) == NULL) {
+	table = (uint32 *) malloc(h.nblocks * 4);
+	if (table == NULL) {
 		goto err;
 	}
 
@@ -349,7 +350,7 @@ static int decrunch_mmcmp(FILE *in, FILE *out)
 			}
 		}
 
-		sub_block = malloc(block.sub_blk * sizeof (struct sub_block));
+		sub_block = (struct sub_block *) malloc(block.sub_blk * sizeof (struct sub_block));
 		if (sub_block == NULL)
 			goto err2;
 

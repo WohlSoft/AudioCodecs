@@ -22,8 +22,8 @@
  */
 
 #include "loader.h"
-#include "effects.h"
-#include "period.h"
+#include "../effects.h"
+#include "../period.h"
 
 #define AMOS_BANK 0x416d426b
 #define AMOS_MUSIC_TYPE 0x0003
@@ -36,7 +36,7 @@
 static int abk_test (HIO_HANDLE *, char *, const int);
 static int abk_load (struct module_data *, HIO_HANDLE *, const int);
 
-struct format_loader libxmp_loader_abk =
+const struct format_loader libxmp_loader_abk =
 {
     "AMOS Music Bank",
     abk_test,
@@ -412,7 +412,9 @@ static struct abk_instrument* read_abk_insts(HIO_HANDLE *f, uint32 inst_section_
 
 static int abk_test(HIO_HANDLE *f, char *t, const int start)
 {
+    struct abk_song song;
     char music[8];
+    uint32 song_section_offset;
 
     if (hio_read32b(f) != AMOS_BANK)
     {
@@ -433,6 +435,15 @@ static int abk_test(HIO_HANDLE *f, char *t, const int start)
     if (memcmp(music, "Music   ", 8))
     {
         return -1;
+    }
+
+    /* Attempt to read title. */
+    hio_read32b(f); /* instruments_offset */
+    song_section_offset = hio_read32b(f);
+
+    if (t != NULL && read_abk_song(f, &song, AMOS_MAIN_HEADER + song_section_offset) == 0)
+    {
+        libxmp_copy_adjust(t, (uint8 *)song.song_name, AMOS_STRING_LEN);
     }
 
     return 0;
@@ -596,7 +607,7 @@ static int abk_load(struct module_data *m, HIO_HANDLE *f, const int start)
         {
             pattern = hio_read16b(f);
             if (read_abk_pattern(f,  mod->xxt[(i*mod->chn)+k]->event, AMOS_MAIN_HEADER + main_header.patterns_offset + pattern) < 0) {
-    		free(playlist.pattern);
+		free(playlist.pattern);
 		return -1;
 	    }
         }

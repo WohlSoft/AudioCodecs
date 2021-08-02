@@ -17,8 +17,7 @@
  * - decryption code removed
  */
 
-#include <sys/stat.h>
-#include "common.h"
+#include "../common.h"
 #include "depacker.h"
 
 /* #define val(p) ((p)[0]<<16 | (p)[1] << 8 | (p)[2]) */
@@ -47,7 +46,7 @@ static int savefile(FILE *fo, void *mem, size_t length)
 } while(0)
 
 #define PP_BYTE_OUT(byte) do {                                 \
-  if (out <= dest) return 0; /* output overflow */              \
+  if (out <= dest) return 0; /* output overflow */             \
   *--out = (byte);                                             \
   written++;                                                   \
 } while (0)
@@ -170,20 +169,13 @@ static int test_pp(unsigned char *b)
 	return memcmp(b, "PP20", 4) == 0;
 }
 
-static int decrunch_pp(FILE *f, FILE *fo)
+static int decrunch_pp(FILE *f, FILE *fo, long inlen)
 {
-    uint8 *packed /*, *unpacked */;
-    int plen, unplen;
-    struct stat st;
+    uint8 *packed;
+    int unplen;
 
     if (fo == NULL)
         goto err;
-
-    if (fstat(fileno(f), &st) < 0)
-	goto err;
-
-    plen = st.st_size;
-    //counter = 0;
 
     /* Amiga longwords are only on even addresses.
      * The pp20 data format has the length stored in a longword
@@ -192,18 +184,18 @@ static int decrunch_pp(FILE *f, FILE *fo)
      * reminding me on this! - mld
      */
 
-    if ((plen != (plen / 2) * 2)) {    
+    if ((inlen != (inlen / 2) * 2)) {
 	 /*fprintf(stderr, "filesize not even\n");*/
          goto err;
     }
 
-    packed = malloc(plen);
+    packed = (uint8 *) malloc(inlen);
     if (packed == NULL) {
 	 /*fprintf(stderr, "can't allocate memory for packed data\n");*/
 	 goto err;
     }
 
-    if (fread(packed, 1, plen, f) != plen) {
+    if (fread(packed, 1, inlen, f) != inlen) {
          goto err1;
     }
 
@@ -215,7 +207,7 @@ static int decrunch_pp(FILE *f, FILE *fo)
      * blo.b .Exit
      * and.l #$f0f0f0f0,d0
      * bne.s .Exit
-     */	 
+     */
 
     if (((packed[4] < 9) || (packed[5] < 9) || (packed[6] < 9) || (packed[7] < 9))) {
 	 /*fprintf(stderr, "invalid efficiency\n");*/
@@ -228,17 +220,17 @@ static int decrunch_pp(FILE *f, FILE *fo)
          goto err1;
     }
 
-    unplen = readmem24b(packed + plen - 4);
+    unplen = readmem24b(packed + inlen - 4);
     if (!unplen) {
 	 /*fprintf(stderr, "not a powerpacked file\n");*/
          goto err1;
     }
-    
-    if (ppdepack (packed, plen, fo) == -1) {
+
+    if (ppdepack (packed, inlen, fo) == -1) {
 	 /*fprintf(stderr, "error while decrunching data...");*/
          goto err1;
     }
-     
+
     free (packed);
 
     return 0;

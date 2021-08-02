@@ -50,7 +50,7 @@ static int test_compress(unsigned char *b)
  * with those of the compress() routine.  See the definitions above.
  */
 
-static int decrunch_compress(FILE * in, FILE * out)
+static int decrunch_compress(FILE * in, FILE * out, long inlen)
 {
 	char_type *stackp;
 	code_int code;
@@ -90,7 +90,7 @@ static int decrunch_compress(FILE * in, FILE * out)
 	block_mode = inbuf[2] & BLOCK_MODE;
 	maxmaxcode = MAXCODE(maxbits);
 
-	if (maxbits > BITS) {
+	if (maxbits < INIT_BITS || maxbits > BITS) {
 		/*fprintf(stderr,
 		   "%s: compressed with %d bits, can only handle %d bits\n",
 		   (*ifname != '\0' ? ifname : "stdin"), maxbits, BITS);

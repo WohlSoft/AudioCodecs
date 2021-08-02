@@ -6,7 +6,7 @@
  * for more information.
  */
 
-#include "common.h"
+#include "../common.h"
 #include "inflate.h"
 #include "depacker.h"
 #include "crc32.h"
@@ -46,7 +46,7 @@ static int test_gzip(unsigned char *b)
 	return b[0] == 31 && b[1] == 139;
 }
 
-static int decrunch_gzip(FILE *in, FILE *out)
+static int decrunch_gzip(FILE *in, FILE *out, long inlen)
 {
 	struct member member;
 	int val, c, err;

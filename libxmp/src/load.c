@@ -20,7 +20,6 @@
  * THE SOFTWARE.
  */
 
-#include <sys/stat.h>
 #include <errno.h>
 
 #include "format.h"
@@ -71,7 +70,7 @@ static char *get_dirname(const char *name)
 
 	if ((p = strrchr(name, '/')) != NULL) {
 		len = p - name + 1;
-		dirname = malloc(len + 1);
+		dirname = (char *) malloc(len + 1);
 		if (dirname != NULL) {
 			memcpy(dirname, name, len);
 			dirname[len] = 0;
@@ -138,16 +137,17 @@ static int test_module(struct xmp_test_info *info, HIO_HANDLE *h)
 int xmp_test_module(const char *path, struct xmp_test_info *info)
 {
 	HIO_HANDLE *h;
-	struct stat st;
-	int ret;
 #ifndef LIBXMP_NO_DEPACKERS
 	char *temp = NULL;
 #endif
+	int ret;
 
-	if (stat(path, &st) < 0)
+	ret = libxmp_get_filetype(path);
+
+	if (ret == XMP_FILETYPE_NONE) {
 		return -XMP_ERROR_SYSTEM;
-
-	if (S_ISDIR(st.st_mode)) {
+	}
+	if (ret & XMP_FILETYPE_DIR) {
 		errno = EISDIR;
 		return -XMP_ERROR_SYSTEM;
 	}
@@ -263,11 +263,6 @@ static int load_module(xmp_context opaque, HIO_HANDLE *h)
 		}
 	}
 
-#ifndef LIBXMP_CORE_PLAYER
-	if (test_result == 0 && load_result == 0)
-		set_md5sum(h, m->md5);
-#endif
-
 	if (test_result < 0) {
 		xmp_release_module(opaque);
 		return -XMP_ERROR_FORMAT;
@@ -316,6 +311,11 @@ static int load_module(xmp_context opaque, HIO_HANDLE *h)
 		libxmp_adjust_string(mod->xxs[i].name);
 	}
 
+#ifndef LIBXMP_CORE_PLAYER
+	if (test_result == 0 && load_result == 0)
+		set_md5sum(h, m->md5);
+#endif
+
 	libxmp_load_epilogue(ctx);
 
 	ret = libxmp_prepare_scan(ctx);
@@ -349,16 +349,16 @@ int xmp_load_module(xmp_context opaque, const char *path)
 	char *temp_name;
 #endif
 	HIO_HANDLE *h;
-	struct stat st;
 	int ret;
 
 	D_(D_WARN "path = %s", path);
 
-	if (stat(path, &st) < 0) {
+	ret = libxmp_get_filetype(path);
+
+	if (ret == XMP_FILETYPE_NONE) {
 		return -XMP_ERROR_SYSTEM;
 	}
-
-	if (S_ISDIR(st.st_mode)) {
+	if (ret & XMP_FILETYPE_DIR) {
 		errno = EISDIR;
 		return -XMP_ERROR_SYSTEM;
 	}

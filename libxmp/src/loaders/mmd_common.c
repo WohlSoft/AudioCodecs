@@ -27,7 +27,7 @@
 
 #include "med.h"
 #include "loader.h"
-#include "med_extras.h"
+#include "../med_extras.h"
 
 #ifdef DEBUG
 const char *const mmd_inst_type[] = {
@@ -385,12 +385,12 @@ int mmd_alloc_tables(struct module_data *m, int i, struct SynthInstr *synth)
 {
 	struct med_module_extras *me = (struct med_module_extras *)m->extra;
 
-	me->vol_table[i] = calloc(1, synth->voltbllen);
+	me->vol_table[i] = (uint8 *) calloc(1, synth->voltbllen);
 	if (me->vol_table[i] == NULL)
 		goto err;
 	memcpy(me->vol_table[i], synth->voltbl, synth->voltbllen);
 
-	me->wav_table[i] = calloc(1, synth->wftbllen);
+	me->wav_table[i] = (uint8 *) calloc(1, synth->wftbllen);
 	if (me->wav_table[i] == NULL)
 		goto err1;
 	memcpy(me->wav_table[i], synth->wftbl, synth->wftbllen);
@@ -439,6 +439,13 @@ int mmd_load_hybrid_instrument(HIO_HANDLE *f, struct module_data *m, int i,
 	hio_seek(f, pos - 6 + hio_read32b(f), SEEK_SET);
 	length = hio_read32b(f);
 	type = hio_read16b(f);
+
+	/* Hybrids using IFFOCT/ext samples as their sample don't seem to
+	 * exist. If one is found, this should be fixed. */
+	if (type != 0) {
+		D_(D_CRIT "unsupported sample type %d for hybrid", type);
+		return -1;
+	}
 
 	if (libxmp_med_new_instrument_extras(xxi) != 0)
 		return -1;
@@ -774,7 +781,7 @@ void mmd_info_text(HIO_HANDLE *f, struct module_data *m, int offset)
 		len = hio_read32b(f);
 		D_(D_INFO "mmdinfo length=%d", len);
 		if (len > 0 && len < hio_size(f)) {
-			m->comment = malloc(len + 1);
+			m->comment = (char *) malloc(len + 1);
 			if (m->comment == NULL)
 				return;
 			hio_read(m->comment, 1, len, f);

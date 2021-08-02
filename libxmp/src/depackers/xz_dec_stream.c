@@ -37,6 +37,12 @@ enum dec_sequence_index {
 	SEQ_INDEX_UNCOMPRESSED
 };
 
+#ifndef __cplusplus
+typedef enum xz_check xz_check_t;
+#else
+typedef int xz_check_t;
+#endif
+
 struct xz_dec {
 	/* Position in dec_main() */
 	enum dec_sequence_main sequence;
@@ -55,7 +61,7 @@ struct xz_dec {
 	uint32 crc32;
 
 	/* Type of the integrity check calculated from uncompressed data */
-	enum xz_check check_type;
+	xz_check_t check_type;
 
 	/* Operation mode */
 	enum xz_mode mode;
@@ -588,6 +594,8 @@ static enum xz_ret dec_main(struct xz_dec *s, struct xz_buf *b)
 			if (ret != XZ_OK)
 				return ret;
 
+			/* fall-through */
+
 		case SEQ_BLOCK_START:
 			/* We need one byte of input to continue. */
 			if (b->in_pos == b->in_size)
@@ -611,6 +619,8 @@ static enum xz_ret dec_main(struct xz_dec *s, struct xz_buf *b)
 			s->temp.pos = 0;
 			s->sequence = SEQ_BLOCK_HEADER;
 
+			/* fall-through */
+
 		case SEQ_BLOCK_HEADER:
 			if (!fill_temp(s, b))
 				return XZ_OK;
@@ -621,12 +631,16 @@ static enum xz_ret dec_main(struct xz_dec *s, struct xz_buf *b)
 
 			s->sequence = SEQ_BLOCK_UNCOMPRESS;
 
+			/* fall-through */
+
 		case SEQ_BLOCK_UNCOMPRESS:
 			ret = dec_block(s, b);
 			if (ret != XZ_STREAM_END)
 				return ret;
 
 			s->sequence = SEQ_BLOCK_PADDING;
+
+			/* fall-through */
 
 		case SEQ_BLOCK_PADDING:
 			/*
@@ -647,6 +661,8 @@ static enum xz_ret dec_main(struct xz_dec *s, struct xz_buf *b)
 			}
 
 			s->sequence = SEQ_BLOCK_CHECK;
+
+			/* fall-through */
 
 		case SEQ_BLOCK_CHECK:
 			if (s->check_type == XZ_CHECK_CRC32) {
@@ -670,6 +686,8 @@ static enum xz_ret dec_main(struct xz_dec *s, struct xz_buf *b)
 
 			s->sequence = SEQ_INDEX_PADDING;
 
+			/* fall-through */
+
 		case SEQ_INDEX_PADDING:
 			while ((s->index.size + (b->in_pos - s->in_start))
 					& 3) {
@@ -692,6 +710,8 @@ static enum xz_ret dec_main(struct xz_dec *s, struct xz_buf *b)
 
 			s->sequence = SEQ_INDEX_CRC32;
 
+			/* fall-through */
+
 		case SEQ_INDEX_CRC32:
 			ret = libxmp_crc32_validate(s, b);
 			if (ret != XZ_STREAM_END)
@@ -699,6 +719,8 @@ static enum xz_ret dec_main(struct xz_dec *s, struct xz_buf *b)
 
 			s->temp.size = STREAM_HEADER_SIZE;
 			s->sequence = SEQ_STREAM_FOOTER;
+
+			/* fall-through */
 
 		case SEQ_STREAM_FOOTER:
 			if (!fill_temp(s, b))
@@ -774,7 +796,7 @@ XZ_EXTERN enum xz_ret xz_dec_run(struct xz_dec *s, struct xz_buf *b)
 
 XZ_EXTERN struct xz_dec *xz_dec_init(enum xz_mode mode, uint32 dict_max)
 {
-	struct xz_dec *s = kmalloc(sizeof(*s), GFP_KERNEL);
+	struct xz_dec *s = (struct xz_dec *) kmalloc(sizeof(*s), GFP_KERNEL);
 	if (s == NULL)
 		return NULL;
 

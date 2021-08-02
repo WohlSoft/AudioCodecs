@@ -6,7 +6,7 @@
  * for more information.
  */
 
-#include "common.h"
+#include "../common.h"
 #include "depacker.h"
 #include "inflate.h"
 
@@ -23,7 +23,7 @@ static int test_muse(unsigned char *b)
 	return 0;
 }
 
-static int decrunch_muse(FILE *f, FILE *fo)                          
+static int decrunch_muse(FILE *f, FILE *fo, long inlen)
 {                                                          
 	uint32 checksum;
   

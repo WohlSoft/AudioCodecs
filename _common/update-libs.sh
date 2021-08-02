@@ -62,6 +62,8 @@ function updateXMP()
 
     echo "Copyng necessary files.."
     cp -a "../$2-tmp/src" "../$2/src"
+    cp -a "../$2-tmp/cmake" "../$2/cmake"
+    cp "../$2-tmp/CMakeLists.txt" "../$2/CMakeLists.txt"
     cp "../$2-tmp/include/xmp.h" "../$2/include/xmp.h"
 
     echo "Removing unnecessary $2-tmp folder..."

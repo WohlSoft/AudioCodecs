@@ -1,8 +1,8 @@
 #ifndef LIBXMP_DEPACKER_H
 #define LIBXMP_DEPACKER_H
 
-#include "common.h"
-#include "hio.h"
+#include "../common.h"
+#include "../hio.h"
 
 extern struct depacker libxmp_depacker_zip;
 extern struct depacker libxmp_depacker_lha;
@@ -22,8 +22,8 @@ extern struct depacker libxmp_depacker_xfd;
 extern struct depacker libxmp_depacker_oxm;
 
 struct depacker {
-	int (*const test)(unsigned char *);
-	int (*const depack)(FILE *, FILE *);
+	int (*test)(unsigned char *);
+	int (*depack)(FILE *, FILE *, long);
 };
 
 int	libxmp_decrunch		(HIO_HANDLE **h, const char *filename, char **temp);

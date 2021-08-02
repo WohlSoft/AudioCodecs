@@ -2,6 +2,7 @@
 #define LIBXMP_COMMON_H
 
 #include <stdarg.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -15,15 +16,32 @@
 #define LIBXMP_EXPORT_VAR
 #endif
 
+#ifndef __cplusplus
+#define LIBXMP_BEGIN_DECLS
+#define LIBXMP_END_DECLS
+#else
+#define LIBXMP_BEGIN_DECLS	extern "C" {
+#define LIBXMP_END_DECLS	}
+#endif
+
+#if defined(_MSC_VER) && !defined(__cplusplus)
+#define inline __inline
+#endif
+
+#if defined(_MSC_VER) ||  defined(__WATCOMC__) || defined(__EMX__)
+#define XMP_MAXPATH _MAX_PATH
+#elif defined(PATH_MAX)
+#define XMP_MAXPATH  PATH_MAX
+#else
+#define XMP_MAXPATH  1024
+#endif
+
 #if defined(__MORPHOS__) || defined(__AROS__) || defined(AMIGAOS) || \
     defined(__amigaos__) || defined(__amigaos4__) ||defined(__amigados__) || \
     defined(AMIGA) || defined(_AMIGA) || defined(__AMIGA__)
 #define LIBXMP_AMIGA	1	/* to identify amiga platforms. */
 #endif
 
-#if (defined(__GNUC__) || defined(__clang__)) && defined(XMP_SYM_VISIBILITY)
-#if !defined(_WIN32) && !defined(__ANDROID__) && !defined(__APPLE__) && !defined(LIBXMP_AMIGA) && !defined(__MSDOS__) && !defined(B_BEOS_VERSION) && !defined(__ATHEOS__) && !defined(EMSCRIPTEN) && !defined(__MINT__)
-#define USE_VERSIONED_SYMBOLS
 #ifdef HAVE_EXTERNAL_VISIBILITY
 #define LIBXMP_EXPORT_VERSIONED __attribute__((visibility("default"),externally_visible))
 #else
@@ -33,8 +51,6 @@
 #define LIBXMP_ATTRIB_SYMVER(_sym) __attribute__((__symver__(_sym)))
 #else
 #define LIBXMP_ATTRIB_SYMVER(_sym)
-#endif
-#endif
 #endif
 
 /* AmigaOS fixes by Chris Young <cdyoung@ntlworld.com>, Nov 25, 2007
@@ -82,6 +98,11 @@ typedef signed long long int64;
 #define RESET_FLAG(a,b)	((a)&=~(b))
 #define TEST_FLAG(a,b)	!!((a)&(b))
 
+/* libxmp_get_filetype() return values */
+#define XMP_FILETYPE_NONE		0
+#define XMP_FILETYPE_DIR	(1 << 0)
+#define XMP_FILETYPE_FILE	(1 << 1)
+
 #define CLAMP(x,a,b) do { \
     if ((x) < (a)) (x) = (a); \
     else if ((x) > (b)) (x) = (b); \
@@ -106,7 +127,8 @@ typedef signed long long int64;
 #endif
 void CLIB_DECL D_(const char *text, ...) ATTR_PRINTF(1,2);
 #else
-// VS prior to VC7.1 does not support variadic macros. VC8.0 does not optimize unused parameters passing
+/* VS prior to VC7.1 does not support variadic macros.
+ * VC8.0 does not optimize unused parameters passing. */
 #if _MSC_VER < 1400
 void __inline CLIB_DECL D_(const char *text, ...) { do {} while (0); }
 #else
@@ -257,7 +279,6 @@ struct ord_data {
 	int st26_speed;
 #endif
 };
-
 
 
 /* Context */
@@ -468,5 +489,7 @@ uint32	readmem32b		(const uint8 *);
 
 struct xmp_instrument *libxmp_get_instrument(struct context_data *, int);
 struct xmp_sample *libxmp_get_sample(struct context_data *, int);
+
+int libxmp_get_filetype (const char *path);
 
 #endif /* LIBXMP_COMMON_H */

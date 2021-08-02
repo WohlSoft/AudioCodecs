@@ -23,7 +23,7 @@
     Modified for xmp by Claudio Matsuoka, 20120812
  */
 
-#include "common.h"
+#include "../common.h"
 #include "depacker.h"
 
 #define LZHUFF0_METHOD          0x2D6C6830      /* -lh0- */
@@ -1407,7 +1407,8 @@ static int32 LhA_Decrunch(FILE *in, FILE *out, int size, uint32 Method)
   struct LhADecrData *dd;
   int32 err = 0;
 
-  if((dd = calloc(sizeof(struct LhADecrData), 1))) {
+  dd = (struct LhADecrData *) calloc(1, sizeof(struct LhADecrData));
+  if(dd) {
     int (*DecodeStart)(struct LhADecrData *);
     int (*DecodeC)(struct LhADecrData *);
     uint16 (*DecodeP)(struct LhADecrData *);
@@ -1499,12 +1500,13 @@ static int32 LhA_Decrunch(FILE *in, FILE *out, int size, uint32 Method)
       offset = 0x100 - 3;
 #endif
 
-      if((text = dd->text = calloc(dicsiz, 1)))
+      text = dd->text = (char *) malloc(dicsiz);
+      if (text)
       {
 /*      if(Method == LZHUFF1_METHOD || Method == LZHUFF2_METHOD || Method == LZHUFF3_METHOD ||
         Method == LZHUFF6_METHOD || Method == LARC_METHOD || Method == LARC5_METHOD)
 */
-          memset(text, ' ', (size_t) dicsiz);
+        memset(text, ' ', dicsiz);
 
         if (DecodeStart(dd) < 0) {
           goto error;
@@ -1830,7 +1832,7 @@ static int test_lha(unsigned char *b) {
 		b[20] <= 3;
 }
 
-static int decrunch_lha(FILE *in, FILE *out)
+static int decrunch_lha(FILE *in, FILE *out, long inlen)
 {
 	struct lha_data data;
 

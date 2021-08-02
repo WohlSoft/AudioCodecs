@@ -11,7 +11,7 @@ me and we can work something out.
 Michael Kohn <mike@mikekohn.net>
 
 */
-#include "common.h"
+#include "../common.h"
 #include "depacker.h"
 #include "inflate.h"
 #include "crc32.h"
@@ -287,7 +287,7 @@ static int test_zip(unsigned char *b)
 		b[4] == 'P' && b[5] == 'K' && b[6] == 3 && b[7] == 4));
 }
 
-static int decrunch_zip(FILE *in, FILE *out)
+static int decrunch_zip(FILE *in, FILE *out, long inlen)
 {
   int offset;
 

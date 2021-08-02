@@ -97,7 +97,7 @@ FILE * pt_popen(const char *cmd, const char *mode, struct pt_popen_data **data)
   BOOL user_data = FALSE;
 
   if (data) {
-    my_data = malloc(sizeof(struct pt_popen_data));
+    my_data = (struct pt_popen_data *) malloc(sizeof(struct pt_popen_data));
     if (!my_data)
       return NULL;
 
@@ -234,4 +234,4 @@ int pt_pclose(FILE *fle, struct pt_popen_data **data)
   return -1;
 }
 
-#endif /* !HAVE_POPEN && WIN32 */
+#endif /* WIN32 */

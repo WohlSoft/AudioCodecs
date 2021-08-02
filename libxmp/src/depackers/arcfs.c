@@ -9,8 +9,7 @@
  * for more information.
  */
 
-#include <sys/stat.h>
-#include "common.h"
+#include "../common.h"
 #include "depacker.h"
 #include "readlzw.h"
 
@@ -86,10 +85,11 @@ static int read_file_header(FILE *in, struct archived_file_header_tag *hdrp)
 		hdrp->offset &= 0x7fffffff;
 		hdrp->offset += start;
 
-		break;
+		return 0;
 	}
 
-	return 0;
+	/* no usable files */
+	return -1;
 }
 
 /* read file data, assuming header has just been read from in
@@ -97,18 +97,18 @@ static int read_file_header(FILE *in, struct archived_file_header_tag *hdrp)
  * the memory allocated.
  * Returns NULL for file I/O error only; OOM is fatal (doesn't return).
  */
-static unsigned char *read_file_data(FILE *in,
+static unsigned char *read_file_data(FILE *in, long inlen,
 				     struct archived_file_header_tag *hdrp)
 {
-	struct stat st;
 	unsigned char *data;
 	int siz = hdrp->compressed_size;
 
 	/* Precheck: if the file can't hold this size, don't bother. */
-	if (siz <= 0 || fstat(fileno(in), &st) != 0 || st.st_size < siz)
+	if (siz <= 0 || inlen < siz)
 		return NULL;
 
-	if ((data = malloc(siz)) == NULL) {
+	data = (unsigned char *) malloc(siz);
+	if (data == NULL) {
 		goto err;
 	}
 	if (fseek(in, hdrp->offset, SEEK_SET) < 0) {
@@ -126,7 +126,7 @@ static unsigned char *read_file_data(FILE *in,
 	return NULL;
 }
 
-static int arcfs_extract(FILE *in, FILE *out)
+static int arcfs_extract(FILE *in, FILE *out, long inlen)
 {
 	struct archived_file_header_tag hdr;
 	unsigned char *data, *orig_data;
@@ -139,7 +139,7 @@ static int arcfs_extract(FILE *in, FILE *out)
 		return -1;
 
 	/* error reading data (hit EOF) */
-	if ((data = read_file_data(in, &hdr)) == NULL)
+	if ((data = read_file_data(in, inlen, &hdr)) == NULL)
 		return -1;
 
 	orig_data = NULL;
@@ -200,14 +200,14 @@ static int test_arcfs(unsigned char *b)
 	return !memcmp(b, "Archive\0", 8);
 }
 
-static int decrunch_arcfs(FILE * f, FILE * fo)
+static int decrunch_arcfs(FILE * f, FILE * fo, long inlen)
 {
 	int ret;
 
 	if (fo == NULL)
 		return -1;
 
-	ret = arcfs_extract(f, fo);
+	ret = arcfs_extract(f, fo, inlen);
 	if (ret < 0)
 		return -1;
 

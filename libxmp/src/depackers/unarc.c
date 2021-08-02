@@ -24,8 +24,7 @@
 #define NOMARCH_VER	"1.4"
 
 #include <ctype.h>
-#include <sys/stat.h>
-#include "common.h"
+#include "../common.h"
 #include "depacker.h"
 #if 0
 #include "readrle.h"
@@ -155,18 +154,18 @@ static int skip_sfx_header(FILE * in)
  * the memory allocated.
  * Returns NULL for file I/O error only; OOM is fatal (doesn't return).
  */
-static unsigned char *read_file_data(FILE * in,
+static unsigned char *read_file_data(FILE * in, long inlen,
 				     struct archived_file_header_tag *hdrp)
 {
-	struct stat st;
 	unsigned char *data;
 	int siz = hdrp->compressed_size;
 
 	/* Precheck: if the file can't hold this size, don't bother. */
-	if (siz <= 0 || fstat(fileno(in), &st) != 0 || st.st_size < siz)
+	if (siz <= 0 || inlen < siz)
 		return NULL;
 
-	if ((data = malloc(siz)) == NULL)
+	data = (unsigned char *) malloc(siz);
+	if (data == NULL)
 		return NULL;
 
 	if (fread(data, 1, siz, in) != siz) {
@@ -192,7 +191,7 @@ static int skip_file_data(FILE *in,struct archived_file_header_tag *hdrp)
 }
 #endif
 
-static int arc_extract(FILE *in, FILE *out)
+static int arc_extract(FILE *in, FILE *out, long inlen)
 {
 	struct archived_file_header_tag hdr;
 	/* int done = 0; */
@@ -221,7 +220,7 @@ static int arc_extract(FILE *in, FILE *out)
 	}
 
 	/* error reading data (hit EOF) */
-	if ((data = read_file_data(in, &hdr)) == NULL)
+	if ((data = read_file_data(in, inlen, &hdr)) == NULL)
 		return -1;
 
 	orig_data = NULL;
@@ -349,9 +348,9 @@ static int test_arc(unsigned char *b)
 	return 0;
 }
 
-static int decrunch_arc(FILE *f, FILE *fo)
+static int decrunch_arc(FILE *f, FILE *fo, long inlen)
 {
-	return arc_extract(f, fo);
+	return arc_extract(f, fo, inlen);
 }
 
 struct depacker libxmp_depacker_arc = {
