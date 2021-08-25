@@ -66,6 +66,7 @@ function updateXMP()
     cp "../$2-tmp/CMakeLists.txt" "../$2/CMakeLists.txt"
     cp "../$2-tmp/include/xmp.h" "../$2/include/xmp.h"
     cp "../$2-tmp/libxmp.pc.in" "../$2/libxmp.pc.in"
+    cp "../$2-tmp/libxmp.map" "../$2/libxmp.map"
 
     echo "Removing unnecessary $2-tmp folder..."
     rm -Rf "../$2-tmp"
