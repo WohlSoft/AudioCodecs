@@ -277,6 +277,7 @@ endif()
 
 if(NOT WIN32
    AND NOT VITA
+   AND NOT 3DS
    AND NOT EMSCRIPTEN
    AND NOT MSDOS)
     option(ENABLE_FPIC "Build static libraries as position independent code" ON)
@@ -364,7 +365,7 @@ if(WITH_MIDI2VGM)
     add_subdirectory(utils/midi2vgm)
 endif()
 
-if(NOT ANDROID AND NOT EMSCRIPTEN)
+if(NOT ANDROID AND NOT EMSCRIPTEN AND NOT VITA AND NOT 3DS)
     add_subdirectory(utils/wopn2hpp)
 endif()
 
