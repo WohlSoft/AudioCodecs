@@ -57,6 +57,7 @@ function updateXMP()
 
     echo "Removing old $2 folder..."
     rm -Rf "../$2/src/"
+    rm -Rf "../$2/cmake/"
 
     git clone --depth 1 "$1" "../$2-tmp"
 
