@@ -61,78 +61,22 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 if(AUDIOCODECS_FLUIDLITE_ENABLE_SF3)
-    include_directories(
-        ${CMAKE_CURRENT_SOURCE_DIR}/../libogg/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/../libvorbis/include
-    )
-    set(LIBVORBIS_LIBRARIES vorbis)
-    set(LIBVORBISFILE_LIBRARIES vorbisfile)
-    set(LIBOGG_LIBRARIES ogg)
+    if(AUDIOCODECS_FLUIDLITE_ENABLE_STB_VORBIS)
+        list(APPEND SOURCES stb/stb_vorbis.c)
+        include_directories(${CMAKE_CURRENT_SOURCE_DIR}/stb)
+    else()
+        include_directories(
+            ${CMAKE_CURRENT_SOURCE_DIR}/../libogg/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/../libvorbis/include
+        )
+        set(LIBVORBIS_LIBRARIES vorbis)
+        set(LIBVORBISFILE_LIBRARIES vorbisfile)
+        set(LIBOGG_LIBRARIES ogg)
+    endif()
 endif()
 
 if (ENABLE_SF3 AND STB_VORBIS)
-    list(APPEND SOURCES
-        stb/stb_vorbis.c)
-
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/stb)
-endif()
-
-if (ENABLE_SF3 AND NOT STB_VORBIS)
-    find_package(PkgConfig QUIET)
-
-    pkg_check_modules(LIBVORBIS vorbis>=1.3.5)
-    pkg_check_modules(LIBVORBISFILE vorbisfile>=1.3.5)
-    if (NOT LIBVORBIS_FOUND OR NOT LIBVORBISFILE_FOUND)
-        list(APPEND SOURCES
-            libvorbis-1.3.5/lib/vorbisenc.c
-            libvorbis-1.3.5/lib/info.c
-            libvorbis-1.3.5/lib/analysis.c
-            libvorbis-1.3.5/lib/bitrate.c
-            libvorbis-1.3.5/lib/block.c
-            libvorbis-1.3.5/lib/codebook.c
-            libvorbis-1.3.5/lib/envelope.c
-            libvorbis-1.3.5/lib/floor0.c
-            libvorbis-1.3.5/lib/floor1.c
-            libvorbis-1.3.5/lib/lookup.c
-            libvorbis-1.3.5/lib/lpc.c
-            libvorbis-1.3.5/lib/lsp.c
-            libvorbis-1.3.5/lib/mapping0.c
-            libvorbis-1.3.5/lib/mdct.c
-            libvorbis-1.3.5/lib/psy.c
-            libvorbis-1.3.5/lib/registry.c
-            libvorbis-1.3.5/lib/res0.c
-            libvorbis-1.3.5/lib/sharedbook.c
-            libvorbis-1.3.5/lib/smallft.c
-            libvorbis-1.3.5/lib/vorbisfile.c
-            libvorbis-1.3.5/lib/window.c
-            libvorbis-1.3.5/lib/synthesis.c
-        )
-        list(APPEND LIBVORBIS_INCLUDE_DIRS
-            ${CMAKE_CURRENT_SOURCE_DIR}/libvorbis-1.3.5/include
-            ${CMAKE_CURRENT_SOURCE_DIR}/libvorbis-1.3.5/lib
-        )
-        message(WARNING "Using libvorbis shipped sources.")
-    else()
-        message(STATUS "Using pkg-config provided libvorbis")
-        set(ADDITIONAL_LIBS "${LIBVORBIS_LDFLAGS} ${LIBVORBISFILE_LDFLAGS}")
-    endif()
-
-    pkg_check_modules(LIBOGG ogg>=1.3.2)
-    if (NOT LIBOGG_FOUND)
-        list(APPEND SOURCES
-            libogg-1.3.2/src/bitwise.c
-            libogg-1.3.2/src/framing.c
-        )
-        set(LIBOGG_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/libogg-1.3.2/include)
-
-        message(WARNING "Using libogg shipped sources.")
-    else()
-        message(STATUS "Using pkg-config provided libogg")
-        string(CONCAT ADDITIONAL_LIBS "${ADDITIONAL_LIBS} ${LIBOGG_LDFLAGS}")
-    endif()
-
-    include_directories(${LIBOGG_INCLUDE_DIRS})
-    include_directories(${LIBVORBIS_INCLUDE_DIRS})
 endif()
 
 option(FLUIDLITE_BUILD_STATIC "Build static library" TRUE)
@@ -181,8 +125,8 @@ if(FLUIDLITE_BUILD_SHARED AND FLUIDLITE_BUILD_STATIC)
     set_target_properties(${PROJECT_NAME}-static PROPERTIES CLEAN_DIRECT_OUTPUT 1)
 endif()
 
-if (ENABLE_SF3 OR AUDIOCODECS_FLUIDLITE_ENABLE_SF3)
-    if (STB_VORBIS AND NOT AUDIOCODECS_FLUIDLITE_ENABLE_SF3)
+if (AUDIOCODECS_FLUIDLITE_ENABLE_SF3)
+    if (AUDIOCODECS_FLUIDLITE_ENABLE_STB_VORBIS)
         set(SF3_SUPPORT "SF3_STB_VORBIS")
     else()
         set(SF3_SUPPORT "SF3_XIPH_VORBIS")
