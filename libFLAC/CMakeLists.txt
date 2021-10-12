@@ -18,11 +18,13 @@ endif()
 
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     # Turn on warnings and legacy C/C++ standards to support more compilers
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -Wall -Wno-pedantic")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
 endif()
 
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-shift-negative-value")
+if(NOT MSVC)
+    ac_add_c_warning_flag("all" ALL)
+    ac_disable_c_warning_flag("pedantic" PEDANTIC)
+    ac_disable_c_warning_flag("shift-negative-value" SHIFT_NEGATIVE_VALUE)
 endif()
 
 if(MSVC)

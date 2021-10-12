@@ -15,12 +15,11 @@ endmacro(use_cxx11)
 
 use_cxx11()
 
-if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
-endif()
-
-if(APPLE OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-inconsistent-missing-override")
+if(NOT MSVC)
+    ac_add_c_warning_flag("all" ALL)
+    ac_add_cxx_warning_flag("all" ALL)
+    ac_disable_c_warning_flag("inconsistent-missing-override" INCONSISTENT_MISSING_OVERRIDE)
+    ac_disable_cxx_warning_flag("inconsistent-missing-override" INCONSISTENT_MISSING_OVERRIDE)
 endif()
 
 if(MSVC)

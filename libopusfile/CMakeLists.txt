@@ -1,15 +1,6 @@
 cmake_minimum_required(VERSION 3.2)
 project(libOpusFile VERSION 0.10 LANGUAGES C)
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
-
-if(NOT MSVC)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wstrict-prototypes -Wno-unused-variable -Wno-unused-parameter -Wno-incompatible-pointer-types")
-    if(NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "^(Apple)?Clang$")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-but-set-variable")
-    endif()
-endif()
-
 include(CheckSymbolExists)
 include(CheckFunctionExists)
 include(CheckIncludeFile)
@@ -17,6 +8,20 @@ include(CheckIncludeFiles)
 include(CheckLibraryExists)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
+
+if(NOT MSVC)
+    ac_add_c_warning_flag("all" ALL)
+    ac_add_c_warning_flag("extra" EXTRA)
+    ac_add_c_warning_flag("cast-align" CAST_ALIGN)
+    ac_add_c_warning_flag("nested-externs" NESTED_EXTERNS)
+    ac_add_c_warning_flag("shadow" SHADOW)
+    ac_add_c_warning_flag("strict-prototypes" STRICT_PROTOTYPES)
+    ac_disable_c_warning_flag("unused-variable" UNUSED_VARIABLE)
+    ac_disable_c_warning_flag("unused-parameter" UNUSED_PARAMETER)
+    ac_disable_c_warning_flag("unused-but-set-variable" UNUSED_BUT_SET_VARIABLE)
+    ac_disable_c_warning_flag("incompatible-pointer-types" INCOMPATIBLE_POINTER_TYPES)
+    ac_disable_c_warning_flag("implicit-fallthrough" IMPLICIT_FALLTHROUGH)
+endif()
 
 set(PACKAGE_NAME "OpusFile")
 set(PACKAGE_VERSION "0.10-10-g1896473")

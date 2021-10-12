@@ -3,6 +3,39 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
     set(EMSCRIPTEN 1)
 endif()
 
+include(CheckCCompilerFlag)
+include(CheckCXXCompilerFlag)
+
+# Warning flags macros
+macro(ac_add_c_warning_flag WARNINGFLAG WARNING_VAR)
+    check_c_compiler_flag("-W${WARNINGFLAG}" HAVE_CW_${WARNING_VAR})
+    if(HAVE_CW_${WARNING_VAR})
+       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -W${WARNINGFLAG}")
+    endif()
+endmacro()
+
+macro(ac_add_cxx_warning_flag WARNINGFLAG WARNING_VAR)
+    check_cxx_compiler_flag("-W${WARNINGFLAG}" HAVE_CXXW_${WARNING_VAR})
+    if(HAVE_CXXW_${WARNING_VAR})
+       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W${WARNINGFLAG}")
+    endif()
+endmacro()
+
+macro(ac_disable_c_warning_flag WARNINGFLAG WARNING_VAR)
+    check_c_compiler_flag("-W${WARNINGFLAG}" HAVE_CW_${WARNING_VAR})
+    if(HAVE_CW_${WARNING_VAR})
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-${WARNINGFLAG}")
+    endif()
+endmacro()
+
+macro(ac_disable_cxx_warning_flag WARNINGFLAG WARNING_VAR)
+    check_cxx_compiler_flag("-W${WARNINGFLAG}" HAVE_CXXW_${WARNING_VAR})
+    if(HAVE_CXXW_${WARNING_VAR})
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-${WARNINGFLAG}")
+    endif()
+endmacro()
+
+
 # Strip garbage
 if(APPLE)
     string(REGEX REPLACE "-O3" ""

@@ -1,19 +1,6 @@
 cmake_minimum_required(VERSION 3.2)
 project(libOPUS VERSION 1.3 LANGUAGES C)
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
-
-if(NOT MSVC)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wstrict-prototypes -Wno-unused-variable -Wno-unused-parameter -Wno-incompatible-pointer-types -Wno-implicit-fallthrough")
-    if(NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "^(Apple)?Clang$")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-but-set-variable")
-    endif()
-endif()
-
-if(MSVC)
-    set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /ignore:4221")
-endif()
-
 set(CMAKE_C_STANDARD 99)
 
 include(CheckSymbolExists)
@@ -23,6 +10,25 @@ include(CheckIncludeFiles)
 include(CheckLibraryExists)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
+
+if(NOT MSVC)
+    ac_add_c_warning_flag("all" ALL)
+    ac_add_c_warning_flag("extra" EXTRA)
+    ac_add_c_warning_flag("cast-align" CAST_ALIGN)
+    ac_add_c_warning_flag("nested-externs" NESTED_EXTERNS)
+    ac_add_c_warning_flag("shadow" SHADOW)
+    ac_add_c_warning_flag("strict-prototypes" STRICT_PROTOTYPES)
+    ac_disable_c_warning_flag("unused-variable" UNUSED_VARIABLE)
+    ac_disable_c_warning_flag("unused-parameter" UNUSED_PARAMETER)
+    ac_disable_c_warning_flag("unused-but-set-variable" UNUSED_BUT_SET_VARIABLE)
+    ac_disable_c_warning_flag("incompatible-pointer-types" INCOMPATIBLE_POINTER_TYPES)
+    ac_disable_c_warning_flag("implicit-fallthrough" IMPLICIT_FALLTHROUGH)
+endif()
+
+if(MSVC)
+    set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /ignore:4221")
+endif()
+
 include(${CMAKE_CURRENT_SOURCE_DIR}/config.tests/TargetArch.cmake)
 
 target_architecture(TARGET_PROCESSOR)
@@ -38,7 +44,6 @@ elseif(${TARGET_PROCESSOR} MATCHES "arm.*")
 else()
     message(WARNING "Unsupported CPU architecture detected! [${TARGET_PROCESSOR}]")
 endif()
-
 
 set(PACKAGE_NAME "Opus")
 set(PACKAGE_VERSION "1.3-rc-2-gc1c247d")

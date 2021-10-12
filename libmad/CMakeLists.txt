@@ -11,7 +11,12 @@ endif()
 
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     # Turn on warnings and legacy C/C++ standards to support more compilers
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-pedantic -std=c99")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
+endif()
+
+if(NOT MSVC)
+    ac_add_c_warning_flag("all" ALL)
+    ac_disable_c_warning_flag("pedantic" PEDANTIC)
 endif()
 
 if(MSVC)

@@ -15,8 +15,9 @@ add_definitions(-DFLOAT_LOOKUP -DINT_LOOKUP)
 
 configure_file(config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config/config.h)
 
-if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-function -Wno-unused-variable")
+if(NOT MSVC)
+    ac_disable_c_warning_flag("unused-function" UNUSED_FUNCTION)
+    ac_disable_c_warning_flag("unused-variable" UNUSED_VARIABLE)
 endif()
 
 if(MSVC)

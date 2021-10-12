@@ -12,8 +12,12 @@ set(CMAKE_C_STANDARD 99)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
-if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-pedantic -Wno-unused-variable -Wno-implicit-fallthrough -Wno-unused-but-set-variable -Wno-pointer-to-int-cast")
+if(NOT MSVC)
+    ac_disable_c_warning_flag("pedantic" PEDANTIC)
+    ac_disable_c_warning_flag("unused-variable" UNUSED_VARIABLE)
+    ac_disable_c_warning_flag("implicit-fallthrough" IMPLICIT_FALLTHROUGH)
+    ac_disable_c_warning_flag("unused-but-set-variable" UNUSED_BUT_SET_VARIABLE)
+    ac_disable_c_warning_flag("pointer-to-int-cast" POINTER_TO_INT_CAST)
 endif()
 
 list(APPEND HEADERS
