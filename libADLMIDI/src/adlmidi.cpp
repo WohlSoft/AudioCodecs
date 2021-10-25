@@ -574,6 +574,21 @@ ADLMIDI_EXPORT void adl_setLoopEnabled(ADL_MIDIPlayer *device, int loopEn)
 #endif
 }
 
+ADLMIDI_EXPORT void adl_setLoopCount(ADL_MIDIPlayer *device, int loopCount)
+{
+#ifndef ADLMIDI_DISABLE_MIDI_SEQUENCER
+    if(!device)
+        return;
+    MidiPlayer *play = GET_MIDI_PLAYER(device);
+    assert(play);
+    play->m_sequencer->setLoopsCount(loopCount);
+#else
+    ADL_UNUSED(device);
+    ADL_UNUSED(loopCount);
+#endif
+}
+
+
 ADLMIDI_EXPORT void adl_setSoftPanEnabled(ADL_MIDIPlayer *device, int softPanEn)
 {
     if(!device)
@@ -1550,6 +1565,27 @@ ADLMIDI_EXPORT int adl_setTrackOptions(struct ADL_MIDIPlayer *device, size_t tra
     ADL_UNUSED(device);
     ADL_UNUSED(trackNumber);
     ADL_UNUSED(trackOptions);
+    return -1;
+#endif
+}
+
+ADLMIDI_EXPORT int adl_setChannelEnabled(struct ADL_MIDIPlayer *device, size_t channelNumber, int enabled)
+{
+#ifndef ADLMIDI_DISABLE_MIDI_SEQUENCER
+    if(!device)
+        return -1;
+
+    MidiPlayer *play = GET_MIDI_PLAYER(device);
+    assert(play);
+    MidiSequencer &seq = *play->m_sequencer;
+
+    if(!seq.setChannelEnabled(channelNumber, (bool)enabled))
+        return -1;
+    return 0;
+#else
+    ADL_UNUSED(device);
+    ADL_UNUSED(channelNumber);
+    ADL_UNUSED(enabled);
     return -1;
 #endif
 }
