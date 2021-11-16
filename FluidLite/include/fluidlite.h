@@ -27,7 +27,7 @@
 extern "C" {
 #endif
 
-#if 0
+/*
 #if defined(WIN32)
 #if defined(FLUIDSYNTH_DLL_EXPORTS)
 #define FLUIDSYNTH_API __declspec(dllexport)
@@ -43,9 +43,12 @@ extern "C" {
 #else
 #define FLUIDSYNTH_API
 #endif
-#endif
-
+*/
+#if defined(__WATCOMC__) && defined(FLUIDSYNTH_DLL_EXPORTS)
+#define FLUIDSYNTH_API __declspec(dllexport) /* watcom needs the dllexport */
+#else
 #define FLUIDSYNTH_API
+#endif
 
 /**
  * @file fluidsynth.h
