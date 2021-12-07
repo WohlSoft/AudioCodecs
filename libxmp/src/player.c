@@ -267,19 +267,23 @@ static const int invloop_table[] = {
 	0, 5, 6, 7, 8, 10, 11, 13, 16, 19, 22, 26, 32, 43, 64, 128
 };
 
-static void update_invloop(struct module_data *m, struct channel_data *xc)
+static void update_invloop(struct context_data *ctx, struct channel_data *xc)
 {
-	struct xmp_sample *xxs = &m->mod.xxs[xc->smp];
+	struct xmp_sample *xxs = libxmp_get_sample(ctx, xc->smp);
 	int len;
 
 	xc->invloop.count += invloop_table[xc->invloop.speed];
 
-	if ((xxs->flg & XMP_SAMPLE_LOOP) && xc->invloop.count >= 128) {
+	if (xxs != NULL && (xxs->flg & XMP_SAMPLE_LOOP) && xc->invloop.count >= 128) {
 		xc->invloop.count = 0;
 		len = xxs->lpe - xxs->lps;
 
 		if (++xc->invloop.pos > len) {
 			xc->invloop.pos = 0;
+		}
+
+		if (xxs->data == NULL) {
+			return;
 		}
 
 		if (~xxs->flg & XMP_SAMPLE_16BIT) {
@@ -948,7 +952,7 @@ static void process_frequency(struct context_data *ctx, int chn, int act)
 
 	/* For xmp_get_frame_info() */
 	xc->info_pitchbend = linear_bend >> 7;
-	xc->info_period = final_period * 4096;
+	xc->info_period = MIN(final_period * 4096, INT_MAX);
 
 	if (IS_PERIOD_MODRNG()) {
 		CLAMP(xc->info_period,
@@ -1082,13 +1086,19 @@ static void update_volume(struct context_data *ctx, int chn)
 
 #ifndef LIBXMP_CORE_PLAYER
 		if (TEST_PER(VOL_SLIDE)) {
-			if (xc->vol.slide > 0 && xc->volume > m->volbase) {
-				xc->volume = m->volbase;
-				RESET_PER(VOL_SLIDE);
+			if (xc->vol.slide > 0) {
+				int target = MAX(xc->vol.target - 1, m->volbase);
+				if (xc->volume > target) {
+					xc->volume = target;
+					RESET_PER(VOL_SLIDE);
+				}
 			}
-			if (xc->vol.slide < 0 && xc->volume < 0) {
-				xc->volume = 0;
-				RESET_PER(VOL_SLIDE);
+			if (xc->vol.slide < 0) {
+				int target = xc->vol.target > 0 ? MIN(0, xc->vol.target - 1) : 0;
+				if (xc->volume < target) {
+					xc->volume = target;
+					RESET_PER(VOL_SLIDE);
+				}
 			}
 		}
 #endif
@@ -1300,9 +1310,16 @@ static void play_channel(struct context_data *ctx, int chn)
 			xc->volume += rval[xc->retrig.type].s;
 			xc->volume *= rval[xc->retrig.type].m;
 			xc->volume /= rval[xc->retrig.type].d;
-                	xc->retrig.count = LSN(xc->retrig.val);
+			xc->retrig.count = LSN(xc->retrig.val);
+
+			if (xc->retrig.limit > 0) {
+				/* Limit the number of retriggers. */
+				--xc->retrig.limit;
+				if (xc->retrig.limit == 0)
+					RESET(RETRIG);
+			}
 		}
-        }
+	}
 
 	/* Do keyoff */
 	if (xc->keyoff) {
@@ -1322,7 +1339,7 @@ static void play_channel(struct context_data *ctx, int chn)
 
 #ifndef LIBXMP_CORE_PLAYER
 	if (HAS_QUIRK(QUIRK_PROTRACK) && xc->ins < mod->ins) {
-		update_invloop(m, xc);
+		update_invloop(ctx, xc);
 	}
 #endif
 
@@ -1428,16 +1445,16 @@ static void next_row(struct context_data *ctx)
 
 		next_order(ctx);
 	} else {
-		if (f->loop_chn) {
-			p->row = f->loop[f->loop_chn - 1].start - 1;
-			f->loop_chn = 0;
-		}
-
 		if (f->rowdelay == 0) {
 			p->row++;
 			f->rowdelay_set = 0;
 		} else {
 			f->rowdelay--;
+		}
+
+		if (f->loop_chn) {
+			p->row = f->loop[f->loop_chn - 1].start;
+			f->loop_chn = 0;
 		}
 
 		/* check end of pattern */
@@ -1541,8 +1558,11 @@ int xmp_start_player(xmp_context opaque, int rate, int format)
 		mod->len = 0;
 	}
 
-	if (mod->len == 0 || mod->chn == 0) {
+	if (mod->len == 0) {
 		/* set variables to sane state */
+		/* Note: previously did this for mod->chn == 0, which caused
+		 * crashes on invalid order 0s. 0 channel modules are technically
+		 * valid (if useless) so just let them play normally. */
 		p->ord = p->scan[0].ord = 0;
 		p->row = p->scan[0].row = 0;
 		f->end_point = 0;
@@ -1562,6 +1582,7 @@ int xmp_start_player(xmp_context opaque, int rate, int format)
 	f->delay = 0;
 	f->jumpline = 0;
 	f->jump = -1;
+	f->loop_chn = 0;
 	f->pbreak = 0;
 	f->rowdelay_set = 0;
 

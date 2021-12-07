@@ -70,6 +70,8 @@ struct retrig_control {
 
 #define IS_VALID_INSTRUMENT(x) ((uint32)(x) < mod->ins && mod->xxi[(x)].nsm > 0)
 #define IS_VALID_INSTRUMENT_OR_SFX(x) (((uint32)(x) < mod->ins && mod->xxi[(x)].nsm > 0) || (smix->ins > 0 && (uint32)(x) < mod->ins + smix->ins))
+#define IS_VALID_SAMPLE(x) ((uint32)(x) < mod->smp && mod->xxs[(x)].len > 0)
+#define IS_VALID_NOTE(x) ((uint32)(x) < XMP_MAX_KEYS)
 
 struct instrument_vibrato {
 	int phase;
@@ -147,6 +149,7 @@ struct channel_data {
 		int val;	/* Retrig value */
 		int count;	/* Retrig counter */
 		int type;	/* Retrig type */
+		int limit;	/* Number of retrigs */
 	} retrig;
 
 	struct {
@@ -163,6 +166,9 @@ struct channel_data {
 #ifndef LIBXMP_CORE_DISABLE_IT
 		int fslide2;
 		int memory2;	/* Volume slide effect memory */
+#endif
+#ifndef LIBXMP_CORE_PLAYER
+		int target;	/* Target for persistent volslide */
 #endif
 	} vol;
 

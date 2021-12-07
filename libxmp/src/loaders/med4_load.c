@@ -539,12 +539,17 @@ static int med4_load(struct module_data *m, HIO_HANDLE *f, const int start)
 			if (_type == 0 || _type == -2) {
 				num_smp++;
 			} else if (_type == -1) {
+				if (_len < 22) {
+					D_(D_CRIT "invalid synth %d length", i);
+					return -1;
+				}
 				hio_seek(f, 20, SEEK_CUR);
 				num_smp += hio_read16b(f);
 				_len -= 22;
 			}
 
 			if (_len < 0) {
+				D_(D_CRIT "invalid sample %d length", i);
 				return -1;
 			}
 			hio_seek(f, _len, SEEK_CUR);
@@ -567,6 +572,7 @@ static int med4_load(struct module_data *m, HIO_HANDLE *f, const int start)
 		struct xmp_instrument *xxi;
 		struct xmp_subinstrument *sub;
 		struct xmp_sample *xxs;
+		struct med_instrument_extras *ie;
 
 		if ((int64)mask > 0) {
 			continue;
@@ -627,8 +633,12 @@ static int med4_load(struct module_data *m, HIO_HANDLE *f, const int start)
 
 			sub = &xxi->sub[0];
 
-			MED_INSTRUMENT_EXTRAS(*xxi)->vts = synth.volspeed;
-			MED_INSTRUMENT_EXTRAS(*xxi)->wts = synth.wfspeed;
+			ie = MED_INSTRUMENT_EXTRAS(*xxi);
+			ie->vts = synth.volspeed;
+			ie->wts = synth.wfspeed;
+			ie->vtlen = synth.voltbllen;
+			ie->wtlen = synth.wftbllen;
+
 			sub->pan = 0x80;
 			sub->vol = temp_inst[i].volume;
 			sub->xpo = temp_inst[i].transpose;
@@ -706,8 +716,11 @@ static int med4_load(struct module_data *m, HIO_HANDLE *f, const int start)
 			if (libxmp_alloc_subinstrument(mod, i, synth.wforms) < 0)
 				return -1;
 
-			MED_INSTRUMENT_EXTRAS(*xxi)->vts = synth.volspeed;
-			MED_INSTRUMENT_EXTRAS(*xxi)->wts = synth.wfspeed;
+			ie = MED_INSTRUMENT_EXTRAS(*xxi);
+			ie->vts = synth.volspeed;
+			ie->wts = synth.wfspeed;
+			ie->vtlen = synth.voltbllen;
+			ie->wtlen = synth.wftbllen;
 
 			for (j = 0; j < synth.wforms; j++) {
 				/* Sanity check */
