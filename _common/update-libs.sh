@@ -75,6 +75,7 @@ function updateXMP()
 
 updateRepo https://github.com/Wohlstand/libADLMIDI.git libADLMIDI
 updateRepo https://github.com/Wohlstand/libOPNMIDI.git libOPNMIDI
+updateRepo https://github.com/Wohlstand/libEDMIDI.git libEDMIDI
 updateGME https://Wohlstand@bitbucket.org/mpyne/game-music-emu.git libgme
 updateXMP https://github.com/libxmp/libxmp.git libxmp
 
