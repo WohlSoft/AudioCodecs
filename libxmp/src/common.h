@@ -28,6 +28,14 @@
 #define inline __inline
 #endif
 
+#if (defined(__GNUC__) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1))) ||\
+    (defined(_MSC_VER) && (_MSC_VER >= 1400)) || \
+    (defined(__WATCOMC__) && (__WATCOMC__ >= 1250) && !defined(__cplusplus))
+#define LIBXMP_RESTRICT __restrict
+#else
+#define LIBXMP_RESTRICT
+#endif
+
 #if defined(_MSC_VER) ||  defined(__WATCOMC__) || defined(__EMX__)
 #define XMP_MAXPATH _MAX_PATH
 #elif defined(PATH_MAX)
@@ -36,10 +44,9 @@
 #define XMP_MAXPATH  1024
 #endif
 
-#if defined(__MORPHOS__) || defined(__AROS__) || defined(AMIGAOS) || \
-    defined(__amigaos__) || defined(__amigaos4__) ||defined(__amigados__) || \
-    defined(AMIGA) || defined(_AMIGA) || defined(__AMIGA__)
-#define LIBXMP_AMIGA	1	/* to identify amiga platforms. */
+#if defined(__MORPHOS__) || defined(__AROS__) || defined(__AMIGA__) \
+ || defined(__amigaos__) || defined(__amigaos4__) || defined(AMIGA)
+#define LIBXMP_AMIGA	1
 #endif
 
 #ifdef HAVE_EXTERNAL_VISIBILITY
@@ -68,7 +75,7 @@ typedef unsigned short int uint16;
 typedef unsigned int uint32;
 #endif
 
-#ifdef _MSC_VER				/* MSVC++6.0 has no long long */
+#ifdef _MSC_VER /* MSVC6 has no long long */
 typedef signed __int64 int64;
 typedef unsigned __int64 uint64;
 #elif !(defined(B_BEOS_VERSION) || defined(__amigaos4__))
@@ -118,19 +125,16 @@ typedef signed long long int64;
 #define D_CRIT "  Error: "
 #define D_WARN "Warning: "
 #define D_INFO "   Info: "
-#ifndef CLIB_DECL
-#define CLIB_DECL
-#endif
 #ifdef DEBUG
-#ifndef ATTR_PRINTF
-#define ATTR_PRINTF(x,y)
-#endif
-void CLIB_DECL D_(const char *text, ...) ATTR_PRINTF(1,2);
+#define D_ libxmp_msvc_dbgprint  /* in win32.c */
+void libxmp_msvc_dbgprint(const char *text, ...);
 #else
 /* VS prior to VC7.1 does not support variadic macros.
  * VC8.0 does not optimize unused parameters passing. */
 #if _MSC_VER < 1400
-void __inline CLIB_DECL D_(const char *text, ...) { do {} while (0); }
+static void __inline D_(const char *text, ...) {
+	do { } while (0);
+}
 #else
 #define D_(...) do {} while (0)
 #endif
@@ -170,7 +174,6 @@ void __inline CLIB_DECL D_(const char *text, ...) { do {} while (0); }
 #define dup _dup
 #define fileno _fileno
 #define strnicmp _strnicmp
-#define strdup _strdup
 #define fdopen _fdopen
 #define open _open
 #define close _close
@@ -295,6 +298,8 @@ struct smix_data {
 /* This will be added to the sample structure in the next API revision */
 struct extra_sample_data {
 	double c5spd;
+	int sus;
+	int sue;
 };
 
 struct module_data {
@@ -334,9 +339,6 @@ struct module_data {
 	void *extra;			/* format-specific extra fields */
 	uint8 **scan_cnt;		/* scan counters */
 	struct extra_sample_data *xtra;
-#ifndef LIBXMP_CORE_DISABLE_IT
-	struct xmp_sample *xsmp;	/* sustain loop samples */
-#endif
 };
 
 
@@ -437,12 +439,13 @@ struct mixer_data {
 	int mix;		/* percentage of channel separation */
 	int interp;		/* interpolation type */
 	int dsp;		/* dsp effect flags */
-	char* buffer;		/* output buffer */
-	int32* buf32;		/* temporary buffer for 32 bit samples */
+	char *buffer;		/* output buffer */
+	int32 *buf32;		/* temporary buffer for 32 bit samples */
 	int numvoc;		/* default softmixer voices number */
 	int ticksize;
 	int dtright;		/* anticlick control, right channel */
 	int dtleft;		/* anticlick control, left channel */
+	int bidir_adjust;	/* adjustment for IT bidirectional loops */
 	double pbase;		/* period base */
 };
 
@@ -479,7 +482,6 @@ void	write16l		(FILE *, uint16);
 void	write16b		(FILE *, uint16);
 void	write32l		(FILE *, uint32);
 void	write32b		(FILE *, uint32);
-int	move_data		(FILE *, FILE *, int);
 
 uint16	readmem16l		(const uint8 *);
 uint16	readmem16b		(const uint8 *);
@@ -491,6 +493,7 @@ uint32	readmem32b		(const uint8 *);
 struct xmp_instrument *libxmp_get_instrument(struct context_data *, int);
 struct xmp_sample *libxmp_get_sample(struct context_data *, int);
 
-int libxmp_get_filetype (const char *path);
+char *libxmp_strdup(const char *);
+int libxmp_get_filetype (const char *);
 
 #endif /* LIBXMP_COMMON_H */

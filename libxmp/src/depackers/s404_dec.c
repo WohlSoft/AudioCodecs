@@ -364,7 +364,7 @@ static int test_s404(unsigned char *b)
 	return memcmp(b, "S404", 4) == 0;
 }
 
-static int decrunch_s404(FILE *in, FILE *out, long inlen)
+static int decrunch_s404(HIO_HANDLE *in, void **out, long inlen, long *outlen)
 {
   int32 oLen, sLen, pLen;
   uint8 *dst = NULL;
@@ -375,7 +375,7 @@ static int decrunch_s404(FILE *in, FILE *out, long inlen)
   src = buf = (uint8 *) malloc(inlen);
   if (src == NULL)
     return -1;
-  if (fread(buf, 1, inlen, in) != inlen) {
+  if (hio_read(buf, 1, inlen, in) != inlen) {
     goto error;
   }
 
@@ -411,13 +411,11 @@ static int decrunch_s404(FILE *in, FILE *out, long inlen)
       goto error1;
   }
 
-  if (fwrite(dst, oLen, 1, out) == 0) {
-      /*fprintf(stderr,"S404 Error: fwrite() failed..\n");*/
-      goto error1;
-  }
-
-  free(dst);
   free(src);
+
+  *out = dst;
+  *outlen = oLen;
+
   return 0;
 
  error1:
@@ -429,5 +427,6 @@ static int decrunch_s404(FILE *in, FILE *out, long inlen)
 
 struct depacker libxmp_depacker_s404 = {
 	test_s404,
+	NULL,
 	decrunch_s404
 };

@@ -19,11 +19,11 @@ extern struct depacker libxmp_depacker_muse;
 extern struct depacker libxmp_depacker_lzx;
 extern struct depacker libxmp_depacker_s404;
 extern struct depacker libxmp_depacker_xfd;
-extern struct depacker libxmp_depacker_oxm;
 
 struct depacker {
 	int (*test)(unsigned char *);
-	int (*depack)(FILE *, FILE *, long);
+	int (*depack)(HIO_HANDLE *, FILE *, long);
+	int (*depack_mem)(HIO_HANDLE *, void **, long, long *);
 };
 
 int	libxmp_decrunch		(HIO_HANDLE **h, const char *filename, char **temp);

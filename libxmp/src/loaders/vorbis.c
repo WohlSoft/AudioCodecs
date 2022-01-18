@@ -302,6 +302,7 @@ extern stb_vorbis * stb_vorbis_open_file_section(FILE *f, int close_handle_on_cl
 // confused.
 #endif
 
+#ifndef STB_VORBIS_NO_SEEK_API
 extern int stb_vorbis_seek_frame(stb_vorbis *f, unsigned int sample_number);
 extern int stb_vorbis_seek(stb_vorbis *f, unsigned int sample_number);
 // these functions seek in the Vorbis file to (approximately) 'sample_number'.
@@ -313,6 +314,7 @@ extern int stb_vorbis_seek(stb_vorbis *f, unsigned int sample_number);
 
 extern int stb_vorbis_seek_start(stb_vorbis *f);
 // this function is equivalent to stb_vorbis_seek(f,0)
+#endif
 
 extern unsigned int stb_vorbis_stream_length_in_samples(stb_vorbis *f);
 extern float        stb_vorbis_stream_length_in_seconds(stb_vorbis *f);
@@ -599,24 +601,9 @@ enum STBVorbisError
 #else // STB_VORBIS_NO_CRT
    #define NULL 0
    #define malloc(s)   0
-   #define free(s)     ((void) 0)
-   #define realloc(s)  0
+   #define free(p)     ((void) 0)
+   #define realloc(p, s)  0
 #endif // STB_VORBIS_NO_CRT
-
-/* we need alloca() regardless of STB_VORBIS_NO_CRT,
- * because there is not a corresponding 'dealloca' */
-#if !defined(alloca)
-# if defined(HAVE_ALLOCA_H)
-#  include <alloca.h>
-# elif defined(__GNUC__)
-#  define alloca __builtin_alloca
-# elif defined(_MSC_VER)
-#  include <malloc.h>
-#  define alloca _alloca
-# elif defined(__WATCOMC__)
-#  include <malloc.h>
-# endif
-#endif
 
 #include <limits.h>
 
@@ -626,7 +613,7 @@ enum STBVorbisError
     #elif (defined(__GNUC__) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 2))) || defined(__clang__)
         #define STB_FORCEINLINE static __inline __attribute__((always_inline))
     #else
-        #define STB_FORCEINLINE static __inline
+        #define STB_FORCEINLINE static inline
     #endif
 #endif
 
@@ -643,7 +630,7 @@ enum STBVorbisError
 #include <crtdbg.h>
 #define CHECK(f)   _CrtIsValidHeapPointer(f->channel_buffers[1])
 #else
-#define CHECK(f)   ((void) 0)
+#define CHECK(f)   do {} while(0)
 #endif
 
 #define MAX_BLOCKSIZE_LOG  13   // from specification
@@ -926,11 +913,14 @@ struct stb_vorbis
    int channel_buffer_start;
    int channel_buffer_end;
 
+  // libxmp hack: decode work buffer (used in inverse_mdct and decode_residues)
+   void *work_buffer;
+
   // temporary buffers
-   uint8 *temp_lengths;
-   uint32 *temp_codewords;
-   uint32 *temp_values;
-   uint16 *temp_mults;
+   void *temp_lengths;
+   void *temp_codewords;
+   void *temp_values;
+   void *temp_mults;
 };
 
 #if defined(STB_VORBIS_NO_PUSHDATA_API)
@@ -960,8 +950,8 @@ static int error(vorb *f, enum STBVorbisError e)
 
 #define array_size_required(count,size)  (count*(sizeof(void *)+(size)))
 
-#define temp_alloc(f,size)              (f->alloc.alloc_buffer ? setup_temp_malloc(f,size) : alloca(size))
-#define temp_free(f,p)                  (void)0
+#define temp_alloc(f,size)              (f->alloc.alloc_buffer ? setup_temp_malloc(f,size) : f->work_buffer)
+#define temp_free(f,p)                  do {} while (0)
 #define temp_alloc_save(f)              ((f)->temp_offset)
 #define temp_alloc_restore(f,p)         ((f)->temp_offset = (p))
 
@@ -3784,8 +3774,10 @@ static int start_decoder(vorb *f)
       if (c->dimensions == 0 && c->entries != 0)    return error(f, VORBIS_invalid_setup);
       if (f->valid_bits < 0)                        return error(f, VORBIS_unexpected_eof);
 
-      if (c->sparse)
-         lengths = f->temp_lengths = (uint8 *) setup_temp_malloc(f, c->entries);
+      if (c->sparse) {
+         lengths = (uint8 *) setup_temp_malloc(f, c->entries);
+         f->temp_lengths = lengths;
+      }
       else
          lengths = c->codeword_lengths = (uint8 *) setup_malloc(f, c->entries);
 
@@ -3826,7 +3818,7 @@ static int start_decoder(vorb *f)
          c->codeword_lengths = (uint8 *) setup_malloc(f, c->entries);
          if (c->codeword_lengths == NULL) return error(f, VORBIS_outofmem);
          memcpy(c->codeword_lengths, lengths, c->entries);
-         setup_temp_free(f, (void **)&(f->temp_lengths), c->entries); // note this is only safe if there have been no intervening temp mallocs!
+         setup_temp_free(f, &f->temp_lengths, c->entries); // note this is only safe if there have been no intervening temp mallocs!
          lengths = c->codeword_lengths;
          c->sparse = 0;
       }
@@ -3855,9 +3847,11 @@ static int start_decoder(vorb *f)
          if (c->sorted_entries) {
             c->codeword_lengths = (uint8 *) setup_malloc(f, c->sorted_entries);
             if (!c->codeword_lengths)           return error(f, VORBIS_outofmem);
-            c->codewords = f->temp_codewords = (uint32 *) setup_temp_malloc(f, sizeof(*c->codewords) * c->sorted_entries);
+            c->codewords = (uint32 *) setup_temp_malloc(f, sizeof(*c->codewords) * c->sorted_entries);
+            f->temp_codewords = c->codewords;
             if (!c->codewords)                  return error(f, VORBIS_outofmem);
-            values = f->temp_values = (uint32 *) setup_temp_malloc(f, sizeof(*values) * c->sorted_entries);
+            values = (uint32 *) setup_temp_malloc(f, sizeof(*values) * c->sorted_entries);
+            f->temp_values = values;
             if (!values)                        return error(f, VORBIS_outofmem);
          }
          size = c->entries + (sizeof(*c->codewords) + sizeof(*values)) * c->sorted_entries;
@@ -3883,9 +3877,9 @@ static int start_decoder(vorb *f)
       }
 
       if (c->sparse) {
-         setup_temp_free(f, (void **)&(f->temp_values), sizeof(*values)*c->sorted_entries);
-         setup_temp_free(f, (void **)&(f->temp_codewords), sizeof(*c->codewords)*c->sorted_entries);
-         setup_temp_free(f, (void **)&(f->temp_lengths), c->entries);
+         setup_temp_free(f, &f->temp_values, sizeof(*values)*c->sorted_entries);
+         setup_temp_free(f, &f->temp_codewords, sizeof(*c->codewords)*c->sorted_entries);
+         setup_temp_free(f, &f->temp_lengths, c->entries);
          c->codewords = NULL;
       }
 
@@ -3908,7 +3902,8 @@ static int start_decoder(vorb *f)
             c->lookup_values = c->entries * c->dimensions;
          }
          if (c->lookup_values == 0) return error(f, VORBIS_invalid_setup);
-         mults = f->temp_mults = (uint16 *) setup_temp_malloc(f, sizeof(mults[0]) * c->lookup_values);
+         mults = (uint16 *) setup_temp_malloc(f, sizeof(mults[0]) * c->lookup_values);
+         f->temp_mults = mults;
          if (mults == NULL) return error(f, VORBIS_outofmem);
          for (j=0; j < (int) c->lookup_values; ++j) {
             int q = get_bits(f, c->value_bits);
@@ -3964,7 +3959,7 @@ static int start_decoder(vorb *f)
 #ifndef STB_VORBIS_DIVIDES_IN_CODEBOOK
         skip:;
 #endif
-         setup_temp_free(f, (void **)&(f->temp_mults), sizeof(mults[0])*c->lookup_values);
+         setup_temp_free(f, &f->temp_mults, sizeof(mults[0])*c->lookup_values);
 
          CHECK(f);
       }
@@ -4244,6 +4239,9 @@ static int start_decoder(vorb *f)
       // check if there's enough temp memory so we don't error later
       if (f->setup_offset + sizeof(*f) + f->temp_memory_required > (unsigned) f->temp_offset)
          return error(f, VORBIS_outofmem);
+   } else {
+      f->work_buffer = setup_malloc(f, f->temp_memory_required);
+      if (f->work_buffer == NULL) return error(f, VORBIS_outofmem);
    }
 
    // @TODO: stb_vorbis_seek_start expects first_audio_page_offset to point to a page
@@ -4323,10 +4321,11 @@ static void vorbis_deinit(stb_vorbis *p)
       setup_free(p, p->bit_reverse[i]);
    }
    if (!p->alloc.alloc_buffer) {
-      setup_temp_free(p, (void **)&(p->temp_lengths), 0);
-      setup_temp_free(p, (void **)&(p->temp_codewords), 0);
-      setup_temp_free(p, (void **)&(p->temp_values), 0);
-      setup_temp_free(p, (void **)&(p->temp_mults), 0);
+      setup_free(p, p->work_buffer);
+      setup_temp_free(p, &p->temp_lengths, 0);
+      setup_temp_free(p, &p->temp_codewords, 0);
+      setup_temp_free(p, &p->temp_values, 0);
+      setup_temp_free(p, &p->temp_mults, 0);
    }
    #ifndef STB_VORBIS_NO_STDIO
    if (p->close_on_free) fclose(p->f);
@@ -4699,6 +4698,7 @@ static uint32 vorbis_find_page(stb_vorbis *f, uint32 *end, uint32 *last)
 
 #define SAMPLE_unknown  0xffffffff
 
+#ifndef STB_VORBIS_NO_SEEK_API
 // seeking is implemented with a binary search, which narrows down the range to
 // 64K, before using a linear search (because finding the synchronization
 // pattern can be expensive, and the chance we'd find the end page again is
@@ -5013,6 +5013,7 @@ int stb_vorbis_seek_start(stb_vorbis *f)
    f->next_seg = -1;
    return vorbis_pump_first_frame(f);
 }
+#endif /* STB_VORBIS_NO_SEEK_API */
 
 unsigned int stb_vorbis_stream_length_in_samples(stb_vorbis *f)
 {

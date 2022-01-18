@@ -76,7 +76,7 @@ static char *get_dirname(const char *name)
 			dirname[len] = 0;
 		}
 	} else {
-		dirname = strdup("");
+		dirname = libxmp_strdup("");
 	}
 
 	return dirname;
@@ -88,9 +88,9 @@ static char *get_basename(const char *name)
 	char *basename;
 
 	if ((p = strrchr(name, '/')) != NULL) {
-		basename = strdup(p + 1);
+		basename = libxmp_strdup(p + 1);
 	} else {
-		basename = strdup(name);
+		basename = libxmp_strdup(name);
 	}
 
 	return basename;
@@ -183,7 +183,7 @@ int xmp_test_module_from_memory(const void *mem, long size, struct xmp_test_info
 		return -XMP_ERROR_INVALID;
 	}
 
-	if ((h = hio_open_mem(mem, size)) == NULL)
+	if ((h = hio_open_mem(mem, size, 0)) == NULL)
 		return -XMP_ERROR_SYSTEM;
 
 	ret = test_module(info, h);
@@ -428,7 +428,7 @@ int xmp_load_module_from_memory(xmp_context opaque, const void *mem, long size)
 		return -XMP_ERROR_INVALID;
 	}
 
-	if ((h = hio_open_mem(mem, size)) == NULL)
+	if ((h = hio_open_mem(mem, size, 0)) == NULL)
 		return -XMP_ERROR_SYSTEM;
 
 	if (ctx->state > XMP_STATE_UNLOADED)
@@ -556,16 +556,6 @@ void xmp_release_module(xmp_context opaque)
 
 	free(m->xtra);
 	m->xtra = NULL;
-
-#ifndef LIBXMP_CORE_DISABLE_IT
-	if (m->xsmp != NULL) {
-		for (i = 0; i < mod->smp; i++) {
-			libxmp_free_sample(&m->xsmp[i]);
-		}
-		free(m->xsmp);
-		m->xsmp = NULL;
-	}
-#endif
 
 	libxmp_free_scan(ctx);
 
