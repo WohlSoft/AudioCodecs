@@ -12,6 +12,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
     set(BUILD_LIBOUT123 OFF)
 endif()
 
+#AucioCodecs: Allow passing variables as options
 if(POLICY CMP0077) # Cache variables override since 3.12
     cmake_policy(SET CMP0077 NEW)
 endif()

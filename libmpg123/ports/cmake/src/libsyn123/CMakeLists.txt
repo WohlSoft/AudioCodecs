@@ -17,6 +17,11 @@ add_library(${TARGET}
 
 set_target_properties(${TARGET} PROPERTIES OUTPUT_NAME syn123)
 
+#AucioCodecs: Enable -fPIC if needed
+if(ENABLE_FPIC)
+    set_target_properties(${TARGET} PROPERTIES COMPILE_FLAGS "-fPIC")
+endif()
+
 target_include_directories(${TARGET} INTERFACE
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
