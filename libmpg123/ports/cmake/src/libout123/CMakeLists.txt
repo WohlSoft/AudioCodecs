@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.2)
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../../../../src/libout123/out123.h.in" out123.h)
 
