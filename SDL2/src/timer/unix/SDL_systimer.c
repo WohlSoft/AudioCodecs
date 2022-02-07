@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2021 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -179,14 +179,21 @@ SDL_GetPerformanceFrequency(void)
         freq /= mach_base_info.numer;
         return freq;
 #endif
-    }
-
+    } 
+        
     return 1000000;
 }
 
 void
 SDL_Delay(Uint32 ms)
 {
+#ifdef __EMSCRIPTEN__
+    if (emscripten_has_asyncify() && SDL_GetHintBoolean(SDL_HINT_EMSCRIPTEN_ASYNCIFY, SDL_TRUE)) {
+        /* pseudo-synchronous pause, used directly or through e.g. SDL_WaitEvent */
+        emscripten_sleep(ms);
+        return;
+    }
+#endif
     int was_error;
 
 #if HAVE_NANOSLEEP
@@ -194,14 +201,6 @@ SDL_Delay(Uint32 ms)
 #else
     struct timeval tv;
     Uint64 then, now, elapsed;
-#endif
-
-#ifdef __EMSCRIPTEN__
-    if (emscripten_has_asyncify() && SDL_GetHintBoolean(SDL_HINT_EMSCRIPTEN_ASYNCIFY, SDL_TRUE)) {
-        /* pseudo-synchronous pause, used directly or through e.g. SDL_WaitEvent */
-        emscripten_sleep(ms);
-        return;
-    }
 #endif
 
     /* Set the timeout interval */
