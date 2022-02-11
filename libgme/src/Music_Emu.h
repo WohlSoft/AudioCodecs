@@ -101,7 +101,10 @@ public:
 	// Request use of custom multichannel buffer. Only supported by "classic" emulators;
 	// on others this has no effect. Should be called only once *before* set_sample_rate().
 	virtual void set_buffer( Multi_Buffer* ) { }
-	
+
+	// Disables echo effect at SPC files
+	virtual void disable_echo( bool disable = true ) { (void)disable; }
+
 	// Enables/disables accurate emulation options, if any are supported. Might change
 	// equalizer settings.
 	void enable_accuracy( bool enable = true );
