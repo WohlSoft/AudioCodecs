@@ -43,8 +43,6 @@ public:
 	
 	// Prevents channels and global volumes from being phase-negated
 	void disable_surround( bool disable = true );
-	
-	void disable_echo( bool disable = true );
 
 	static gme_type_t static_type() { return gme_spc_type; }
 	
@@ -68,6 +66,7 @@ protected:
 	blargg_err_t play_( long, sample_t* );
 	blargg_err_t skip_( long );
 	void mute_voices_( int );
+	void disable_echo_( bool disable );
 	void set_tempo_( double );
 	void enable_accuracy_( bool );
 	byte const* file_data;
@@ -81,7 +80,6 @@ private:
 };
 
 inline void Spc_Emu::disable_surround( bool b ) { apu.disable_surround( b ); }
-inline void Spc_Emu::disable_echo( bool b ) { apu.disable_echo( b ); }
 
 class Rsn_Emu : public Spc_Emu {
 public:
