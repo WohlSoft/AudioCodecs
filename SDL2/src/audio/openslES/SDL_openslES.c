@@ -36,6 +36,7 @@
 #include <SLES/OpenSLES_Android.h>
 
 #include <android/log.h>
+#include <sys/system_properties.h>
 
 #if 0
 #define LOG_TAG "SDL_openslES"
@@ -409,30 +410,35 @@ openslES_CreatePCMPlayer(_THIS)
     SLDataFormat_PCM format_pcm;
     SLresult result;
     int i;
+    long sdk_ver = 0;
+    char sdk_ver_str[92] = {'\0'};
+
+    __system_property_get("ro.build.version.sdk", sdk_ver_str);
+    sdk_ver = SDL_atoi(sdk_ver_str);
 
     /* If we want to add floating point audio support (requires API level 21)
        it can be done as described here:
         https://developer.android.com/ndk/guides/audio/opensl/android-extensions.html#floating-point
     */
-#if 1
-    /* Just go with signed 16-bit audio as it's the most compatible */
-    this->spec.format = AUDIO_S16SYS;
-#else
-    SDL_AudioFormat test_format = SDL_FirstAudioFormat(this->spec.format);
-    while (test_format != 0) {
-        if (SDL_AUDIO_ISSIGNED(test_format) && SDL_AUDIO_ISINT(test_format)) {
-            break;
+    if(sdk_ver >= 21) {
+        SDL_AudioFormat test_format = SDL_FirstAudioFormat(this->spec.format);
+        while (test_format != 0) {
+            if (SDL_AUDIO_ISSIGNED(test_format) && SDL_AUDIO_ISINT(test_format)) {
+                break;
+            }
+            test_format = SDL_NextAudioFormat();
         }
-        test_format = SDL_NextAudioFormat();
-    }
 
-    if (test_format == 0) {
-        /* Didn't find a compatible format : */
-        LOGI( "No compatible audio format, using signed 16-bit audio" );
-        test_format = AUDIO_S16SYS;
+        if (test_format == 0) {
+            /* Didn't find a compatible format : */
+            LOGI( "No compatible audio format, using signed 16-bit audio" );
+            test_format = AUDIO_S16SYS;
+        }
+        this->spec.format = test_format;
+    } else {
+        /* Just go with signed 16-bit audio as it's the most compatible */
+        this->spec.format = AUDIO_S16SYS;
     }
-    this->spec.format = test_format;
-#endif
 
     /* Update the fragment size as size in bytes */
     SDL_CalculateAudioSpec(&this->spec);
