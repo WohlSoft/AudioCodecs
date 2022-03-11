@@ -108,11 +108,10 @@ extern "C" {
 /* It reads just enough bytes from the input stream that are needed to decode the next Huffman code (and absolutely no more). It works by trying to fully decode a */
 /* Huffman code by using whatever bits are currently present in the bit buffer. If this fails, it reads another byte, and tries again until it succeeds or until the */
 /* bit buffer contains >=15 bits (deflate's max. Huffman code size). */
-#define TINFL_HUFF_BITBUF_FILL(state_index, pHuff)                             \
+#define TINFL_HUFF_BITBUF_FILL(state_index, pLookUp, pTree)                    \
     do                                                                         \
     {                                                                          \
-        mz_int16 *pTreeFill;                                                   \
-        temp = (pHuff)->m_look_up[bit_buf & (TINFL_FAST_LOOKUP_SIZE - 1)];     \
+        temp = pLookUp[bit_buf & (TINFL_FAST_LOOKUP_SIZE - 1)];                \
         if (temp >= 0)                                                         \
         {                                                                      \
             code_len = temp >> 9;                                              \
@@ -121,11 +120,10 @@ extern "C" {
         }                                                                      \
         else if (num_bits > TINFL_FAST_LOOKUP_BITS)                            \
         {                                                                      \
-            pTreeFill = (pHuff)->m_pTree;                                      \
             code_len = TINFL_FAST_LOOKUP_BITS;                                 \
             do                                                                 \
             {                                                                  \
-                temp = pTreeFill[~temp + ((bit_buf >> code_len++) & 1)];       \
+                temp = pTree[~temp + ((bit_buf >> code_len++) & 1)];           \
             } while ((temp < 0) && (num_bits >= (code_len + 1)));              \
             if (temp >= 0)                                                     \
                 break;                                                         \
@@ -141,17 +139,16 @@ extern "C" {
 /* The slow path is only executed at the very end of the input buffer. */
 /* v1.16: The original macro handled the case at the very end of the passed-in input buffer, but we also need to handle the case where the user passes in 1+zillion bytes */
 /* following the deflate data and our non-conservative read-ahead path won't kick in here on this code. This is much trickier. */
-#define TINFL_HUFF_DECODE(state_index, sym, pHuff)                                                                                  \
+#define TINFL_HUFF_DECODE(state_index, sym, pLookUp, pTree)                                                                         \
     do                                                                                                                              \
     {                                                                                                                               \
         int temp;                                                                                                                   \
         mz_uint code_len, c;                                                                                                        \
-        mz_int16 *pTreeDec;                                                                                                         \
         if (num_bits < 15)                                                                                                          \
         {                                                                                                                           \
             if ((pIn_buf_end - pIn_buf_cur) < 2)                                                                                    \
             {                                                                                                                       \
-                TINFL_HUFF_BITBUF_FILL(state_index, pHuff);                                                                         \
+                TINFL_HUFF_BITBUF_FILL(state_index, pLookUp, pTree);                                                                \
             }                                                                                                                       \
             else                                                                                                                    \
             {                                                                                                                       \
@@ -160,22 +157,32 @@ extern "C" {
                 num_bits += 16;                                                                                                     \
             }                                                                                                                       \
         }                                                                                                                           \
-        if ((temp = (pHuff)->m_look_up[bit_buf & (TINFL_FAST_LOOKUP_SIZE - 1)]) >= 0)                                               \
+        if ((temp = pLookUp[bit_buf & (TINFL_FAST_LOOKUP_SIZE - 1)]) >= 0)                                                          \
             code_len = temp >> 9, temp &= 511;                                                                                      \
         else                                                                                                                        \
         {                                                                                                                           \
-            pTreeDec = (pHuff)->m_pTree;                                                                                            \
             code_len = TINFL_FAST_LOOKUP_BITS;                                                                                      \
             do                                                                                                                      \
             {                                                                                                                       \
-                temp = pTreeDec[~temp + ((bit_buf >> code_len++) & 1)];                                                             \
+                temp = pTree[~temp + ((bit_buf >> code_len++) & 1)];                                                                \
             } while (temp < 0);                                                                                                     \
         }                                                                                                                           \
         sym = temp;                                                                                                                 \
         bit_buf >>= code_len;                                                                                                       \
         num_bits -= code_len;                                                                                                       \
+        code_len_hack = code_len; /* FIXME: workaround for miniz/#229 */ \
     }                                                                                                                               \
     MZ_MACRO_END
+
+static void tinfl_clear_tree(tinfl_decompressor *r)
+{
+    if (r->m_type == 0)
+        MZ_CLEAR_ARR(r->m_tree_0);
+    else if (r->m_type == 1)
+        MZ_CLEAR_ARR(r->m_tree_1);
+    else
+        MZ_CLEAR_ARR(r->m_tree_2);
+}
 
 tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_next, size_t *pIn_buf_size, mz_uint8 *pOut_buf_start, mz_uint8 *pOut_buf_next, size_t *pOut_buf_size, const mz_uint32 decomp_flags)
 {
@@ -185,6 +192,9 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
     static const mz_uint8 s_dist_extra[32] = { 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13 };
     static const mz_uint8 s_length_dezigzag[19] = { 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15 };
     static const mz_uint16 s_min_table_sizes[3] = { 257, 1, 4 };
+
+    mz_int16 *pTrees[3];
+    mz_uint8 *pCode_sizes[3];
 
     tinfl_status status = TINFL_STATUS_FAILED;
     mz_uint32 num_bits, dist, counter, num_extra;
@@ -199,6 +209,13 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
         *pIn_buf_size = *pOut_buf_size = 0;
         return TINFL_STATUS_BAD_PARAM;
     }
+
+    pTrees[0] = r->m_tree_0;
+    pTrees[1] = r->m_tree_1;
+    pTrees[2] = r->m_tree_2;
+    pCode_sizes[0] = r->m_code_size_0;
+    pCode_sizes[1] = r->m_code_size_1;
+    pCode_sizes[2] = r->m_code_size_2;
 
     num_bits = r->m_num_bits;
     bit_buf = r->m_bit_buf;
@@ -275,6 +292,7 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
         }
         else
         {
+            mz_uint code_len_hack; /* FIXME: workaround for miniz/#229 */
             if (r->m_type == 1)
             {
                 mz_uint8 *p = r->m_code_size_0;
@@ -310,16 +328,16 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
             for (; (int)r->m_type >= 0; r->m_type--)
             {
                 int tree_next, tree_cur;
-                tinfl_huff_table *pTable;
+                mz_int16 *pLookUp;
                 mz_int16 *pTree;
                 mz_uint8 *pCode_size;
                 mz_uint i, j, used_syms, total, sym_index, next_code[17], total_syms[16];
-                pTable = &r->m_tables[r->m_type];
-                pTree = pTable->m_pTree;
-                pCode_size = pTable->m_pCode_size;
+                pLookUp = r->m_look_up[r->m_type];
+                pTree = pTrees[r->m_type];
+                pCode_size = pCode_sizes[r->m_type];
                 MZ_CLEAR_ARR(total_syms);
-                MZ_CLEAR_ARR(pTable->m_look_up);
-                TINFL_MEMSET(pTree, 0, r->m_table_sizes[r->m_type] * sizeof(pTree[0]) * 2);
+                TINFL_MEMSET(pLookUp, 0, sizeof(r->m_look_up[0]));
+                tinfl_clear_tree(r);
                 for (i = 0; i < r->m_table_sizes[r->m_type]; ++i)
                     total_syms[pCode_size[i]]++;
                 used_syms = 0, total = 0;
@@ -346,14 +364,14 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
                         mz_int16 k = (mz_int16)((code_size << 9) | sym_index);
                         while (rev_code < TINFL_FAST_LOOKUP_SIZE)
                         {
-                            pTable->m_look_up[rev_code] = k;
+                            pLookUp[rev_code] = k;
                             rev_code += (1 << code_size);
                         }
                         continue;
                     }
-                    if (0 == (tree_cur = pTable->m_look_up[rev_code & (TINFL_FAST_LOOKUP_SIZE - 1)]))
+                    if (0 == (tree_cur = pLookUp[rev_code & (TINFL_FAST_LOOKUP_SIZE - 1)]))
                     {
-                        pTable->m_look_up[rev_code & (TINFL_FAST_LOOKUP_SIZE - 1)] = (mz_int16)tree_next;
+                        pLookUp[rev_code & (TINFL_FAST_LOOKUP_SIZE - 1)] = (mz_int16)tree_next;
                         tree_cur = tree_next;
                         tree_next -= 2;
                     }
@@ -378,7 +396,7 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
                     for (counter = 0; counter < (r->m_table_sizes[0] + r->m_table_sizes[1]);)
                     {
                         mz_uint s;
-                        TINFL_HUFF_DECODE(16, dist, &r->m_tables[2]);
+                        TINFL_HUFF_DECODE(16, dist, r->m_look_up[2], r->m_tree_2);
                         if (dist < 16)
                         {
                             r->m_len_codes[counter++] = (mz_uint8)dist;
@@ -409,7 +427,10 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
                 {
                     if (((pIn_buf_end - pIn_buf_cur) < 4) || ((pOut_buf_end - pOut_buf_cur) < 2))
                     {
-                        TINFL_HUFF_DECODE(23, counter, &r->m_tables[0]);
+                        TINFL_HUFF_DECODE(23, counter, r->m_look_up[0], r->m_tree_0);
+                        /* FIXME: workaround for miniz/#229 */
+                        if (!code_len_hack)
+                            TINFL_CR_RETURN_FOREVER(101, TINFL_STATUS_FAILED);
                         if (counter >= 256)
                             break;
                         while (pOut_buf_cur >= pOut_buf_end)
@@ -437,7 +458,7 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
                             num_bits += 16;
                         }
 #endif
-                        if ((sym2 = r->m_tables[0].m_look_up[bit_buf & (TINFL_FAST_LOOKUP_SIZE - 1)]) >= 0)
+                        if ((sym2 = r->m_look_up[0][bit_buf & (TINFL_FAST_LOOKUP_SIZE - 1)]) >= 0)
                             code_len = sym2 >> 9;
                         else
                         {
@@ -447,6 +468,9 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
                                 sym2 = r->m_tree_0[~sym2 + ((bit_buf >> code_len++) & 1)];
                             } while (sym2 < 0);
                         }
+                        /* FIXME: workaround for miniz/#229 */
+                        if (!code_len)
+                            TINFL_CR_RETURN_FOREVER(100, TINFL_STATUS_FAILED);
                         counter = sym2;
                         bit_buf >>= code_len;
                         num_bits -= code_len;
@@ -461,7 +485,7 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
                             num_bits += 16;
                         }
 #endif
-                        if ((sym2 = r->m_tables[0].m_look_up[bit_buf & (TINFL_FAST_LOOKUP_SIZE - 1)]) >= 0)
+                        if ((sym2 = r->m_look_up[0][bit_buf & (TINFL_FAST_LOOKUP_SIZE - 1)]) >= 0)
                             code_len = sym2 >> 9;
                         else
                         {
@@ -497,7 +521,7 @@ tinfl_status tinfl_decompress(tinfl_decompressor *r, const mz_uint8 *pIn_buf_nex
                     counter += extra_bits;
                 }
 
-                TINFL_HUFF_DECODE(26, dist, &r->m_tables[1]);
+                TINFL_HUFF_DECODE(26, dist, r->m_look_up[1], r->m_tree_1);
                 num_extra = s_dist_extra[dist];
                 dist = s_dist_base[dist];
                 if (num_extra)

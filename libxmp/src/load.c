@@ -112,7 +112,7 @@ static int test_module(struct xmp_test_info *info, HIO_HANDLE *h)
 		if (format_loaders[i]->test(h, buf, 0) == 0) {
 			int is_prowizard = 0;
 
-#if !defined(LIBXMP_CORE_PLAYER) && !defined(LIBXMP_NO_PROWIZARD)
+#ifndef LIBXMP_NO_PROWIZARD
 			if (strcmp(format_loaders[i]->name, "prowizard") == 0) {
 				hio_seek(h, 0, SEEK_SET);
 				pw_test_format(h, buf, 0, info);
@@ -555,7 +555,9 @@ void xmp_release_module(xmp_context opaque)
 	}
 
 	free(m->xtra);
+	free(m->midi);
 	m->xtra = NULL;
+	m->midi = NULL;
 
 	libxmp_free_scan(ctx);
 

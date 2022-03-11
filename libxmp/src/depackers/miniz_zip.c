@@ -907,6 +907,7 @@ static mz_bool mz_zip_file_stat_internal(mz_zip_archive *pZip, mz_uint file_inde
     return MZ_TRUE;
 }
 
+#if 0 /* not used in libxmp */
 static MZ_FORCEINLINE mz_bool mz_zip_string_equal(const char *pA, const char *pB, mz_uint len, mz_uint flags)
 {
     mz_uint i;
@@ -935,7 +936,6 @@ static MZ_FORCEINLINE int mz_zip_filename_compare(const mz_zip_array *pCentral_d
     return (pL == pE) ? (int)(l_len - r_len) : (l - r);
 }
 
-#if 0 /* not used in libxmp */
 static mz_bool mz_zip_locate_file_binary_search(mz_zip_archive *pZip, const char *pFilename, mz_uint32 *pIndex)
 {
     mz_zip_internal_state *pState = pZip->m_pState;
@@ -1220,7 +1220,7 @@ void *mz_zip_reader_extract_to_heap(mz_zip_archive *pZip, mz_uint file_index, si
         *pSize = 0;
 
     if (!mz_zip_reader_file_stat(pZip, file_index, &file_stat))
-        return MZ_FALSE;
+        return NULL;
 
     alloc_size = (flags & MZ_ZIP_FLAG_COMPRESSED_DATA) ? file_stat.m_comp_size : file_stat.m_uncomp_size;
     if (((sizeof(size_t) == sizeof(mz_uint32))) && (alloc_size > 0x7FFFFFFF))
@@ -1526,7 +1526,6 @@ const char *mz_zip_get_error_string(mz_zip_error mz_err)
     return "unknown error";
 }
 #elif defined(_MSC_VER) && (_MSC_VER < 1400)
-/* see common.h of libxmp : */
 const char *mz_zip_get_error_string(mz_zip_error mz_err) {
     return "";
 }

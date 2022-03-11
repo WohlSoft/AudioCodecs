@@ -107,6 +107,9 @@
 #define FX_PANBRELLO_WF	0x8b
 #define FX_HIOFFSET	0x8c
 #define FX_IT_BREAK	0x8e	/* like FX_BREAK with hex parameter */
+#define FX_MACRO_SET	0xbd	/* Set active IT parametered MIDI macro */
+#define FX_MACRO	0xbe	/* Execute IT MIDI macro */
+#define FX_MACROSMOOTH	0xbf	/* Execute IT MIDI macro slide */
 #endif
 
 #ifndef LIBXMP_CORE_PLAYER
@@ -134,9 +137,11 @@
 #define FX_VOL_SUB	0xb7	/* SFX change volume down */
 #define FX_PITCH_ADD	0xb8	/* SFX add steps to current note */
 #define FX_PITCH_SUB	0xb9	/* SFX add steps to current note */
+#define FX_LINE_JUMP	0xba	/* Archimedes jump to line in current order */
 #endif
 
 #define FX_SURROUND	0x8d	/* S3M/IT */
+#define FX_REVERSE	0x8f	/* XM/IT/others: play forward/reverse */
 #define FX_S3M_SPEED	0xa3	/* S3M */
 #define FX_VOLSLIDE_2	0xa4
 #define FX_FINETUNE	0xa6

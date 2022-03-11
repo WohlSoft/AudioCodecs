@@ -1,6 +1,15 @@
 #ifndef LIBXMP_COMMON_H
 #define LIBXMP_COMMON_H
 
+#ifdef LIBXMP_CORE_PLAYER
+#ifndef LIBXMP_NO_PROWIZARD
+#define LIBXMP_NO_PROWIZARD
+#endif
+#ifndef LIBXMP_NO_DEPACKERS
+#define LIBXMP_NO_DEPACKERS
+#endif
+#endif
+
 #include <stdarg.h>
 #include <limits.h>
 #include <stdlib.h>
@@ -157,11 +166,16 @@ static void __inline D_(const char *text, ...) {
 #else
 
 #ifdef DEBUG
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+#define LIBXMP_FUNC __func__
+#else
+#define LIBXMP_FUNC __FUNCTION__
+#endif
 #define D_INFO "\x1b[33m"
 #define D_CRIT "\x1b[31m"
 #define D_WARN "\x1b[36m"
 #define D_(...) do { \
-	printf("\x1b[33m%s \x1b[37m[%s:%d] " D_INFO, __FUNCTION__, \
+	printf("\x1b[33m%s \x1b[37m[%s:%d] " D_INFO, LIBXMP_FUNC, \
 		__FILE__, __LINE__); printf (__VA_ARGS__); printf ("\x1b[0m\n"); \
 	} while (0)
 #else
@@ -213,6 +227,7 @@ int libxmp_snprintf (char *, size_t, const char *, ...);
 #define QUIRK_UNISLD	(1 << 10)	/* Unified pitch slide/portamento */
 #define QUIRK_ITVPOR	(1 << 11)	/* Disable fine bends in IT vol fx */
 #define QUIRK_FTMOD	(1 << 12)	/* Flag for multichannel mods */
+#define QUIRK_INVLOOP	(1 << 13)	/* Enable invert loop */
 /*#define QUIRK_MODRNG	(1 << 13)*/	/* Limit periods to MOD range */
 #define QUIRK_INSVOL	(1 << 14)	/* Use instrument volume */
 #define QUIRK_VIRTUAL	(1 << 15)	/* Enable virtual channels */
@@ -302,6 +317,15 @@ struct extra_sample_data {
 	int sue;
 };
 
+struct midi_macro {
+	char data[32];
+};
+
+struct midi_macro_data {
+	struct midi_macro param[16];
+	struct midi_macro fixed[128];
+};
+
 struct module_data {
 	struct xmp_module mod;
 
@@ -339,6 +363,7 @@ struct module_data {
 	void *extra;			/* format-specific extra fields */
 	uint8 **scan_cnt;		/* scan counters */
 	struct extra_sample_data *xtra;
+	struct midi_macro_data *midi;
 };
 
 
@@ -353,6 +378,9 @@ struct flow_control {
 	int delay;
 	int jumpline;
 	int loop_chn;
+#ifndef LIBXMP_CORE_PLAYER
+	int jump_in_pat;
+#endif
 
 	struct pattern_loop *loop;
 
@@ -466,6 +494,7 @@ void	libxmp_free_scan	(struct context_data *);
 int	libxmp_scan_sequences	(struct context_data *);
 int	libxmp_get_sequence	(struct context_data *, int);
 int	libxmp_set_player_mode	(struct context_data *);
+void	libxmp_reset_flow	(struct context_data *);
 
 int8	read8s			(FILE *, int *err);
 uint8	read8			(FILE *, int *err);

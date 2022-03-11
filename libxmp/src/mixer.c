@@ -283,6 +283,7 @@ static void set_sample_end(struct context_data *ctx, int voc, int end)
 
 	if (end) {
 		SET_NOTE(NOTE_SAMPLE_END);
+		vi->fidx &= ~FLAG_ACTIVE;
 		if (HAS_QUIRK(QUIRK_RSTCHN)) {
 			libxmp_virt_resetvoice(ctx, voc, 0);
 		}
@@ -430,7 +431,10 @@ static int loop_reposition(struct context_data *ctx, struct mixer_voice *vi,
 
 	if (~vi->flags & VOICE_BIDIR) {
 		/* Reposition for next loop */
-		vi->pos -= vi->end - vi->start;
+		if (~vi->flags & VOICE_REVERSE)
+			vi->pos -= vi->end - vi->start;
+		else
+			vi->pos += vi->end - vi->start;
 	} else {
 		/* Bidirectional loop: switch directions */
 		vi->flags ^= VOICE_REVERSE;
@@ -544,6 +548,11 @@ void libxmp_mixer_softmixer(struct context_data *ctx)
 			libxmp_virt_resetvoice(ctx, voc, 1);
 			continue;
 		}
+
+		/* Negative positions can be left over from some
+		 * loop edge cases. These can be safely clamped. */
+		if (vi->pos < 0.0)
+			vi->pos = 0.0;
 
 		vi->pos0 = vi->pos;
 
@@ -686,7 +695,13 @@ void libxmp_mixer_softmixer(struct context_data *ctx)
 			size -= samples;
 			if (size <= 0) {
 				if (has_active_loop(ctx, vi, xxs)) {
-					if (vi->pos >= vi->end) {
+					/* This isn't particularly important for
+					 * forward loops, but reverse loops need
+					 * to be corrected here to avoid their
+					 * negative positions getting clamped
+					 * in later ticks. */
+					if (((~vi->flags & VOICE_REVERSE) && vi->pos >= vi->end) ||
+					    ((vi->flags & VOICE_REVERSE) && vi->pos <= vi->start)) {
 						if (loop_reposition(ctx, vi, xxs, xtra)) {
 							reset_sample_wraparound(&loop_data);
 							init_sample_wraparound(s, &loop_data, vi, xxs);
@@ -765,6 +780,9 @@ void libxmp_mixer_voicepos(struct context_data *ctx, int voc, double pos, int ac
 		vi->pos = vi->end;
 		if (has_active_loop(ctx, vi, xxs))
 			loop_reposition(ctx, vi, xxs, xtra);
+	} else if ((vi->flags & VOICE_REVERSE) && vi->pos <= 0.1) {
+		/* Hack: 0 maps to the end for reversed samples. */
+		vi->pos = vi->end;
 	}
 
 	if (ac) {
@@ -874,9 +892,39 @@ void libxmp_mixer_release(struct context_data *ctx, int voc, int rel)
 	struct mixer_voice *vi = &p->virt.voice_array[voc];
 
 	if (rel) {
+#ifndef LIBXMP_CORE_DISABLE_IT
+		/* Cancel voice reverse when releasing an active sustain loop,
+		 * unless the main loop is bidirectional. This is done both for
+		 * bidirectional sustain loops and for forward sustain loops
+		 * that have been reversed with MPT S9F Play Backward. */
+		if (~vi->flags & VOICE_RELEASE) {
+			struct xmp_sample *xxs = libxmp_get_sample(ctx, vi->smp);
+
+			if (has_active_sustain_loop(ctx, vi, xxs) &&
+			    (~xxs->flg & XMP_SAMPLE_LOOP_BIDIR))
+				vi->flags &= ~VOICE_REVERSE;
+		}
+#endif
 		vi->flags |= VOICE_RELEASE;
 	} else {
 		vi->flags &= ~VOICE_RELEASE;
+	}
+}
+
+void libxmp_mixer_reverse(struct context_data *ctx, int voc, int rev)
+{
+	struct player_data *p = &ctx->p;
+	struct mixer_voice *vi = &p->virt.voice_array[voc];
+
+	/* Don't reverse samples that have already ended */
+	if (~vi->fidx & FLAG_ACTIVE) {
+		return;
+	}
+
+	if (rev) {
+		vi->flags |= VOICE_REVERSE;
+	} else {
+		vi->flags &= ~VOICE_REVERSE;
 	}
 }
 

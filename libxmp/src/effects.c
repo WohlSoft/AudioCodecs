@@ -734,6 +734,9 @@ void libxmp_process_fx(struct context_data *ctx, struct channel_data *xc, int ch
 	case FX_SURROUND:
 		xc->pan.surround = fxp;
 		break;
+	case FX_REVERSE:	/* Play forward/backward */
+		libxmp_virt_reverse(ctx, chn, fxp);
+		break;
 
 #ifndef LIBXMP_CORE_DISABLE_IT
 	case FX_TRK_VOL:	/* Track volume setting */
@@ -827,12 +830,25 @@ void libxmp_process_fx(struct context_data *ctx, struct channel_data *xc, int ch
 		}
 		break;
 	case FX_FLT_CUTOFF:
-		if (fxp < 0xfe || xc->filter.resonance > 0) {
-			xc->filter.cutoff = fxp;
-		}
+		xc->filter.cutoff = fxp;
 		break;
 	case FX_FLT_RESN:
 		xc->filter.resonance = fxp;
+		break;
+	case FX_MACRO_SET:
+		xc->macro.active = LSN(fxp);
+		break;
+	case FX_MACRO:
+		SET(MIDI_MACRO);
+		xc->macro.val = fxp;
+		xc->macro.slide = 0;
+		break;
+	case FX_MACROSMOOTH:
+		if (ctx->p.speed && xc->macro.val < 0x80) {
+			SET(MIDI_MACRO);
+			xc->macro.target = fxp;
+			xc->macro.slide = ((float)fxp - xc->macro.val) / ctx->p.speed;
+		}
 		break;
 	case FX_PANBRELLO:	/* Panbrello */
 		SET(PANBRELLO);
@@ -1091,6 +1107,20 @@ void libxmp_process_fx(struct context_data *ctx, struct channel_data *xc, int ch
 		xc->porta.slide = fxp;
 		if (fxp == 0)
 			RESET_PER(TONEPORTA);
+		break;
+
+	/* Archimedes (!Tracker, Digital Symphony, et al.) effects */
+
+	case FX_LINE_JUMP:	/* !Tracker and Digital Symphony "Line Jump" */
+		/* Jump to a line within the current order. In Digital Symphony
+		 * this can be combined with position jump (like pattern break)
+		 * and overrides the pattern break line in lower channels. */
+		if (p->flow.pbreak == 0) {
+			p->flow.pbreak = 1;
+			p->flow.jump = p->ord;
+		}
+		p->flow.jumpline = fxp;
+		p->flow.jump_in_pat = p->ord;
 		break;
 #endif
 
