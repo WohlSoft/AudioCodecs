@@ -62,12 +62,14 @@ function updateXMP()
     echo "Removing old $2 folder..."
     rm -Rf "../$2/src/"
     rm -Rf "../$2/cmake/"
+    rm -Rf "../$2/docs/"
 
     git clone --depth 1 "$1" "../$2-tmp"
 
     echo "Copyng necessary files.."
     cp -a "../$2-tmp/src" "../$2/src"
     cp -a "../$2-tmp/cmake" "../$2/cmake"
+    cp -a "../$2-tmp/docs" "../$2/docs"
     cp "../$2-tmp/CMakeLists.txt" "../$2/CMakeLists.txt"
     cp "../$2-tmp/include/xmp.h" "../$2/include/xmp.h"
     cp "../$2-tmp/libxmp.pc.in" "../$2/libxmp.pc.in"
