@@ -63,7 +63,9 @@
 /* #define VERSION "..." */
 
 /* Target processor is big endian. */
-#define WORDS_BIGENDIAN 0
+#ifndef WORDS_BIGENDIAN
+#   define WORDS_BIGENDIAN 0
+#endif
 
 /* Number of bits in a file offset, on hosts where this is settable. */
 /* #undef _FILE_OFFSET_BITS */
