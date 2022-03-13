@@ -7,10 +7,16 @@ cmake_minimum_required(VERSION 3.1)
 project(fluidlite)
 
 include(GNUInstallDirs)
+include(TestBigEndian)
 
 set(CMAKE_C_STANDARD 99)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
+
+test_big_endian(WORDS_BIGENDIAN)
+if(WORDS_BIGENDIAN)
+    add_definitions(-DWORDS_BIGENDIAN)
+endif()
 
 if(NOT MSVC)
     ac_disable_c_warning_flag("pedantic" PEDANTIC)
