@@ -53,6 +53,8 @@ void FLAC__bitreader_delete(FLAC__BitReader *br);
 FLAC__bool FLAC__bitreader_init(FLAC__BitReader *br, FLAC__BitReaderReadCallback rcb, void *cd);
 void FLAC__bitreader_free(FLAC__BitReader *br); /* does not 'free(br)' */
 FLAC__bool FLAC__bitreader_clear(FLAC__BitReader *br);
+void FLAC__bitreader_set_framesync_location(FLAC__BitReader *br);
+FLAC__bool FLAC__bitreader_rewind_to_after_last_seen_framesync(FLAC__BitReader *br);
 void FLAC__bitreader_dump(const FLAC__BitReader *br, FILE *out);
 
 /*
@@ -67,6 +69,10 @@ FLAC__uint16 FLAC__bitreader_get_read_crc16(FLAC__BitReader *br);
 FLAC__bool FLAC__bitreader_is_consumed_byte_aligned(const FLAC__BitReader *br);
 uint32_t FLAC__bitreader_bits_left_for_byte_alignment(const FLAC__BitReader *br);
 uint32_t FLAC__bitreader_get_input_bits_unconsumed(const FLAC__BitReader *br);
+void FLAC__bitreader_set_limit(FLAC__BitReader *br, uint32_t limit);
+void FLAC__bitreader_remove_limit(FLAC__BitReader *br);
+uint32_t FLAC__bitreader_limit_remaining(FLAC__BitReader *br);
+void FLAC__bitreader_limit_invalidate(FLAC__BitReader *br);
 
 /*
  * read functions

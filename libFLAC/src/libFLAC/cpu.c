@@ -53,7 +53,7 @@
 #define dfprintf(file, format, ...)
 #endif
 
-#if defined FLAC__CPU_PPC
+#if defined(HAVE_SYS_AUXV_H)
 #include <sys/auxv.h>
 #endif
 
@@ -245,11 +245,29 @@ ppc_cpu_info (FLAC__CPUInfo *info)
 #define PPC_FEATURE2_ARCH_2_07		0x80000000
 #endif
 
+#if defined (__linux__) && defined(HAVE_GETAUXVAL)
 	if (getauxval(AT_HWCAP2) & PPC_FEATURE2_ARCH_3_00) {
 		info->ppc.arch_3_00 = true;
 	} else if (getauxval(AT_HWCAP2) & PPC_FEATURE2_ARCH_2_07) {
 		info->ppc.arch_2_07 = true;
 	}
+#elif defined(__FreeBSD__) && defined(HAVE_GETAUXVAL)
+	unsigned long hwcaps;
+	elf_aux_info(AT_HWCAP2, &hwcaps, sizeof(hwcaps));
+	if (hwcaps & PPC_FEATURE2_ARCH_3_00) {
+		info->ppc.arch_3_00 = true;
+	} else if (hwcaps & PPC_FEATURE2_ARCH_2_07) {
+		info->ppc.arch_2_07 = true;
+	}
+#elif defined(__APPLE__)
+	/* no Mac OS X version supports CPU with Power AVI v2.07 or better */
+	info->ppc.arch_2_07 = false;
+	info->ppc.arch_3_00 = false;
+#else
+	info->ppc.arch_2_07 = false;
+	info->ppc.arch_3_00 = false;
+#endif
+
 #else
 	info->ppc.arch_2_07 = false;
 	info->ppc.arch_3_00 = false;

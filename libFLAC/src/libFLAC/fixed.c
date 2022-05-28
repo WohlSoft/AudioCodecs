@@ -219,29 +219,48 @@ uint32_t FLAC__fixed_compute_best_predictor(const FLAC__int32 data[], uint32_t d
 uint32_t FLAC__fixed_compute_best_predictor(const FLAC__int32 data[], uint32_t data_len, FLAC__fixedpoint residual_bits_per_sample[FLAC__MAX_FIXED_ORDER+1])
 #endif
 {
+	FLAC__uint32 total_error_0 = 0, total_error_1 = 0, total_error_2 = 0, total_error_3 = 0, total_error_4 = 0;
+	uint32_t order;
+#if 0
+	/* This code has been around a long time, and was written when compilers weren't able
+	 * to vectorize code. These days, compilers are better in optimizing the next block
+	 * which is also much more readable
+	 */
 	FLAC__int32 last_error_0 = data[-1];
 	FLAC__int32 last_error_1 = data[-1] - data[-2];
 	FLAC__int32 last_error_2 = last_error_1 - (data[-2] - data[-3]);
 	FLAC__int32 last_error_3 = last_error_2 - (data[-2] - 2*data[-3] + data[-4]);
 	FLAC__int32 error, save;
-	FLAC__uint32 total_error_0 = 0, total_error_1 = 0, total_error_2 = 0, total_error_3 = 0, total_error_4 = 0;
-	uint32_t i, order;
-
-	for(i = 0; i < data_len; i++) {
+	/* total_error_* are 64-bits to avoid overflow when encoding
+	 * erratic signals when the bits-per-sample and blocksize are
+	 * large.
+	 */
+	for(uint32_t i = 0; i < data_len; i++) {
 		error  = data[i]     ; total_error_0 += local_abs(error);                      save = error;
 		error -= last_error_0; total_error_1 += local_abs(error); last_error_0 = save; save = error;
 		error -= last_error_1; total_error_2 += local_abs(error); last_error_1 = save; save = error;
 		error -= last_error_2; total_error_3 += local_abs(error); last_error_2 = save; save = error;
 		error -= last_error_3; total_error_4 += local_abs(error); last_error_3 = save;
 	}
+#else
+	for(int i = 0; i < (int)data_len; i++) {
+		total_error_0 += local_abs(data[i]);
+		total_error_1 += local_abs(data[i] - data[i-1]);
+		total_error_2 += local_abs(data[i] - 2 * data[i-1] + data[i-2]);
+		total_error_3 += local_abs(data[i] - 3 * data[i-1] + 3 * data[i-2] - data[i-3]);
+		total_error_4 += local_abs(data[i] - 4 * data[i-1] + 6 * data[i-2] - 4 * data[i-3] + data[i-4]);
+	}
+#endif
 
-	if(total_error_0 < flac_min(flac_min(flac_min(total_error_1, total_error_2), total_error_3), total_error_4))
+
+	/* prefer lower order */
+	if(total_error_0 <= flac_min(flac_min(flac_min(total_error_1, total_error_2), total_error_3), total_error_4))
 		order = 0;
-	else if(total_error_1 < flac_min(flac_min(total_error_2, total_error_3), total_error_4))
+	else if(total_error_1 <= flac_min(flac_min(total_error_2, total_error_3), total_error_4))
 		order = 1;
-	else if(total_error_2 < flac_min(total_error_3, total_error_4))
+	else if(total_error_2 <= flac_min(total_error_3, total_error_4))
 		order = 2;
-	else if(total_error_3 < total_error_4)
+	else if(total_error_3 <= total_error_4)
 		order = 3;
 	else
 		order = 4;
@@ -277,33 +296,25 @@ uint32_t FLAC__fixed_compute_best_predictor_wide(const FLAC__int32 data[], uint3
 uint32_t FLAC__fixed_compute_best_predictor_wide(const FLAC__int32 data[], uint32_t data_len, FLAC__fixedpoint residual_bits_per_sample[FLAC__MAX_FIXED_ORDER+1])
 #endif
 {
-	FLAC__int32 last_error_0 = data[-1];
-	FLAC__int32 last_error_1 = data[-1] - data[-2];
-	FLAC__int32 last_error_2 = last_error_1 - (data[-2] - data[-3]);
-	FLAC__int32 last_error_3 = last_error_2 - (data[-2] - 2*data[-3] + data[-4]);
-	FLAC__int32 error, save;
-	/* total_error_* are 64-bits to avoid overflow when encoding
-	 * erratic signals when the bits-per-sample and blocksize are
-	 * large.
-	 */
 	FLAC__uint64 total_error_0 = 0, total_error_1 = 0, total_error_2 = 0, total_error_3 = 0, total_error_4 = 0;
-	uint32_t i, order;
+	uint32_t order;
 
-	for(i = 0; i < data_len; i++) {
-		error  = data[i]     ; total_error_0 += local_abs(error);                      save = error;
-		error -= last_error_0; total_error_1 += local_abs(error); last_error_0 = save; save = error;
-		error -= last_error_1; total_error_2 += local_abs(error); last_error_1 = save; save = error;
-		error -= last_error_2; total_error_3 += local_abs(error); last_error_2 = save; save = error;
-		error -= last_error_3; total_error_4 += local_abs(error); last_error_3 = save;
+	for(int i = 0; i < (int)data_len; i++) {
+		total_error_0 += local_abs(data[i]);
+		total_error_1 += local_abs(data[i] - data[i-1]);
+		total_error_2 += local_abs(data[i] - 2 * data[i-1] + data[i-2]);
+		total_error_3 += local_abs(data[i] - 3 * data[i-1] + 3 * data[i-2] - data[i-3]);
+		total_error_4 += local_abs(data[i] - 4 * data[i-1] + 6 * data[i-2] - 4 * data[i-3] + data[i-4]);
 	}
 
-	if(total_error_0 < flac_min(flac_min(flac_min(total_error_1, total_error_2), total_error_3), total_error_4))
+	/* prefer lower order */
+	if(total_error_0 <= flac_min(flac_min(flac_min(total_error_1, total_error_2), total_error_3), total_error_4))
 		order = 0;
-	else if(total_error_1 < flac_min(flac_min(total_error_2, total_error_3), total_error_4))
+	else if(total_error_1 <= flac_min(flac_min(total_error_2, total_error_3), total_error_4))
 		order = 1;
-	else if(total_error_2 < flac_min(total_error_3, total_error_4))
+	else if(total_error_2 <= flac_min(total_error_3, total_error_4))
 		order = 2;
-	else if(total_error_3 < total_error_4)
+	else if(total_error_3 <= total_error_4)
 		order = 3;
 	else
 		order = 4;
@@ -364,6 +375,14 @@ void FLAC__fixed_compute_residual(const FLAC__int32 data[], uint32_t data_len, u
 	}
 }
 
+#ifdef FUZZING_BUILD_MODE_NO_SANITIZE_SIGNED_INTEGER_OVERFLOW
+/* The attribute below is to silence the undefined sanitizer of oss-fuzz.
+ * Because fuzzing feeds bogus predictors and residual samples to the
+ * decoder, having overflows in this section is unavoidable. Also,
+ * because the calculated values are audio path only, there is no
+ * potential for security problems */
+__attribute__((no_sanitize("signed-integer-overflow")))
+#endif
 void FLAC__fixed_restore_signal(const FLAC__int32 residual[], uint32_t data_len, uint32_t order, FLAC__int32 data[])
 {
 	int i, idata_len = (int)data_len;

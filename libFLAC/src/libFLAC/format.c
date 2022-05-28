@@ -44,10 +44,19 @@
 #include "private/format.h"
 #include "private/macros.h"
 
+#if (defined GIT_COMMIT_HASH && defined GIT_COMMIT_DATE)
+# ifdef GIT_COMMIT_TAG
+FLAC_API const char *FLAC__VERSION_STRING = GIT_COMMIT_TAG;
+FLAC_API const char *FLAC__VENDOR_STRING = "reference libFLAC " GIT_COMMIT_TAG " " GIT_COMMIT_DATE;
+# else
+FLAC_API const char *FLAC__VERSION_STRING = "git-" GIT_COMMIT_HASH " " GIT_COMMIT_DATE;
+FLAC_API const char *FLAC__VENDOR_STRING = "reference libFLAC git-" GIT_COMMIT_HASH " " GIT_COMMIT_DATE;
+# endif
+#else
 /* PACKAGE_VERSION should come from configure */
 FLAC_API const char *FLAC__VERSION_STRING = PACKAGE_VERSION;
-
-FLAC_API const char *FLAC__VENDOR_STRING = "reference libFLAC " PACKAGE_VERSION " 20190804";
+FLAC_API const char *FLAC__VENDOR_STRING = "reference libFLAC " PACKAGE_VERSION " 20220220";
+#endif
 
 FLAC_API const FLAC__byte FLAC__STREAM_SYNC_STRING[4] = { 'f','L','a','C' };
 FLAC_API const uint32_t FLAC__STREAM_SYNC = 0x664C6143;
@@ -218,12 +227,10 @@ FLAC_API FLAC__bool FLAC__format_blocksize_is_subset(uint32_t blocksize, uint32_
 
 FLAC_API FLAC__bool FLAC__format_sample_rate_is_subset(uint32_t sample_rate)
 {
-	if(
-		!FLAC__format_sample_rate_is_valid(sample_rate) ||
-		(
-			sample_rate >= (1u << 16) &&
-			!(sample_rate % 1000 == 0 || sample_rate % 10 == 0)
-		)
+	if( // sample rate is not subset if
+		!FLAC__format_sample_rate_is_valid(sample_rate) || // sample rate is invalid or
+		sample_rate >= ((1u << 16) * 10) || // sample rate is larger then or equal to 655360 or
+		(sample_rate >= (1u << 16) && sample_rate % 10 != 0) //sample rate is >= 65536 and not divisible by 10
 	) {
 		return false;
 	}
@@ -570,6 +577,11 @@ void FLAC__format_entropy_coding_method_partitioned_rice_contents_clear(FLAC__En
 	FLAC__format_entropy_coding_method_partitioned_rice_contents_init(object);
 }
 
+#if defined(_MSC_VER)
+// silence three MSVC warnings 'result of 32-bit shift implicitly converted to 64 bits (was 64-bit shift intended?)'
+#pragma warning ( disable : 4334 )
+#endif
+
 FLAC__bool FLAC__format_entropy_coding_method_partitioned_rice_contents_ensure_size(FLAC__EntropyCodingMethod_PartitionedRiceContents *object, uint32_t max_partition_order)
 {
 	FLAC__ASSERT(0 != object);
@@ -587,3 +599,7 @@ FLAC__bool FLAC__format_entropy_coding_method_partitioned_rice_contents_ensure_s
 
 	return true;
 }
+
+#if defined(_MSC_VER)
+#pragma warning ( default : 4334 )
+#endif

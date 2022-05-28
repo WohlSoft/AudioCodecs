@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.2)
-project(libFLAC VERSION 1.3.3 LANGUAGES C)
+project(libFLAC VERSION 1.3.4 LANGUAGES C)
 
 include(CheckIncludeFiles)
 include(CheckFunctionExists)
@@ -66,8 +66,15 @@ list(APPEND FLAC_SRC
     src/libFLAC/cpu.c
     src/libFLAC/crc.c
     src/libFLAC/fixed.c
+    src/libFLAC/fixed_intrin_sse2.c
+    src/libFLAC/fixed_intrin_ssse3.c
     src/libFLAC/format.c
     src/libFLAC/lpc.c
+    src/libFLAC/lpc_intrin_neon.c
+    src/libFLAC/lpc_intrin_sse2.c
+    src/libFLAC/lpc_intrin_sse41.c
+    src/libFLAC/lpc_intrin_avx2.c
+    src/libFLAC/lpc_intrin_vsx.c
     src/libFLAC/md5.c
     src/libFLAC/memory.c
     src/libFLAC/metadata_iterators.c
@@ -78,13 +85,16 @@ list(APPEND FLAC_SRC
     src/libFLAC/ogg_mapping.c
     src/libFLAC/stream_decoder.c
     src/libFLAC/stream_encoder.c
+    src/libFLAC/stream_encoder_intrin_sse2.c
+    src/libFLAC/stream_encoder_intrin_ssse3.c
+    src/libFLAC/stream_encoder_intrin_avx2.c
     src/libFLAC/stream_encoder_framing.c
     src/libFLAC/window.c
 )
 
 if(WIN32)
     list(APPEND FLAC_SRC
-        src/libFLAC/windows_unicode_filenames.c
+        src/libFLAC/win_utf8_io.c
     )
 endif()
 
