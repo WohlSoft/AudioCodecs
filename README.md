@@ -136,8 +136,6 @@ rem Tip: instead of "release" you can have "debug" to build debug versions. Inst
 * **libFLAC:** Multiple: BSD 3-clause "New" or "Revised" License (libFLAC, libFLAC++), GNU GPL (extra plugins and tools)
 * **libFluidLite:** GNU LGPLv2.1+
 * **libGME:** GNU LGPLv2.1+
-* **libMAD:** GNU GPLv2+ (a.k.a. v2 or any later version)
-* **libMikMod:** GNU LGPLv2+
 * **libModPlug:** Public Domain
 * **libOGG:** BSD 3-clause "New" or "Revised" License
 * **libOpenMPT:** BSD
@@ -168,7 +166,6 @@ rem Tip: instead of "release" you can have "debug" to build debug versions. Inst
 * libFLAC
 * libFluidLite
 * libGME
-* libMikMod
 * libModPlug
 * libOGG
 * libOpenMPT
