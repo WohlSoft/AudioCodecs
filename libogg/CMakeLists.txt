@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.2)
-project(libOGG VERSION 1.3.3 LANGUAGES C)
+project(libOGG VERSION 1.3.5 LANGUAGES C)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
@@ -21,4 +21,3 @@ install(FILES
         include/ogg/ogg.h
         include/ogg/os_types.h
         DESTINATION include/ogg)
-

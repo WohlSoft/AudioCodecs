@@ -6,7 +6,7 @@
  * IN 'COPYING'. PLEASE READ THESE TERMS BEFORE DISTRIBUTING.       *
  *                                                                  *
  * THE OggVorbis SOURCE CODE IS (C) COPYRIGHT 1994-2015             *
- * by the Xiph.Org Foundation http://www.xiph.org/                  *
+ * by the Xiph.Org Foundation https://xiph.org/                     *
  *                                                                  *
  ********************************************************************
 
@@ -684,6 +684,7 @@ int vorbis_encode_setup_init(vorbis_info *vi){
   highlevel_encode_setup *hi=&ci->hi;
 
   if(ci==NULL)return(OV_EINVAL);
+  if(vi->channels<1||vi->channels>255)return(OV_EINVAL);
   if(!hi->impulse_block_p)i0=1;
 
   /* too low/high an ATH floater is nonsensical, but doesn't break anything */

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.2)
-project(libVorbis VERSION 1.3.6 LANGUAGES C)
+project(libVorbis VERSION 1.3.7 LANGUAGES C)
 
 include(CheckIncludeFile)
 
@@ -76,4 +76,3 @@ install(FILES
         include/vorbis/vorbisenc.h
         include/vorbis/vorbisfile.h
         DESTINATION include/vorbis)
-
