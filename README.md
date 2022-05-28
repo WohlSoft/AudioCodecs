@@ -146,6 +146,7 @@ rem Tip: instead of "release" you can have "debug" to build debug versions. Inst
 * **libVorbis:** BSD 3-clause "New" or "Revised" License
 * **libXMP:** GNU LGPLv2+, partially MIT
 * **libZlib:** ZLib license
+* **libEDMIDI:** ZLib license
 
 # Libraries are can be freely used in non-free projects:
 
@@ -160,6 +161,7 @@ rem Tip: instead of "release" you can have "debug" to build debug versions. Inst
 * libTimidity-SDL
 * libVorbis
 * libZlib
+* libEDMIDI
 
 ## Dynamic linking
 (LGPL allows usage in closed-source projects when LGPL-licensed components are linked dynamically)
@@ -175,4 +177,4 @@ rem Tip: instead of "release" you can have "debug" to build debug versions. Inst
 * libVorbis
 * libXMP
 * libZlib
-
+* libEDMIDI
