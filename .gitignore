@@ -32,11 +32,15 @@ build
 *.directory
 
 /build/*
+/build17/*
+/msvc-build/*
+/.vs/*
 
 #CMake stuff
 CMakeFiles
 CMakeCache.txt
 cmake_install.cmake
+CMakeSettings.json
 
 # libSDL2 must not be included here since it will be fetched separately
 /libSDL2/
