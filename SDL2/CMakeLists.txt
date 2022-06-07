@@ -2908,7 +2908,7 @@ if(SDL_SHARED)
       SOVERSION ${LT_REVISION}
       OUTPUT_NAME "SDL2")
   endif()
-  set_target_properties(SDL2 PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+  set_target_properties(SDL2 PROPERTIES POSITION_INDEPENDENT_CODE FALSE)
   # Note: The clang toolset for Visual Studio does not support /NODEFAULTLIB.
   if(MSVC AND NOT SDL_LIBC AND NOT MSVC_CLANG)
     # Don't try to link with the default set of libraries.
