@@ -227,7 +227,7 @@ HIDAPI_CleanupDeviceDriver(SDL_HIDAPI_Device *device)
     }
 
     /* Disconnect any joysticks */
-    while (device->num_joysticks && device->joysticks) {
+    while (device->num_joysticks) {
         HIDAPI_JoystickDisconnected(device, device->joysticks[0]);
     }
 
@@ -309,7 +309,8 @@ HIDAPI_JoystickInit(void)
 #endif
 
     if (SDL_hid_init() < 0) {
-        return SDL_SetError("Couldn't initialize hidapi");
+        SDL_SetError("Couldn't initialize hidapi");
+        return -1;
     }
 
     for (i = 0; i < SDL_arraysize(SDL_HIDAPI_drivers); ++i) {
@@ -870,7 +871,8 @@ HIDAPI_JoystickRumble(SDL_Joystick *joystick, Uint16 low_frequency_rumble, Uint1
 
         result = device->driver->RumbleJoystick(device, joystick, low_frequency_rumble, high_frequency_rumble);
     } else {
-        result = SDL_SetError("Rumble failed, device disconnected");
+        SDL_SetError("Rumble failed, device disconnected");
+        result = -1;
     }
 
     return result;
@@ -886,7 +888,8 @@ HIDAPI_JoystickRumbleTriggers(SDL_Joystick *joystick, Uint16 left_rumble, Uint16
 
         result = device->driver->RumbleJoystickTriggers(device, joystick, left_rumble, right_rumble);
     } else {
-        result = SDL_SetError("Rumble failed, device disconnected");
+        SDL_SetError("Rumble failed, device disconnected");
+        result = -1;
     }
 
     return result;
@@ -916,7 +919,8 @@ HIDAPI_JoystickSetLED(SDL_Joystick *joystick, Uint8 red, Uint8 green, Uint8 blue
 
         result = device->driver->SetJoystickLED(device, joystick, red, green, blue);
     } else {
-        result = SDL_SetError("SetLED failed, device disconnected");
+        SDL_SetError("SetLED failed, device disconnected");
+        result = -1;
     }
 
     return result;
@@ -932,7 +936,8 @@ HIDAPI_JoystickSendEffect(SDL_Joystick *joystick, const void *data, int size)
 
         result = device->driver->SendJoystickEffect(device, joystick, data, size);
     } else {
-        result = SDL_SetError("SendEffect failed, device disconnected");
+        SDL_SetError("SendEffect failed, device disconnected");
+        result = -1;
     }
 
     return result;
@@ -948,7 +953,8 @@ HIDAPI_JoystickSetSensorsEnabled(SDL_Joystick *joystick, SDL_bool enabled)
 
         result = device->driver->SetJoystickSensorsEnabled(device, joystick, enabled);
     } else {
-        result = SDL_SetError("SetSensorsEnabled failed, device disconnected");
+        SDL_SetError("SetSensorsEnabled failed, device disconnected");
+        result = -1;
     }
 
     return result;

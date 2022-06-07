@@ -185,7 +185,6 @@
 /* Enable various threading systems */
 #ifdef __EMSCRIPTEN_PTHREADS__
 #define SDL_THREAD_PTHREAD 1
-#define SDL_THREAD_PTHREAD_RECURSIVE_MUTEX 1
 #endif
 
 /* Enable various timer systems */

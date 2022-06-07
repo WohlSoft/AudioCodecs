@@ -24,7 +24,6 @@
 
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
-#include <emscripten/threading.h>
 
 #include "SDL_emscriptenmouse.h"
 #include "SDL_emscriptenvideo.h"
@@ -63,10 +62,19 @@ Emscripten_CreateDefaultCursor()
     return Emscripten_CreateCursorFromString("default", SDL_FALSE);
 }
 
-static const char*
-Emscripten_GetCursorUrl(int w, int h, int hot_x, int hot_y, void* pixels)
+static SDL_Cursor*
+Emscripten_CreateCursor(SDL_Surface* surface, int hot_x, int hot_y)
 {
-    return (const char *)EM_ASM_INT({
+    const char *cursor_url = NULL;
+    SDL_Surface *conv_surf;
+
+    conv_surf = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_ABGR8888, 0);
+
+    if (!conv_surf) {
+        return NULL;
+    }
+
+    cursor_url = (const char *)EM_ASM_INT({
         var w = $0;
         var h = $1;
         var hot_x = $2;
@@ -114,40 +122,7 @@ Emscripten_GetCursorUrl(int w, int h, int hot_x, int hot_y, void* pixels)
         stringToUTF8(url, urlBuf, url.length + 1);
 
         return urlBuf;
-    }, w, h, hot_x, hot_y, pixels);
-}
-
-static SDL_Cursor*
-Emscripten_CreateCursor(SDL_Surface* surface, int hot_x, int hot_y)
-{
-    const char *cursor_url = NULL;
-    SDL_Surface *conv_surf;
-
-    conv_surf = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_ABGR8888, 0);
-
-    if (!conv_surf) {
-        return NULL;
-    }
-
-    if (emscripten_is_main_runtime_thread()) {
-        cursor_url = Emscripten_GetCursorUrl(
-            surface->w,
-            surface->h,
-            hot_x,
-            hot_y,
-            conv_surf->pixels
-        );
-    } else {
-        cursor_url = (const char *)emscripten_sync_run_in_main_runtime_thread(
-            EM_FUNC_SIG_IIIIIII,
-            Emscripten_GetCursorUrl,
-            surface->w,
-            surface->h,
-            hot_x,
-            hot_y,
-            conv_surf->pixels
-        );
-    }
+    }, surface->w, surface->h, hot_x, hot_y, conv_surf->pixels);
 
     SDL_FreeSurface(conv_surf);
 
@@ -231,15 +206,16 @@ Emscripten_ShowCursor(SDL_Cursor* cursor)
             curdata = (Emscripten_CursorData *) cursor->driverdata;
 
             if(curdata->system_cursor) {
-                MAIN_THREAD_EM_ASM({
+                EM_ASM_INT({
                     if (Module['canvas']) {
                         Module['canvas'].style['cursor'] = UTF8ToString($0);
                     }
+                    return 0;
                 }, curdata->system_cursor);
             }
         }
         else {
-            MAIN_THREAD_EM_ASM(
+            EM_ASM(
                 if (Module['canvas']) {
                     Module['canvas'].style['cursor'] = 'none';
                 }

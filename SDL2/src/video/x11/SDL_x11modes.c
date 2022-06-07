@@ -1011,13 +1011,7 @@ static int (*PreXRRSetScreenSizeErrorHandler)(Display *, XErrorEvent *) = NULL;
 static int
 SDL_XRRSetScreenSizeErrHandler(Display *d, XErrorEvent *e)
 {
-    /* BadMatch: https://github.com/libsdl-org/SDL/issues/4561 */
-    /* BadValue: https://github.com/libsdl-org/SDL/issues/4840 */
-    if ((e->error_code == BadMatch) || (e->error_code == BadValue)) {
-        return 0;
-    }
-
-    return PreXRRSetScreenSizeErrorHandler(d, e);
+    return (e->error_code == BadMatch) ? 0 : PreXRRSetScreenSizeErrorHandler(d, e);
 }
 
 int

@@ -128,6 +128,8 @@ static VideoBootStrap *bootstrap[] = {
     NULL
 };
 
+static SDL_VideoDevice *_this = NULL;
+
 #define CHECK_WINDOW_MAGIC(window, retval) \
     if (!_this) { \
         SDL_UninitializedVideo(); \
@@ -170,58 +172,129 @@ typedef struct {
     int bytes_per_pixel;
 } SDL_WindowTextureData;
 
+static SDL_bool
+ShouldUseTextureFramebuffer()
+{
+    const char *hint;
+
+    /* If there's no native framebuffer support then there's no option */
+    if (!_this->CreateWindowFramebuffer) {
+        return SDL_TRUE;
+    }
+
+    /* If this is the dummy driver there is no texture support */
+    if (_this->is_dummy) {
+        return SDL_FALSE;
+    }
+
+    /* See if the user or application wants a specific behavior */
+    hint = SDL_GetHint(SDL_HINT_FRAMEBUFFER_ACCELERATION);
+    if (hint) {
+        if (*hint == '0' || SDL_strcasecmp(hint, "false") == 0) {
+            return SDL_FALSE;
+        } else {
+            return SDL_TRUE;
+        }
+    }
+
+    /* Each platform has different performance characteristics */
+#if defined(__WIN32__)
+    /* GDI BitBlt() is way faster than Direct3D dynamic textures right now.
+     */
+    return SDL_FALSE;
+
+#elif defined(__MACOSX__)
+    /* Mac OS X uses OpenGL as the native fast path (for cocoa and X11) */
+    return SDL_TRUE;
+
+#elif defined(__LINUX__)
+    /* Properly configured OpenGL drivers are faster than MIT-SHM */
+#if SDL_VIDEO_OPENGL
+    /* Ugh, find a way to cache this value! */
+    {
+        SDL_Window *window;
+        SDL_GLContext context;
+        SDL_bool hasAcceleratedOpenGL = SDL_FALSE;
+
+        window = SDL_CreateWindow("OpenGL test", -32, -32, 32, 32, SDL_WINDOW_OPENGL|SDL_WINDOW_HIDDEN);
+        if (window) {
+            context = SDL_GL_CreateContext(window);
+            if (context) {
+                const GLubyte *(APIENTRY * glGetStringFunc) (GLenum);
+                const char *vendor = NULL;
+
+                glGetStringFunc = SDL_GL_GetProcAddress("glGetString");
+                if (glGetStringFunc) {
+                    vendor = (const char *) glGetStringFunc(GL_VENDOR);
+                }
+                /* Add more vendors here at will... */
+                if (vendor &&
+                    (SDL_strstr(vendor, "ATI Technologies") ||
+                     SDL_strstr(vendor, "NVIDIA"))) {
+                    hasAcceleratedOpenGL = SDL_TRUE;
+                }
+                SDL_GL_DeleteContext(context);
+            }
+            SDL_DestroyWindow(window);
+        }
+        return hasAcceleratedOpenGL;
+    }
+#elif SDL_VIDEO_OPENGL_ES || SDL_VIDEO_OPENGL_ES2
+    /* Let's be optimistic about this! */
+    return SDL_TRUE;
+#else
+    return SDL_FALSE;
+#endif
+
+#else
+    /* Play it safe, assume that if there is a framebuffer driver that it's
+       optimized for the current platform.
+    */
+    return SDL_FALSE;
+#endif
+}
 
 static int
-SDL_CreateWindowTexture(SDL_VideoDevice *_this, SDL_Window * window, Uint32 * format, void ** pixels, int *pitch)
+SDL_CreateWindowTexture(SDL_VideoDevice *unused, SDL_Window * window, Uint32 * format, void ** pixels, int *pitch)
 {
-    SDL_RendererInfo info;
-    SDL_WindowTextureData *data = SDL_GetWindowData(window, SDL_WINDOWTEXTUREDATA);
-    int i;
+    SDL_WindowTextureData *data;
 
+    data = SDL_GetWindowData(window, SDL_WINDOWTEXTUREDATA);
     if (!data) {
         SDL_Renderer *renderer = NULL;
+        int i;
         const char *hint = SDL_GetHint(SDL_HINT_FRAMEBUFFER_ACCELERATION);
-        const SDL_bool specific_accelerated_renderer = (
-            hint && *hint != '0' && *hint != '1' &&
-            SDL_strcasecmp(hint, "true") != 0 &&
-            SDL_strcasecmp(hint, "false") != 0 &&
-            SDL_strcasecmp(hint, "software") != 0
-        );
 
         /* Check to see if there's a specific driver requested */
-        if (specific_accelerated_renderer) {
+        if (hint && *hint != '0' && *hint != '1' &&
+            SDL_strcasecmp(hint, "true") != 0 &&
+            SDL_strcasecmp(hint, "false") != 0 &&
+            SDL_strcasecmp(hint, "software") != 0) {
             for (i = 0; i < SDL_GetNumRenderDrivers(); ++i) {
+                SDL_RendererInfo info;
                 SDL_GetRenderDriverInfo(i, &info);
                 if (SDL_strcasecmp(info.name, hint) == 0) {
                     renderer = SDL_CreateRenderer(window, i, 0);
                     break;
                 }
             }
-            if (!renderer || (SDL_GetRendererInfo(renderer, &info) == -1)) {
-                if (renderer) { SDL_DestroyRenderer(renderer); }
-                return SDL_SetError("Requested renderer for " SDL_HINT_FRAMEBUFFER_ACCELERATION " is not available");
-            }
-            /* if it was specifically requested, even if SDL_RENDERER_ACCELERATED isn't set, we'll accept this renderer. */
-        } else {
+        }
+        
+        if (!renderer) {
             for (i = 0; i < SDL_GetNumRenderDrivers(); ++i) {
+                SDL_RendererInfo info;
                 SDL_GetRenderDriverInfo(i, &info);
                 if (SDL_strcmp(info.name, "software") != 0) {
                     renderer = SDL_CreateRenderer(window, i, 0);
-                    if (renderer && (SDL_GetRendererInfo(renderer, &info) == 0) && (info.flags & SDL_RENDERER_ACCELERATED)) {
-                        break;  /* this will work. */
-                    }
-                    if (renderer) {  /* wasn't accelerated, etc, skip it. */
-                        SDL_DestroyRenderer(renderer);
-                        renderer = NULL;
+                    if (renderer) {
+                        break;
                     }
                 }
             }
-            if (!renderer) {
-                return SDL_SetError("No hardware accelerated renderers available");
-            }
         }
-
-        SDL_assert(renderer != NULL);  /* should have explicitly checked this above. */
+        if (!renderer) {
+            return SDL_SetError("No hardware accelerated renderers available");
+        }
 
         /* Create the data after we successfully create the renderer (bug #1116) */
         data = (SDL_WindowTextureData *)SDL_calloc(1, sizeof(*data));
@@ -232,10 +305,6 @@ SDL_CreateWindowTexture(SDL_VideoDevice *_this, SDL_Window * window, Uint32 * fo
         SDL_SetWindowData(window, SDL_WINDOWTEXTUREDATA, data);
 
         data->renderer = renderer;
-    } else {
-        if (SDL_GetRendererInfo(data->renderer, &info) == -1) {
-            return -1;
-        }
     }
 
     /* Free any old texture and pixel data */
@@ -246,14 +315,23 @@ SDL_CreateWindowTexture(SDL_VideoDevice *_this, SDL_Window * window, Uint32 * fo
     SDL_free(data->pixels);
     data->pixels = NULL;
 
-    /* Find the first format without an alpha channel */
-    *format = info.texture_formats[0];
+    {
+        SDL_RendererInfo info;
+        Uint32 i;
 
-    for (i = 0; i < (int) info.num_texture_formats; ++i) {
-        if (!SDL_ISPIXELFORMAT_FOURCC(info.texture_formats[i]) &&
-            !SDL_ISPIXELFORMAT_ALPHA(info.texture_formats[i])) {
-            *format = info.texture_formats[i];
-            break;
+        if (SDL_GetRendererInfo(data->renderer, &info) < 0) {
+            return -1;
+        }
+
+        /* Find the first format without an alpha channel */
+        *format = info.texture_formats[0];
+
+        for (i = 0; i < info.num_texture_formats; ++i) {
+            if (!SDL_ISPIXELFORMAT_FOURCC(info.texture_formats[i]) &&
+                    !SDL_ISPIXELFORMAT_ALPHA(info.texture_formats[i])) {
+                *format = info.texture_formats[i];
+                break;
+            }
         }
     }
 
@@ -261,7 +339,6 @@ SDL_CreateWindowTexture(SDL_VideoDevice *_this, SDL_Window * window, Uint32 * fo
                                       SDL_TEXTUREACCESS_STREAMING,
                                       window->w, window->h);
     if (!data->texture) {
-        /* codechecker_false_positive [Malloc] Static analyzer doesn't realize allocated `data` is saved to SDL_WINDOWTEXTUREDATA and not leaked here. */
         return -1;
     }
 
@@ -286,8 +363,6 @@ SDL_CreateWindowTexture(SDL_VideoDevice *_this, SDL_Window * window, Uint32 * fo
 
     return 0;
 }
-
-static SDL_VideoDevice *_this = NULL;
 
 static int
 SDL_UpdateWindowTexture(SDL_VideoDevice *unused, SDL_Window * window, const SDL_Rect * rects, int numrects)
@@ -337,6 +412,7 @@ SDL_DestroyWindowTexture(SDL_VideoDevice *unused, SDL_Window * window)
     SDL_free(data->pixels);
     SDL_free(data);
 }
+
 
 static int
 cmpmodes(const void *A, const void *B)
@@ -425,7 +501,7 @@ SDL_VideoInit(const char *driver_name)
     i = index = 0;
     video = NULL;
     if (driver_name == NULL) {
-        driver_name = SDL_GetHint(SDL_HINT_VIDEODRIVER);
+        driver_name = SDL_getenv("SDL_VIDEODRIVER");
     }
     if (driver_name != NULL && *driver_name != 0) {
         const char *driver_attempt = driver_name;
@@ -486,6 +562,13 @@ SDL_VideoInit(const char *driver_name)
     if (_this->num_displays == 0) {
         SDL_VideoQuit();
         return SDL_SetError("The video driver did not add any displays");
+    }
+
+    /* Add the renderer framebuffer emulation if desired */
+    if (ShouldUseTextureFramebuffer()) {
+        _this->CreateWindowFramebuffer = SDL_CreateWindowTexture;
+        _this->UpdateWindowFramebuffer = SDL_UpdateWindowTexture;
+        _this->DestroyWindowFramebuffer = SDL_DestroyWindowTexture;
     }
 
     /* Disable the screen saver by default. This is a change from <= 2.0.1,
@@ -887,7 +970,7 @@ SDL_GetClosestDisplayModeForDisplay(SDL_VideoDisplay * display,
     SDL_DisplayMode *current, *match;
 
     if (!mode || !closest) {
-        SDL_InvalidParamError("mode/closest");
+        SDL_SetError("Missing desired mode or closest mode parameter");
         return NULL;
     }
 
@@ -1185,7 +1268,6 @@ SDL_GetWindowDisplayMode(SDL_Window * window, SDL_DisplayMode * mode)
     } else if (!SDL_GetClosestDisplayModeForDisplay(SDL_GetDisplayForWindow(window),
                                              &fullscreen_mode,
                                              &fullscreen_mode)) {
-        SDL_zerop(mode);
         return SDL_SetError("Couldn't find display mode match");
     }
 
@@ -1339,17 +1421,14 @@ SDL_UpdateFullscreenMode(SDL_Window * window, SDL_bool fullscreen)
                     resized = SDL_FALSE;
                 }
 
-                /* Don't try to change the display mode if the driver doesn't want it. */
-                if (_this->disable_display_mode_switching == SDL_FALSE) {
-                    /* only do the mode change if we want exclusive fullscreen */
-                    if ((window->flags & SDL_WINDOW_FULLSCREEN_DESKTOP) != SDL_WINDOW_FULLSCREEN_DESKTOP) {
-                        if (SDL_SetDisplayModeForDisplay(display, &fullscreen_mode) < 0) {
-                            return -1;
-                        }
-                    } else {
-                        if (SDL_SetDisplayModeForDisplay(display, NULL) < 0) {
-                            return -1;
-                        }
+                /* only do the mode change if we want exclusive fullscreen */
+                if ((window->flags & SDL_WINDOW_FULLSCREEN_DESKTOP) != SDL_WINDOW_FULLSCREEN_DESKTOP) {
+                    if (SDL_SetDisplayModeForDisplay(display, &fullscreen_mode) < 0) {
+                        return -1;
+                    }
+                } else {
+                    if (SDL_SetDisplayModeForDisplay(display, NULL) < 0) {
+                        return -1;
                     }
                 }
 
@@ -1497,16 +1576,12 @@ SDL_CreateWindow(const char *title, int x, int y, int w, int h, Uint32 flags)
     }
 
     /* Some platforms have certain graphics backends enabled by default */
-    if (!graphics_flags && !SDL_IsVideoContextExternal()) {
+    if (!_this->is_dummy && !graphics_flags && !SDL_IsVideoContextExternal()) {
 #if (SDL_VIDEO_OPENGL && __MACOSX__) || (__IPHONEOS__ && !TARGET_OS_MACCATALYST) || __ANDROID__ || __NACL__
-        if (_this->GL_CreateContext != NULL) {
-            flags |= SDL_WINDOW_OPENGL;
-        }
+        flags |= SDL_WINDOW_OPENGL;
 #endif
 #if SDL_VIDEO_METAL && (TARGET_OS_MACCATALYST || __MACOSX__ || __IPHONEOS__)
-        if (_this->Metal_CreateView != NULL) {
-            flags |= SDL_WINDOW_METAL;
-        }
+        flags |= SDL_WINDOW_METAL;
 #endif
     }
 
@@ -1681,7 +1756,6 @@ SDL_Window *
 SDL_CreateWindowFrom(const void *data)
 {
     SDL_Window *window;
-    Uint32 flags = SDL_WINDOW_FOREIGN;
 
     if (!_this) {
         SDL_UninitializedVideo();
@@ -1691,37 +1765,6 @@ SDL_CreateWindowFrom(const void *data)
         SDL_Unsupported();
         return NULL;
     }
-
-    if (SDL_GetHintBoolean(SDL_HINT_VIDEO_FOREIGN_WINDOW_OPENGL, SDL_FALSE)) {
-        if (!_this->GL_CreateContext) {
-            SDL_SetError("OpenGL support is either not configured in SDL "
-                         "or not available in current SDL video driver "
-                         "(%s) or platform", _this->name);
-            return NULL;
-        }
-        if (SDL_GL_LoadLibrary(NULL) < 0) {
-            return NULL;
-        }
-        flags |= SDL_WINDOW_OPENGL;
-    }
-
-    if (SDL_GetHintBoolean(SDL_HINT_VIDEO_FOREIGN_WINDOW_VULKAN, SDL_FALSE)) {
-        if (!_this->Vulkan_CreateSurface) {
-            SDL_SetError("Vulkan support is either not configured in SDL "
-                         "or not available in current SDL video driver "
-                         "(%s) or platform", _this->name);
-            return NULL;
-        }
-        if (flags & SDL_WINDOW_OPENGL) {
-            SDL_SetError("Vulkan and OpenGL not supported on same window");
-            return NULL;
-        }
-        if (SDL_Vulkan_LoadLibrary(NULL) < 0) {
-            return NULL;
-        }
-        flags |= SDL_WINDOW_VULKAN;
-    }
-
     window = (SDL_Window *)SDL_calloc(1, sizeof(*window));
     if (!window) {
         SDL_OutOfMemory();
@@ -1729,7 +1772,7 @@ SDL_CreateWindowFrom(const void *data)
     }
     window->magic = &_this->window_magic;
     window->id = _this->next_object_id++;
-    window->flags = flags;
+    window->flags = SDL_WINDOW_FOREIGN;
     window->last_fullscreen_flags = window->flags;
     window->is_destroying = SDL_FALSE;
     window->opacity = 1.0f;
@@ -1775,9 +1818,7 @@ SDL_RecreateWindow(SDL_Window * window, Uint32 flags)
     }
 
     /* Restore video mode, etc. */
-    if (!(window->flags & SDL_WINDOW_FOREIGN)) {
-        SDL_HideWindow(window);
-    }
+    SDL_HideWindow(window);
 
     /* Tear down the old native window */
     if (window->surface) {
@@ -1786,13 +1827,9 @@ SDL_RecreateWindow(SDL_Window * window, Uint32 flags)
         window->surface = NULL;
         window->surface_valid = SDL_FALSE;
     }
-
-    if (_this->checked_texture_framebuffer) { /* never checked? No framebuffer to destroy. Don't risk calling the wrong implementation. */
-        if (_this->DestroyWindowFramebuffer) {
-            _this->DestroyWindowFramebuffer(_this, window);
-        }
+    if (_this->DestroyWindowFramebuffer) {
+        _this->DestroyWindowFramebuffer(_this, window);
     }
-
     if (_this->DestroyWindow && !(flags & SDL_WINDOW_FOREIGN)) {
         _this->DestroyWindow(_this, window);
     }
@@ -1804,6 +1841,17 @@ SDL_RecreateWindow(SDL_Window * window, Uint32 flags)
             need_gl_unload = SDL_TRUE;
         }
     } else if (window->flags & SDL_WINDOW_OPENGL) {
+        need_gl_unload = SDL_TRUE;
+        need_gl_load  = SDL_TRUE;
+    }
+
+    if ((window->flags & SDL_WINDOW_METAL) != (flags & SDL_WINDOW_METAL)) {
+        if (flags & SDL_WINDOW_METAL) {
+            need_gl_load = SDL_TRUE;
+        } else {
+            need_gl_unload = SDL_TRUE;
+        }
+    } else if (window->flags & SDL_WINDOW_METAL) {
         need_gl_unload = SDL_TRUE;
         need_gl_load  = SDL_TRUE;
     }
@@ -1820,15 +1868,18 @@ SDL_RecreateWindow(SDL_Window * window, Uint32 flags)
     }
 
     if ((flags & SDL_WINDOW_VULKAN) && (flags & SDL_WINDOW_OPENGL)) {
-        return SDL_SetError("Vulkan and OpenGL not supported on same window");
+        SDL_SetError("Vulkan and OpenGL not supported on same window");
+        return -1;
     }
 
     if ((flags & SDL_WINDOW_METAL) && (flags & SDL_WINDOW_OPENGL)) {
-        return SDL_SetError("Metal and OpenGL not supported on same window");
+        SDL_SetError("Metal and OpenGL not supported on same window");
+        return -1;
     }
 
     if ((flags & SDL_WINDOW_METAL) && (flags & SDL_WINDOW_VULKAN)) {
-        return SDL_SetError("Metal and Vulkan not supported on same window");
+        SDL_SetError("Metal and Vulkan not supported on same window");
+        return -1;
     }
 
     if (need_gl_unload) {
@@ -2222,14 +2273,12 @@ SDL_SetWindowSize(SDL_Window * window, int w, int h)
             SDL_UpdateFullscreenMode(window, SDL_TRUE);
         }
     } else {
-        int old_w = window->w;
-        int old_h = window->h;
         window->w = w;
         window->h = h;
         if (_this->SetWindowSize) {
             _this->SetWindowSize(_this, window);
         }
-        if (window->w != old_w || window->h != old_h) {
+        if (window->w == w && window->h == h) {
             /* We didn't get a SDL_WINDOWEVENT_RESIZED event (by design) */
             SDL_OnWindowResized(window);
         }
@@ -2490,63 +2539,18 @@ SDL_SetWindowFullscreen(SDL_Window * window, Uint32 flags)
 static SDL_Surface *
 SDL_CreateWindowFramebuffer(SDL_Window * window)
 {
-    Uint32 format = 0;
-    void *pixels = NULL;
-    int pitch = 0;
+    Uint32 format;
+    void *pixels;
+    int pitch;
     int bpp;
     Uint32 Rmask, Gmask, Bmask, Amask;
-    SDL_bool created_framebuffer = SDL_FALSE;
 
-    /* This will switch the video backend from using a software surface to
-       using a GPU texture through the 2D render API, if we think this would
-       be more efficient. This only checks once, on demand. */
-    if (!_this->checked_texture_framebuffer) {
-        SDL_bool attempt_texture_framebuffer = SDL_TRUE;
-
-        if (_this->is_dummy) {  /* dummy driver never has GPU support, of course. */
-            attempt_texture_framebuffer = SDL_FALSE;
-        }
-
-        #if defined(__WIN32__) /* GDI BitBlt() is way faster than Direct3D dynamic textures right now. (!!! FIXME: is this still true?) */
-        else if ((_this->CreateWindowFramebuffer != NULL) && (SDL_strcmp(_this->name, "windows") == 0)) {
-            attempt_texture_framebuffer = SDL_FALSE;
-        }
-        #endif
-        #if defined(__EMSCRIPTEN__)
-        else {
-            attempt_texture_framebuffer = SDL_FALSE;
-        }
-        #endif
-
-        if (attempt_texture_framebuffer) {
-            if (SDL_CreateWindowTexture(_this, window, &format, &pixels, &pitch) == -1) {
-                /* !!! FIXME: if this failed halfway (made renderer, failed to make texture, etc),
-                   !!! FIXME:  we probably need to clean this up so it doesn't interfere with
-                   !!! FIXME:  a software fallback at the system level (can we blit to an
-                   !!! FIXME:  OpenGL window? etc). */
-            } else {
-                /* future attempts will just try to use a texture framebuffer. */
-                /* !!! FIXME:  maybe we shouldn't override these but check if we used a texture
-                   !!! FIXME:  framebuffer at the right places; is it feasible we could have an
-                   !!! FIXME:  accelerated OpenGL window and a second ends up in software? */
-                _this->CreateWindowFramebuffer = SDL_CreateWindowTexture;
-                _this->UpdateWindowFramebuffer = SDL_UpdateWindowTexture;
-                _this->DestroyWindowFramebuffer = SDL_DestroyWindowTexture;
-                created_framebuffer = SDL_TRUE;
-            }
-        }
-
-        _this->checked_texture_framebuffer = SDL_TRUE;  /* don't check this again. */
+    if (!_this->CreateWindowFramebuffer || !_this->UpdateWindowFramebuffer) {
+        return NULL;
     }
 
-    if (!created_framebuffer) {
-        if (!_this->CreateWindowFramebuffer || !_this->UpdateWindowFramebuffer) {
-            return NULL;
-        }
-
-        if (_this->CreateWindowFramebuffer(_this, window, &format, &pixels, &pitch) < 0) {
-            return NULL;
-        }
+    if (_this->CreateWindowFramebuffer(_this, window, &format, &pixels, &pitch) < 0) {
+        return NULL;
     }
 
     if (window->surface) {
@@ -2603,8 +2607,6 @@ SDL_UpdateWindowSurfaceRects(SDL_Window * window, const SDL_Rect * rects,
     if (!window->surface_valid) {
         return SDL_SetError("Window surface is invalid, please call SDL_GetWindowSurface() to get a new surface");
     }
-
-    SDL_assert(_this->checked_texture_framebuffer); /* we should have done this before we had a valid surface. */
 
     return _this->UpdateWindowFramebuffer(_this, window, rects, numrects);
 }
@@ -3060,8 +3062,7 @@ ShouldMinimizeOnFocusLoss(SDL_Window * window)
     /* Real fullscreen windows should minimize on focus loss so the desktop video mode is restored */
     hint = SDL_GetHint(SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS);
     if (!hint || !*hint || SDL_strcasecmp(hint, "auto") == 0) {
-        if ((window->flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL_WINDOW_FULLSCREEN_DESKTOP ||
-            _this->disable_display_mode_switching == SDL_TRUE) {
+        if ((window->flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL_WINDOW_FULLSCREEN_DESKTOP) {
             return SDL_FALSE;
         } else {
             return SDL_TRUE;
@@ -3112,9 +3113,7 @@ SDL_DestroyWindow(SDL_Window * window)
     window->is_destroying = SDL_TRUE;
 
     /* Restore video mode, etc. */
-    if (!(window->flags & SDL_WINDOW_FOREIGN)) {
-        SDL_HideWindow(window);
-    }
+    SDL_HideWindow(window);
 
     /* Make sure this window no longer has focus */
     if (SDL_GetKeyboardFocus() == window) {
@@ -3137,10 +3136,8 @@ SDL_DestroyWindow(SDL_Window * window)
         window->surface = NULL;
         window->surface_valid = SDL_FALSE;
     }
-    if (_this->checked_texture_framebuffer) { /* never checked? No framebuffer to destroy. Don't risk calling the wrong implementation. */
-        if (_this->DestroyWindowFramebuffer) {
-            _this->DestroyWindowFramebuffer(_this, window);
-        }
+    if (_this->DestroyWindowFramebuffer) {
+        _this->DestroyWindowFramebuffer(_this, window);
     }
     if (_this->DestroyWindow) {
         _this->DestroyWindow(_this, window);
@@ -3925,10 +3922,6 @@ SDL_GL_MakeCurrent(SDL_Window * window, SDL_GLContext ctx)
 {
     int retval;
 
-    if (!_this) {
-        return SDL_UninitializedVideo();
-    }
-
     if (window == SDL_GL_GetCurrentWindow() &&
         ctx == SDL_GL_GetCurrentContext()) {
         /* We're already current. */
@@ -4184,24 +4177,6 @@ SDL_StartTextInput(void)
     if (_this && _this->StartTextInput) {
         _this->StartTextInput(_this);
     }
-}
-
-void
-SDL_ClearComposition(void)
-{
-    if (_this && _this->ClearComposition) {
-        _this->ClearComposition(_this);
-    }
-}
-
-SDL_bool
-SDL_IsTextInputShown(void)
-{
-    if (_this && _this->IsTextInputShown) {
-        return _this->IsTextInputShown(_this);
-    }
-
-    return SDL_FALSE;
 }
 
 SDL_bool

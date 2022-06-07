@@ -522,7 +522,7 @@ SourceDeviceNameCallback(pa_context *c, const pa_source_info *i, int is_last, vo
 }
 
 static SDL_bool
-FindDeviceName(struct SDL_PrivateAudioData *h, const SDL_bool iscapture, void *handle)
+FindDeviceName(struct SDL_PrivateAudioData *h, const int iscapture, void *handle)
 {
     const uint32_t idx = ((uint32_t) ((size_t) handle)) - 1;
 
@@ -544,17 +544,16 @@ FindDeviceName(struct SDL_PrivateAudioData *h, const SDL_bool iscapture, void *h
 }
 
 static int
-PULSEAUDIO_OpenDevice(_THIS, const char *devname)
+PULSEAUDIO_OpenDevice(_THIS, void *handle, const char *devname, int iscapture)
 {
     struct SDL_PrivateAudioData *h = NULL;
-    SDL_AudioFormat test_format;
+    Uint16 test_format = 0;
     pa_sample_spec paspec;
     pa_buffer_attr paattr;
     pa_channel_map pacmap;
     pa_stream_flags_t flags = 0;
     const char *name = NULL;
-    SDL_bool iscapture = this->iscapture;
-    int state = 0, format = PA_SAMPLE_INVALID;
+    int state = 0;
     int rc = 0;
 
     /* Initialize all variables that we clean on shutdown */
@@ -565,43 +564,48 @@ PULSEAUDIO_OpenDevice(_THIS, const char *devname)
     }
     SDL_zerop(this->hidden);
 
+    paspec.format = PA_SAMPLE_INVALID;
+
     /* Try for a closest match on audio format */
-    for (test_format = SDL_FirstAudioFormat(this->spec.format); test_format; test_format = SDL_NextAudioFormat()) {
+    for (test_format = SDL_FirstAudioFormat(this->spec.format);
+         (paspec.format == PA_SAMPLE_INVALID) && test_format;) {
 #ifdef DEBUG_AUDIO
         fprintf(stderr, "Trying format 0x%4.4x\n", test_format);
 #endif
         switch (test_format) {
         case AUDIO_U8:
-            format = PA_SAMPLE_U8;
+            paspec.format = PA_SAMPLE_U8;
             break;
         case AUDIO_S16LSB:
-            format = PA_SAMPLE_S16LE;
+            paspec.format = PA_SAMPLE_S16LE;
             break;
         case AUDIO_S16MSB:
-            format = PA_SAMPLE_S16BE;
+            paspec.format = PA_SAMPLE_S16BE;
             break;
         case AUDIO_S32LSB:
-            format = PA_SAMPLE_S32LE;
+            paspec.format = PA_SAMPLE_S32LE;
             break;
         case AUDIO_S32MSB:
-            format = PA_SAMPLE_S32BE;
+            paspec.format = PA_SAMPLE_S32BE;
             break;
         case AUDIO_F32LSB:
-            format = PA_SAMPLE_FLOAT32LE;
+            paspec.format = PA_SAMPLE_FLOAT32LE;
             break;
         case AUDIO_F32MSB:
-            format = PA_SAMPLE_FLOAT32BE;
+            paspec.format = PA_SAMPLE_FLOAT32BE;
             break;
         default:
-            continue;
+            paspec.format = PA_SAMPLE_INVALID;
+            break;
         }
-        break;
+        if (paspec.format == PA_SAMPLE_INVALID) {
+            test_format = SDL_NextAudioFormat();
+        }
     }
-    if (!test_format) {
-        return SDL_SetError("%s: Unsupported audio format", "pulseaudio");
+    if (paspec.format == PA_SAMPLE_INVALID) {
+        return SDL_SetError("Couldn't find any hardware audio formats");
     }
     this->spec.format = test_format;
-    paspec.format = format;
 
     /* Calculate the final parameters for this audio specification */
 #ifdef PA_STREAM_ADJUST_LATENCY
@@ -644,7 +648,7 @@ PULSEAUDIO_OpenDevice(_THIS, const char *devname)
         return SDL_SetError("Could not connect to PulseAudio server");
     }
 
-    if (!FindDeviceName(h, iscapture, this->handle)) {
+    if (!FindDeviceName(h, iscapture, handle)) {
         return SDL_SetError("Requested PulseAudio sink/source missing?");
     }
 
@@ -828,16 +832,16 @@ PULSEAUDIO_Deinitialize(void)
     UnloadPulseAudioLibrary();
 }
 
-static SDL_bool
+static int
 PULSEAUDIO_Init(SDL_AudioDriverImpl * impl)
 {
     if (LoadPulseAudioLibrary() < 0) {
-        return SDL_FALSE;
+        return 0;
     }
 
     if (ConnectToPulseServer(&hotplug_mainloop, &hotplug_context) < 0) {
         UnloadPulseAudioLibrary();
-        return SDL_FALSE;
+        return 0;
     }
 
     include_monitors = SDL_GetHintBoolean(SDL_HINT_AUDIO_INCLUDE_MONITORS, SDL_FALSE);
@@ -855,11 +859,11 @@ PULSEAUDIO_Init(SDL_AudioDriverImpl * impl)
 
     impl->HasCaptureSupport = SDL_TRUE;
 
-    return SDL_TRUE;   /* this audio target is available. */
+    return 1;   /* this audio target is available. */
 }
 
 AudioBootStrap PULSEAUDIO_bootstrap = {
-    "pulseaudio", "PulseAudio", PULSEAUDIO_Init, SDL_FALSE
+    "pulseaudio", "PulseAudio", PULSEAUDIO_Init, 0
 };
 
 #endif /* SDL_AUDIO_DRIVER_PULSEAUDIO */
