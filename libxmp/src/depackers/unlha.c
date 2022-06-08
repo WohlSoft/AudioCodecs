@@ -1759,6 +1759,8 @@ static int get_header(HIO_HANDLE *f, struct lha_data *data)
 		if (hio_error(f) != 0) {
 			return -1;
 		}
+		if (data->packed_size <= 0)
+			return -1;
 		if (hio_read(data->name, 1, namelen, f) != namelen) {
 			return -1;
 		}
@@ -1846,6 +1848,9 @@ static int decrunch_lha(HIO_HANDLE *in, FILE *out, long inlen)
 		printf("original size = %d\n", data.original_size);
 		printf("position = %lx\n", hio_tell(in));
 #endif
+
+		if (data.packed_size <= 0)
+			return -1;
 
 		if (libxmp_exclude_match(data.name)) {
 			if (hio_seek(in, data.packed_size, SEEK_CUR) < 0) {
