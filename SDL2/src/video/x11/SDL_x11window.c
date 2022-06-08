@@ -27,6 +27,7 @@
 #include "../SDL_pixels_c.h"
 #include "../../events/SDL_keyboard_c.h"
 #include "../../events/SDL_mouse_c.h"
+#include "../../events/SDL_events_c.h"
 
 #include "SDL_x11video.h"
 #include "SDL_x11mouse.h"
@@ -422,7 +423,7 @@ X11_CreateWindow(_THIS, SDL_Window * window)
 #if SDL_VIDEO_OPENGL_EGL
         if (((_this->gl_config.profile_mask == SDL_GL_CONTEXT_PROFILE_ES) ||
              SDL_GetHintBoolean(SDL_HINT_VIDEO_X11_FORCE_EGL, SDL_FALSE))
-#if SDL_VIDEO_OPENGL_GLX            
+#if SDL_VIDEO_OPENGL_GLX
             && ( !_this->gl_data || X11_GL_UseEGL(_this) )
 #endif
         ) {
@@ -635,14 +636,14 @@ X11_CreateWindow(_THIS, SDL_Window * window)
     windowdata = (SDL_WindowData *) window->driverdata;
 
 #if SDL_VIDEO_OPENGL_ES || SDL_VIDEO_OPENGL_ES2 || SDL_VIDEO_OPENGL_EGL
-    if ((window->flags & SDL_WINDOW_OPENGL) && 
+    if ((window->flags & SDL_WINDOW_OPENGL) &&
         ((_this->gl_config.profile_mask == SDL_GL_CONTEXT_PROFILE_ES) ||
          SDL_GetHintBoolean(SDL_HINT_VIDEO_X11_FORCE_EGL, SDL_FALSE))
-#if SDL_VIDEO_OPENGL_GLX            
+#if SDL_VIDEO_OPENGL_GLX
         && ( !_this->gl_data || X11_GL_UseEGL(_this) )
-#endif  
+#endif
     ) {
-#if SDL_VIDEO_OPENGL_EGL  
+#if SDL_VIDEO_OPENGL_EGL
         if (!_this->egl_data) {
             return -1;
         }
@@ -658,7 +659,7 @@ X11_CreateWindow(_THIS, SDL_Window * window)
 #endif /* SDL_VIDEO_OPENGL_EGL */
     }
 #endif
-    
+
 
 #ifdef X_HAVE_UTF8_STRING
     if (SDL_X11_HAVE_UTF8 && windowdata->ic) {
@@ -1027,7 +1028,7 @@ X11_SetWindowOpacity(_THIS, SDL_Window * window, float opacity)
     return 0;
 }
 
-int 
+int
 X11_SetWindowModalFor(_THIS, SDL_Window * modal_window, SDL_Window * parent_window) {
     SDL_WindowData *data = (SDL_WindowData *) modal_window->driverdata;
     SDL_WindowData *parent_data = (SDL_WindowData *) parent_window->driverdata;
@@ -1038,7 +1039,7 @@ X11_SetWindowModalFor(_THIS, SDL_Window * modal_window, SDL_Window * parent_wind
 }
 
 int
-X11_SetWindowInputFocus(_THIS, SDL_Window * window) 
+X11_SetWindowInputFocus(_THIS, SDL_Window * window)
 {
     if (X11_IsWindowMapped(_this, window)) {
         SDL_WindowData *data = (SDL_WindowData *) window->driverdata;
@@ -1392,12 +1393,24 @@ X11_SetWindowFullscreenViaWM(_THIS, SDL_Window * window, SDL_VideoDisplay * _dis
                                       attrs.x, attrs.y, &x, &y, &childReturn);
 
             if (!caught_x11_error) {
-                if ((x != orig_x) || (y != orig_y) || (attrs.width != orig_w) || (attrs.height != orig_h)) {
+                SDL_bool window_changed = SDL_FALSE;
                     window->x = x;
+                if ((x != orig_x) || (y != orig_y)) {
                     window->y = y;
+                    SDL_SendWindowEvent(data->window, SDL_WINDOWEVENT_MOVED, x, y);
                     window->w = attrs.width;
+                    window_changed = SDL_TRUE;
                     window->h = attrs.height;
+                }
                     break;  /* window moved, time to go. */
+
+                if ((attrs.width != orig_w) || (attrs.height != orig_h)) {
+                    SDL_SendWindowEvent(data->window, SDL_WINDOWEVENT_RESIZED, attrs.width, attrs.height);
+                    window_changed = SDL_TRUE;
+                }
+
+                if (window_changed) {
+                    break;  /* window changed, time to go. */
                 }
             }
 
@@ -1731,7 +1744,7 @@ X11_GetWindowICCProfile(_THIS, SDL_Window * window, size_t * size)
     SDL_memcpy(ret_icc_profile_data, icc_profile_data, real_nitems);
     *size = real_nitems;
     X11_XFree(icc_profile_data);
-    
+
     return ret_icc_profile_data;
 }
 
