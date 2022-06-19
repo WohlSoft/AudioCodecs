@@ -25,6 +25,7 @@
 
 #include "SDL_stdinc.h"
 #include "SDL_timer.h"
+#include "SDL_hints.h"
 
 #include "../../core/unix/SDL_poll.h"
 #include "../../events/SDL_sysevents.h"
@@ -294,6 +295,12 @@ Wayland_WaitEventTimeout(_THIS, int timeout)
         }
     }
 
+#ifdef HAVE_LIBDECOR_H
+    if (d->shell.libdecor) {
+        libdecor_dispatch(d->shell.libdecor, timeout);
+    }
+#endif
+
     /* wl_display_prepare_read() will return -1 if the default queue is not empty.
      * If the default queue is empty, it will prepare us for our SDL_IOReady() call. */
     if (WAYLAND_wl_display_prepare_read(d->display) == 0) {
@@ -472,23 +479,24 @@ ProcessHitTest(struct SDL_WaylandInput *input, uint32_t serial)
         };
 
 #ifdef HAVE_LIBDECOR_H
-        /* ditto for libdecor. */
-        const uint32_t *directions_libdecor = directions;
+        static const uint32_t directions_libdecor[] = {
+            LIBDECOR_RESIZE_EDGE_TOP_LEFT, LIBDECOR_RESIZE_EDGE_TOP,
+            LIBDECOR_RESIZE_EDGE_TOP_RIGHT, LIBDECOR_RESIZE_EDGE_RIGHT,
+            LIBDECOR_RESIZE_EDGE_BOTTOM_RIGHT, LIBDECOR_RESIZE_EDGE_BOTTOM,
+            LIBDECOR_RESIZE_EDGE_BOTTOM_LEFT, LIBDECOR_RESIZE_EDGE_LEFT
+        };
 #endif
-
-        /* Hit tests shouldn't apply to xdg_popups, right? */
-        SDL_assert(!WINDOW_IS_XDG_POPUP(window));
 
         switch (rc) {
             case SDL_HITTEST_DRAGGABLE:
 #ifdef HAVE_LIBDECOR_H
-                if (input->display->shell.libdecor) {
+                if (window_data->shell_surface_type == WAYLAND_SURFACE_LIBDECOR) {
                     if (window_data->shell_surface.libdecor.frame) {
                         libdecor_frame_move(window_data->shell_surface.libdecor.frame, input->seat, serial);
                     }
                 } else
 #endif
-                if (input->display->shell.xdg) {
+                if (window_data->shell_surface_type == WAYLAND_SURFACE_XDG_TOPLEVEL) {
                     if (window_data->shell_surface.xdg.roleobj.toplevel) {
                         xdg_toplevel_move(window_data->shell_surface.xdg.roleobj.toplevel,
                                           input->seat,
@@ -506,13 +514,13 @@ ProcessHitTest(struct SDL_WaylandInput *input, uint32_t serial)
             case SDL_HITTEST_RESIZE_BOTTOMLEFT:
             case SDL_HITTEST_RESIZE_LEFT:
 #ifdef HAVE_LIBDECOR_H
-                if (input->display->shell.libdecor) {
+                if (window_data->shell_surface_type == WAYLAND_SURFACE_LIBDECOR) {
                     if (window_data->shell_surface.libdecor.frame) {
                         libdecor_frame_resize(window_data->shell_surface.libdecor.frame, input->seat, serial, directions_libdecor[rc - SDL_HITTEST_RESIZE_TOPLEFT]);
                     }
                 } else
 #endif
-                if (input->display->shell.xdg) {
+                if (window_data->shell_surface_type == WAYLAND_SURFACE_XDG_TOPLEVEL) {
                     if (window_data->shell_surface.xdg.roleobj.toplevel) {
                         xdg_toplevel_resize(window_data->shell_surface.xdg.roleobj.toplevel,
                                             input->seat,
@@ -1551,18 +1559,33 @@ text_input_preedit_string(void *data,
     char buf[SDL_TEXTEDITINGEVENT_TEXT_SIZE];
     text_input->has_preedit = SDL_TRUE;
     if (text) {
-        size_t text_bytes = SDL_strlen(text), i = 0;
-        size_t cursor = 0;
-
-        do {
-            const size_t sz = SDL_utf8strlcpy(buf, text+i, sizeof(buf));
-            const size_t chars = SDL_utf8strlen(buf);
-
-            SDL_SendEditingText(buf, cursor, chars);
-
-            i += sz;
-            cursor += chars;
-        } while (i < text_bytes);
+        if (SDL_GetHintBoolean(SDL_HINT_IME_SUPPORT_EXTENDED_TEXT, SDL_FALSE)) {
+            size_t cursor_begin_utf8 = cursor_begin >= 0 ? SDL_utf8strnlen(text, cursor_begin) : -1;
+            size_t cursor_end_utf8 = cursor_end >= 0 ? SDL_utf8strnlen(text, cursor_end) : -1;
+            size_t cursor_size_utf8;
+            if (cursor_end_utf8 >= 0) {
+                if (cursor_begin_utf8 >= 0) {
+                    cursor_size_utf8 = cursor_end_utf8 - cursor_begin_utf8;
+                } else {
+                    cursor_size_utf8 = cursor_end_utf8;
+                }
+            } else {
+                cursor_size_utf8 = -1;
+            }
+            SDL_SendEditingText(text, cursor_begin_utf8, cursor_size_utf8);
+        } else {
+            size_t text_bytes = SDL_strlen(text), i = 0;
+            size_t cursor = 0;
+            do {
+                const size_t sz = SDL_utf8strlcpy(buf, text+i, sizeof(buf));
+                const size_t chars = SDL_utf8strlen(buf);
+    
+                SDL_SendEditingText(buf, cursor, chars);
+    
+                i += sz;
+                cursor += chars;
+            } while (i < text_bytes);
+        }
     } else {
         buf[0] = '\0';
         SDL_SendEditingText(buf, 0, 0);

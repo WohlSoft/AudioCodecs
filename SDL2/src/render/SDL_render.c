@@ -96,6 +96,9 @@ static const SDL_RenderDriver *render_drivers[] = {
 #if SDL_VIDEO_RENDER_D3D11
     &D3D11_RenderDriver,
 #endif
+#if SDL_VIDEO_RENDER_D3D12
+    &D3D12_RenderDriver,
+#endif
 #if SDL_VIDEO_RENDER_METAL
     &METAL_RenderDriver,
 #endif
@@ -350,7 +353,7 @@ static int
 QueueCmdSetViewport(SDL_Renderer *renderer)
 {
     int retval = 0;
-    if (!renderer->viewport_queued || (SDL_memcmp(&renderer->viewport, &renderer->last_queued_viewport, sizeof (SDL_Rect)) != 0)) {
+    if (!renderer->viewport_queued || (SDL_memcmp(&renderer->viewport, &renderer->last_queued_viewport, sizeof (SDL_DRect)) != 0)) {
         SDL_RenderCommand *cmd = AllocateRenderCommand(renderer);
         retval = -1;
         if (cmd != NULL) {
@@ -365,7 +368,7 @@ QueueCmdSetViewport(SDL_Renderer *renderer)
             if (retval < 0) {
                 cmd->command = SDL_RENDERCMD_NO_OP;
             } else {
-                SDL_memcpy(&renderer->last_queued_viewport, &renderer->viewport, sizeof (SDL_Rect));
+                SDL_memcpy(&renderer->last_queued_viewport, &renderer->viewport, sizeof (SDL_DRect));
                 renderer->viewport_queued = SDL_TRUE;
             }
         }
@@ -379,7 +382,7 @@ QueueCmdSetClipRect(SDL_Renderer *renderer)
     int retval = 0;
     if ((!renderer->cliprect_queued) ||
          (renderer->clipping_enabled != renderer->last_queued_cliprect_enabled) ||
-         (SDL_memcmp(&renderer->clip_rect, &renderer->last_queued_cliprect, sizeof (SDL_Rect)) != 0)) {
+         (SDL_memcmp(&renderer->clip_rect, &renderer->last_queued_cliprect, sizeof (SDL_DRect)) != 0)) {
         SDL_RenderCommand *cmd = AllocateRenderCommand(renderer);
         if (cmd == NULL) {
             retval = -1;
@@ -391,7 +394,7 @@ QueueCmdSetClipRect(SDL_Renderer *renderer)
             cmd->data.cliprect.rect.y = (int)SDL_floor(renderer->clip_rect.y);
             cmd->data.cliprect.rect.w = (int)SDL_floor(renderer->clip_rect.w);
             cmd->data.cliprect.rect.h = (int)SDL_floor(renderer->clip_rect.h);
-            SDL_memcpy(&renderer->last_queued_cliprect, &renderer->clip_rect, sizeof (SDL_Rect));
+            SDL_memcpy(&renderer->last_queued_cliprect, &renderer->clip_rect, sizeof (SDL_DRect));
             renderer->last_queued_cliprect_enabled = renderer->clipping_enabled;
             renderer->cliprect_queued = SDL_TRUE;
         }
@@ -2670,11 +2673,16 @@ static int
 RenderDrawPointsWithRects(SDL_Renderer * renderer,
                           const SDL_Point * points, const int count)
 {
-    int retval = -1;
+    int retval;
     SDL_bool isstack;
-    SDL_FRect *frects = SDL_small_alloc(SDL_FRect, count, &isstack);
+    SDL_FRect *frects;
     int i;
 
+    if (count < 1) {
+        return 0;
+    }
+
+    frects = SDL_small_alloc(SDL_FRect, count, &isstack);
     if (!frects) {
         return SDL_OutOfMemory();
     }
@@ -2686,9 +2694,7 @@ RenderDrawPointsWithRects(SDL_Renderer * renderer,
         frects[i].h = renderer->scale.y;
     }
 
-    if (count) {
-        retval = QueueCmdFillRects(renderer, frects, count);
-    }
+    retval = QueueCmdFillRects(renderer, frects, count);
 
     SDL_small_free(frects, isstack);
 
@@ -2743,11 +2749,16 @@ static int
 RenderDrawPointsWithRectsF(SDL_Renderer * renderer,
                            const SDL_FPoint * fpoints, const int count)
 {
-    int retval = -1;
+    int retval;
     SDL_bool isstack;
-    SDL_FRect *frects = SDL_small_alloc(SDL_FRect, count, &isstack);
+    SDL_FRect *frects;
     int i;
 
+    if (count < 1) {
+        return 0;
+    }
+
+    frects = SDL_small_alloc(SDL_FRect, count, &isstack);
     if (!frects) {
         return SDL_OutOfMemory();
     }
@@ -2759,9 +2770,7 @@ RenderDrawPointsWithRectsF(SDL_Renderer * renderer,
         frects[i].h = renderer->scale.y;
     }
 
-    if (count) {
-        retval = QueueCmdFillRects(renderer, frects, count);
-    }
+    retval = QueueCmdFillRects(renderer, frects, count);
 
     SDL_small_free(frects, isstack);
 
@@ -3998,7 +4007,23 @@ SDL_SW_RenderGeometryRaw(SDL_Renderer *renderer,
             if (texture && s.w != 0 && s.h != 0) {
                 SDL_SetTextureAlphaMod(texture, col0_.a);
                 SDL_SetTextureColorMod(texture, col0_.r, col0_.g, col0_.b);
-                SDL_RenderCopyF(renderer, texture, &s, &d);
+                if (s.w > 0 && s.h > 0) {
+                    SDL_RenderCopyF(renderer, texture, &s, &d);
+                } else {
+                    int flags = 0;
+                    if (s.w < 0) {
+                        flags |= SDL_FLIP_HORIZONTAL;
+                        s.w *= -1;
+                        s.x -= s.w;
+                    }
+                    if (s.h < 0) {
+                        flags |= SDL_FLIP_VERTICAL;
+                        s.h *= -1;
+                        s.y -= s.h;
+                    }
+                    SDL_RenderCopyExF(renderer, texture, &s, &d, 0, NULL, flags);
+                }
+
 #if DEBUG_SW_RENDER_GEOMETRY
                 SDL_Log("Rect-COPY: RGB %d %d %d - Alpha:%d - texture=%p: src=(%d,%d, %d x %d) dst (%f, %f, %f x %f)", col0_.r, col0_.g, col0_.b, col0_.a,
                         (void *)texture, s.x, s.y, s.w, s.h, d.x, d.y, d.w, d.h);
@@ -4008,8 +4033,8 @@ SDL_SW_RenderGeometryRaw(SDL_Renderer *renderer,
                 SDL_SetRenderDrawColor(renderer, col0_.r, col0_.g, col0_.b, col0_.a);
                 SDL_RenderFillRectF(renderer, &d);
 #if DEBUG_SW_RENDER_GEOMETRY
-                SDL_Log("Rect-FILL: RGB %d %d %d - Alpha:%d - texture=%p: src=(%d,%d, %d x %d) dst (%f, %f, %f x %f)", col0_.r, col0_.g, col0_.b, col0_.a,
-                        (void *)texture, s.x, s.y, s.w, s.h, d.x, d.y, d.w, d.h);
+                SDL_Log("Rect-FILL: RGB %d %d %d - Alpha:%d - texture=%p: dst (%f, %f, %f x %f)", col0_.r, col0_.g, col0_.b, col0_.a,
+                        (void *)texture, d.x, d.y, d.w, d.h);
             } else {
                 SDL_Log("Rect-DISMISS: RGB %d %d %d - Alpha:%d - texture=%p: src=(%d,%d, %d x %d) dst (%f, %f, %f x %f)", col0_.r, col0_.g, col0_.b, col0_.a,
                         (void *)texture, s.x, s.y, s.w, s.h, d.x, d.y, d.w, d.h);

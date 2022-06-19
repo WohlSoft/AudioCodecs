@@ -59,6 +59,7 @@ typedef enum
 {
     k_EPS5FeatureReportIdCalibration = 0x05,
     k_EPS5FeatureReportIdSerialNumber = 0x09,
+    k_EPS5FeatureReportIdFirmwareInfo = 0x20,
 } EPS5FeatureReportId;
 
 typedef struct
@@ -184,7 +185,7 @@ HIDAPI_DriverPS5_IsSupportedDevice(const char *name, SDL_GameControllerType type
 }
 
 static const char *
-HIDAPI_DriverPS5_GetDeviceName(Uint16 vendor_id, Uint16 product_id)
+HIDAPI_DriverPS5_GetDeviceName(const char *name, Uint16 vendor_id, Uint16 product_id)
 {
     if (vendor_id == USB_VENDOR_SONY) {
         return "PS5 Controller";
@@ -600,6 +601,13 @@ HIDAPI_DriverPS5_OpenJoystick(SDL_HIDAPI_Device *device, SDL_Joystick *joystick)
             SDL_snprintf(serial, sizeof(serial), "%.2x-%.2x-%.2x-%.2x-%.2x-%.2x",
                 data[6], data[5], data[4], data[3], data[2], data[1]);
             joystick->serial = SDL_strdup(serial);
+        }
+
+        /* Read the firmware version
+           This will also enable enhanced reports over Bluetooth
+        */
+        if (ReadFeatureReport(device->dev, k_EPS5FeatureReportIdFirmwareInfo, data, USB_PACKET_LENGTH) >= 46) {
+            joystick->firmware_version = (Uint16)data[44] | ((Uint16)data[45] << 8);
         }
     }
 

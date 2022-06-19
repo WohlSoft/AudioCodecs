@@ -63,6 +63,7 @@ Emscripten_CreateDefaultCursor()
     return Emscripten_CreateCursorFromString("default", SDL_FALSE);
 }
 
+
 static SDL_Cursor*
 Emscripten_CreateCursor(SDL_Surface* surface, int hot_x, int hot_y)
 {
@@ -280,3 +281,4 @@ Emscripten_FiniMouse()
 #endif /* SDL_VIDEO_DRIVER_EMSCRIPTEN */
 
 /* vi: set ts=4 sw=4 expandtab: */
+
