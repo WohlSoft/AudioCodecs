@@ -49,6 +49,13 @@ if(APPLE)
     )
 endif()
 
+set(EMSCRIPTEN_FLAGS)
+if(EMSCRIPTEN)
+    set(EMSCRIPTEN_FLAGS
+        "-DEXTRA_CFLAGS=-s USE_SDL=0"
+    )
+endif()
+
 set(ANDROID_FLAGS)
 if(ANDROID)
     set(ANDROID_FLAGS
@@ -133,6 +140,7 @@ elseif(USE_LOCAL_SDL2)
             ${SDL2_WASAPI_FLAG}
             ${APPLE_FLAGS}
             ${ANDROID_FLAGS}
+            ${EMSCRIPTEN_FLAGS}
     )
 
 else()
@@ -158,6 +166,7 @@ else()
             ${SDL2_WASAPI_FLAG}
             ${APPLE_FLAGS}
             ${ANDROID_FLAGS}
+            ${EMSCRIPTEN_FLAGS}
     )
 
 endif()
