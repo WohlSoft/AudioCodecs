@@ -8,6 +8,8 @@
 #ifndef LIBXMP_NO_DEPACKERS
 #define LIBXMP_NO_DEPACKERS
 #endif
+#else
+#undef LIBXMP_CORE_DISABLE_IT
 #endif
 
 #include <stdarg.h>
@@ -75,6 +77,8 @@
 #  include <SupportDefs.h>
 #elif defined __amigaos4__
 #  include <exec/types.h>
+#elif defined _arch_dreamcast /* KallistiOS */
+#  include <arch/types.h>
 #else
 typedef signed char int8;
 typedef signed short int int16;
@@ -207,12 +211,32 @@ static void __inline D_(const char *text, ...) {
 #undef USE_LIBXMP_SNPRINTF
 #endif
 #ifdef USE_LIBXMP_SNPRINTF
-int libxmp_vsnprintf(char *, size_t, const char *, va_list);
-int libxmp_snprintf (char *, size_t, const char *, ...);
+#if defined(__GNUC__) || defined(__clang__)
+#define LIBXMP_ATTRIB_PRINTF(x,y) __attribute__((__format__(__printf__,x,y)))
+#else
+#define LIBXMP_ATTRIB_PRINTF(x,y)
+#endif
+int libxmp_vsnprintf(char *, size_t, const char *, va_list) LIBXMP_ATTRIB_PRINTF(3,0);
+int libxmp_snprintf (char *, size_t, const char *, ...) LIBXMP_ATTRIB_PRINTF(3,4);
 #define snprintf  libxmp_snprintf
 #define vsnprintf libxmp_vsnprintf
 #endif
 #endif
+
+/* Output file size limit for files unpacked from unarchivers into RAM. Most
+ * general archive compression formats can't nicely bound the output size
+ * from their input filesize, and a cap is needed for a few reasons:
+ *
+ * - Linux is too dumb for its own good and its malloc/realloc will return
+ *   pointers to RAM that doesn't exist instead of NULL. When these are used,
+ *   it will kill the application instead of allowing it to fail gracefully.
+ * - libFuzzer and the clang sanitizers have malloc/realloc interceptors that
+ *   terminate with an error instead of returning NULL.
+ *
+ * Depackers that have better ways of bounding the output size can ignore this.
+ * This value is fairly arbitrary and can be changed if needed.
+ */
+#define LIBXMP_DEPACK_LIMIT (512 << 20)
 
 /* Quirks */
 #define QUIRK_S3MLOOP	(1 << 0)	/* S3M loop mode */

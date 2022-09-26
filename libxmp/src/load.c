@@ -25,10 +25,10 @@
 #include "format.h"
 #include "list.h"
 #include "hio.h"
-#include "tempfile.h"
 #include "loaders/loader.h"
 
 #ifndef LIBXMP_NO_DEPACKERS
+#include "tempfile.h"
 #include "depackers/depacker.h"
 #endif
 
@@ -44,9 +44,7 @@ int  libxmp_prepare_scan(struct context_data *);
 
 #ifndef LIBXMP_CORE_PLAYER
 #define BUFLEN 16384
-#endif
 
-#ifndef LIBXMP_CORE_PLAYER
 static void set_md5sum(HIO_HANDLE *f, unsigned char *digest)
 {
 	unsigned char buf[BUFLEN];
@@ -156,7 +154,7 @@ int xmp_test_module(const char *path, struct xmp_test_info *info)
 		return -XMP_ERROR_SYSTEM;
 
 #ifndef LIBXMP_NO_DEPACKERS
-	if (libxmp_decrunch(&h, path, &temp) < 0) {
+	if (libxmp_decrunch(h, path, &temp) < 0) {
 		ret = -XMP_ERROR_DEPACK;
 		goto err;
 	}
@@ -204,7 +202,7 @@ int xmp_test_module_from_file(void *file, struct xmp_test_info *info)
 		return -XMP_ERROR_SYSTEM;
 
 #ifndef LIBXMP_NO_DEPACKERS
-	if (libxmp_decrunch(&h, NULL, &temp) < 0) {
+	if (libxmp_decrunch(h, NULL, &temp) < 0) {
 		ret = -XMP_ERROR_DEPACK;
 		goto err;
 	}
@@ -368,7 +366,7 @@ int xmp_load_module(xmp_context opaque, const char *path)
 
 #ifndef LIBXMP_NO_DEPACKERS
 	D_(D_INFO "decrunch");
-	if (libxmp_decrunch(&h, path, &temp_name) < 0) {
+	if (libxmp_decrunch(h, path, &temp_name) < 0) {
 		ret = -XMP_ERROR_DEPACK;
 		goto err;
 	}

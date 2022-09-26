@@ -74,6 +74,9 @@ static int scan_module(struct context_data *ctx, int ep, int chain)
     int st26_speed;
     int far_tempo_coarse, far_tempo_fine, far_tempo_mode;
 #endif
+    /* was 255, but Global trash goes to 318.
+     * Higher limit for MEDs, defiance.crybaby.5 has blocks with 2048+ rows. */
+    const int row_limit = IS_PLAYER_MODE_MED() ? 3200 : 512;
 
     if (mod->len == 0)
 	return 0;
@@ -237,7 +240,7 @@ static int scan_module(struct context_data *ctx, int ep, int chain)
 	     * (...) it dies at the end of position 2F
 	     */
 
-	    if (row_count_total > 512) { /* was 255, but Global trash goes to 318. */
+	    if (row_count_total > row_limit) {
 		D_(D_CRIT "row_count_total = %d @ ord %d, pat %d, row %d; ending scan", row_count_total, ord, pat, row);
 		goto end_module;
 	    }
@@ -313,23 +316,23 @@ static int scan_module(struct context_data *ctx, int ep, int chain)
 		    }
 		}
 
-		if ((f1 == FX_SPEED && p1) || (f2 == FX_SPEED && p2)) {
-		    parm = (f1 == FX_SPEED) ? p1 : p2;
+		/* Some formats can have two FX_SPEED effects, and both need
+		 * to be checked. Slot 2 is currently handled first. */
+		for (i = 0; i < 2; i++) {
+		    parm = i ? p1 : p2;
+		    if ((i ? f1 : f2) != FX_SPEED || parm == 0)
+			continue;
 		    frame_count += row_count * speed;
 		    row_count = 0;
-		    if (parm) {
-			if (HAS_QUIRK(QUIRK_NOBPM) || p->flags & XMP_FLAGS_VBLANK || parm < 0x20) {
-			    if (parm > 0) {
-			        speed = parm;
+		    if (HAS_QUIRK(QUIRK_NOBPM) || p->flags & XMP_FLAGS_VBLANK || parm < 0x20) {
+			speed = parm;
 #ifndef LIBXMP_CORE_PLAYER
-			        st26_speed = 0;
+			st26_speed = 0;
 #endif
-                            }
-			} else {
-			    time += m->time_factor * frame_count * base_time / bpm;
-			    frame_count = 0;
-			    bpm = parm;
-			}
+		    } else {
+			time += m->time_factor * frame_count * base_time / bpm;
+			frame_count = 0;
+			bpm = parm;
 		    }
 		}
 

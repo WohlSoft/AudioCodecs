@@ -68,7 +68,6 @@ static struct depacker *depacker_list[] = {
 	&libxmp_depacker_arc,
 	&libxmp_depacker_arcfs,
 	&libxmp_depacker_mmcmp,
-	&libxmp_depacker_muse,
 	&libxmp_depacker_lzx,
 	&libxmp_depacker_s404,
 	NULL
@@ -200,13 +199,12 @@ static int execute_command(const char * const cmd[], FILE *t)
 }
 #endif /* USE_FORK */
 
-static int decrunch_command(HIO_HANDLE **h, const char * const cmd[], char **temp)
+static int decrunch_command(HIO_HANDLE *h, const char * const cmd[], char **temp)
 {
 #if defined __ANDROID__ || defined __native_client__
 	/* Don't use external helpers in android */
 	return 0;
 #else
-	HIO_HANDLE *tmp;
 	FILE *t;
 
 	D_(D_WARN "Depacking file... ");
@@ -229,11 +227,9 @@ static int decrunch_command(HIO_HANDLE **h, const char * const cmd[], char **tem
 		goto err2;
 	}
 
-	if ((tmp = hio_open_file2(t)) == NULL)
-		return -1;  /* call closes on failure. */
-
-	hio_close(*h);
-	*h = tmp;
+	if (hio_reopen_file(t, 1, h) < 0) {
+		goto err2;
+	}
 	return 0;
 
     err2:
@@ -243,9 +239,8 @@ static int decrunch_command(HIO_HANDLE **h, const char * const cmd[], char **tem
 #endif
 }
 
-static int decrunch_internal_tempfile(HIO_HANDLE **h, struct depacker *depacker, char **temp)
+static int decrunch_internal_tempfile(HIO_HANDLE *h, struct depacker *depacker, char **temp)
 {
-	HIO_HANDLE *tmp;
 	FILE *t;
 
 	D_(D_WARN "Depacking file... ");
@@ -256,7 +251,7 @@ static int decrunch_internal_tempfile(HIO_HANDLE **h, struct depacker *depacker,
 
 	/* Depack file */
 	D_(D_INFO "Internal depacker");
-	if (depacker->depack(*h, t, hio_size(*h)) < 0) {
+	if (depacker->depack(h, t, hio_size(h)) < 0) {
 		D_(D_CRIT "failed");
 		goto err2;
 	}
@@ -268,11 +263,9 @@ static int decrunch_internal_tempfile(HIO_HANDLE **h, struct depacker *depacker,
 		goto err2;
 	}
 
-	if ((tmp = hio_open_file2(t)) == NULL)
-		return -1; /* call closes on failure. */
-
-	hio_close(*h);
-	*h = tmp;
+	if (hio_reopen_file(t, 1, h) < 0) {
+		goto err2;
+	}
 	return 0;
 
     err2:
@@ -281,9 +274,8 @@ static int decrunch_internal_tempfile(HIO_HANDLE **h, struct depacker *depacker,
 	return -1;
 }
 
-static int decrunch_internal_memory(HIO_HANDLE **h, struct depacker *depacker)
+static int decrunch_internal_memory(HIO_HANDLE *h, struct depacker *depacker)
 {
-	HIO_HANDLE *tmp;
 	void *out;
 	long outlen;
 
@@ -291,24 +283,21 @@ static int decrunch_internal_memory(HIO_HANDLE **h, struct depacker *depacker)
 
 	/* Depack file */
 	D_(D_INFO "Internal depacker");
-	if (depacker->depack_mem(*h, &out, hio_size(*h), &outlen) < 0) {
+	if (depacker->depack_mem(h, &out, hio_size(h), &outlen) < 0) {
 		D_(D_CRIT "failed");
 		return -1;
 	}
 
 	D_(D_INFO "done");
 
-	if ((tmp = hio_open_mem(out, outlen, 1)) == NULL) {
+	if (hio_reopen_mem(out, outlen, 1, h) < 0) {
 		free(out);
 		return -1;
 	}
-
-	hio_close(*h);
-	*h = tmp;
 	return 0;
 }
 
-int libxmp_decrunch(HIO_HANDLE **h, const char *filename, char **temp)
+int libxmp_decrunch(HIO_HANDLE *h, const char *filename, char **temp)
 {
 	unsigned char b[1024];
 	const char *cmd[32];
@@ -319,7 +308,7 @@ int libxmp_decrunch(HIO_HANDLE **h, const char *filename, char **temp)
 	cmd[0] = NULL;
 	*temp = NULL;
 
-	headersize = hio_read(b, 1, 1024, *h);
+	headersize = hio_read(b, 1, 1024, h);
 	if (headersize < 100) {	/* minimum valid file size */
 		return 0;
 	}
@@ -362,7 +351,7 @@ int libxmp_decrunch(HIO_HANDLE **h, const char *filename, char **temp)
 		}
 	}
 
-	if (hio_seek(*h, 0, SEEK_SET) < 0) {
+	if (hio_seek(h, 0, SEEK_SET) < 0) {
 		return -1;
 	}
 
