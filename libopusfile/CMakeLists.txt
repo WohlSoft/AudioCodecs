@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.2)
-project(libOpusFile VERSION 0.12 LANGUAGES C)
+project(libOpusFile VERSION 0.12.39 LANGUAGES C)
 
 include(CheckSymbolExists)
 include(CheckFunctionExists)
