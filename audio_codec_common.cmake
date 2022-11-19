@@ -35,6 +35,20 @@ macro(ac_disable_cxx_warning_flag WARNINGFLAG WARNING_VAR)
     endif()
 endmacro()
 
+# Add compiler argument(s)
+macro(ac_add_c_compiler_flag COMPILERFLAG COMPILERFLAG_VAR)
+    check_c_compiler_flag("${COMPILERFLAG}" HAVE_C_${COMPILERFLAG_VAR})
+    if(HAVE_C_${COMPILERFLAG_VAR})
+       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${COMPILERFLAG}")
+    endif()
+endmacro()
+
+macro(ac_add_cxx_compiler_flag COMPILERFLAG COMPILERFLAG_VAR)
+    check_cxx_compiler_flag("${COMPILERFLAG}" HAVE_CXX_${COMPILERFLAG_VAR})
+    if(HAVE_CXX_${COMPILERFLAG_VAR})
+       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COMPILERFLAG}")
+    endif()
+endmacro()
 
 # Strip garbage
 if(APPLE)

@@ -358,6 +358,9 @@ if(OPUS_ARM_ARCHITECTURE)
     endif()
 
     if(NOT DISABLE_RTCD)
+        ac_add_c_compiler_flag(-mfpu=neon MFPU_NEON)
+        ac_add_c_compiler_flag(-mfloat-abi=softfp FLOATABI_SOFTFP)
+
         try_compile(HAVE_ARM_INLINE_NEON
             ${CMAKE_BINARY_DIR}/compile_tests
             ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/arm/neon_inline.c
@@ -412,8 +415,8 @@ if(OPUS_ARM_ARCHITECTURE)
             message("-- Has NEON EDSP: NO")
         endif()
 
-    #m4_define([DEFAULT_ARM_NEON_INTR_CFLAGS], [-mfpu=neon])
-    #m4_define([DEFAULT_ARM_NEON_SOFTFP_INTR_CFLAGS], [-mfpu=neon -mfloat-abi=softfp])
+        #m4_define([DEFAULT_ARM_NEON_INTR_CFLAGS], [-mfpu=neon])
+        #m4_define([DEFAULT_ARM_NEON_SOFTFP_INTR_CFLAGS], [-mfpu=neon -mfloat-abi=softfp])
         try_compile(HAVE_ARM_NE10
             ${CMAKE_BINARY_DIR}/compile_tests
             ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/arm/has_ne10.c
