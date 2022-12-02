@@ -126,6 +126,7 @@ SDL_GetPixelFormatName(Uint32 format)
     CASE(SDL_PIXELFORMAT_YVYU)
     CASE(SDL_PIXELFORMAT_NV12)
     CASE(SDL_PIXELFORMAT_NV21)
+    CASE(SDL_PIXELFORMAT_EXTERNAL_OES)
 #undef CASE
     default:
         return "SDL_PIXELFORMAT_UNKNOWN";
@@ -435,6 +436,7 @@ SDL_MasksToPixelFormatEnum(int bpp, Uint32 Rmask, Uint32 Gmask, Uint32 Bmask,
             return SDL_PIXELFORMAT_RGB24;
 #endif
         }
+        break;
     case 32:
         if (Rmask == 0) {
             return SDL_PIXELFORMAT_RGB888;

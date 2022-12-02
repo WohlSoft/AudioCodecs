@@ -79,7 +79,7 @@ _m_prefetch(void *__P)
 #if !defined(SDL_DISABLE_ARM_NEON_H)
 #  if defined(__ARM_NEON)
 #    include <arm_neon.h>
-#  elif defined(__WINDOWS__) || defined(__WINRT__)
+#  elif defined(__WINDOWS__) || defined(__WINRT__) || defined(__GDK__)
 /* Visual Studio doesn't define __ARM_ARCH, but _M_ARM (if set, always 7), and _M_ARM64 (if set, always 1). */
 #    if defined(_M_ARM)
 #      include <armintr.h>
@@ -90,6 +90,7 @@ _m_prefetch(void *__P)
 #      include <arm64intr.h>
 #      include <arm64_neon.h>
 #      define __ARM_NEON 1 /* Set __ARM_NEON so that it can be used elsewhere, at compile time */
+#      define __ARM_ARCH 8
 #    endif
 #  endif
 #endif
@@ -470,7 +471,7 @@ extern DECLSPEC SDL_bool SDLCALL SDL_HasLASX(void);
 /**
  * Get the amount of RAM configured in the system.
  *
- * \returns the amount of RAM configured in the system in MB.
+ * \returns the amount of RAM configured in the system in MiB.
  *
  * \since This function is available since SDL 2.0.1.
  */

@@ -105,6 +105,7 @@ Fcitx_GetPreeditString(SDL_DBusContext *dbus,
         dbus->message_iter_recurse(&iter, &array);
         while (dbus->message_iter_get_arg_type(&array) == DBUS_TYPE_STRUCT) {
             dbus->message_iter_recurse(&array, &sub);
+            subtext = NULL;
             if (dbus->message_iter_get_arg_type(&sub) == DBUS_TYPE_STRING) {
                 dbus->message_iter_get_basic(&sub, &subtext);
                 if (subtext && *subtext) {
@@ -423,7 +424,7 @@ SDL_Fcitx_ProcessKeyEvent(Uint32 keysym, Uint32 keycode, Uint8 state)
 }
 
 void
-SDL_Fcitx_UpdateTextRect(SDL_Rect *rect)
+SDL_Fcitx_UpdateTextRect(const SDL_Rect *rect)
 {
     SDL_Window *focused_win = NULL;
     SDL_SysWMinfo info;
@@ -431,7 +432,7 @@ SDL_Fcitx_UpdateTextRect(SDL_Rect *rect)
     SDL_Rect *cursor = &fcitx_client.cursor_rect;
 
     if (rect) {
-        SDL_memcpy(cursor, rect, sizeof(SDL_Rect));
+        SDL_copyp(cursor, rect);
     }
 
     focused_win = SDL_GetKeyboardFocus();

@@ -24,7 +24,7 @@
 #include "../SDL_internal.h"
 #endif
 
-#if defined(__WIN32__) || defined(__WINRT__)
+#if defined(__WIN32__) || defined(__WINRT__) || defined(__GDK__)
 #include "../core/windows/SDL_windows.h"
 #endif
 #if defined(__OS2__)
@@ -51,7 +51,7 @@
 #if defined(__MACOSX__) && (defined(__ppc__) || defined(__ppc64__))
 #include <sys/sysctl.h>         /* For AltiVec check */
 #elif defined(__OpenBSD__) && defined(__powerpc__)
-#include <sys/param.h>
+#include <sys/types.h>
 #include <sys/sysctl.h> /* For AltiVec check */
 #include <machine/cpu.h>
 #elif defined(__FreeBSD__) && defined(__powerpc__)
@@ -456,7 +456,7 @@ CPU_haveNEON(void)
    query the OS kernel in a platform-specific way. :/ */
 #if defined(SDL_CPUINFO_DISABLED)
    return 0; /* disabled */
-#elif (defined(__WINDOWS__) || defined(__WINRT__)) && (defined(_M_ARM) || defined(_M_ARM64))
+#elif (defined(__WINDOWS__) || defined(__WINRT__) || defined(__GDK__)) && (defined(_M_ARM) || defined(_M_ARM64))
 /* Visual Studio, for ARM, doesn't define __ARM_ARCH. Handle this first. */
 /* Seems to have been removed */
 #  if !defined(PF_ARM_NEON_INSTRUCTIONS_AVAILABLE)
@@ -468,6 +468,8 @@ CPU_haveNEON(void)
     return 1;  /* ARMv8 always has non-optional NEON support. */
 #elif __VITA__
     return 1;
+#elif __3DS__
+    return 0;
 #elif defined(__APPLE__) && defined(__ARM_ARCH) && (__ARM_ARCH >= 7)
     /* (note that sysctlbyname("hw.optional.neon") doesn't work!) */
     return 1;  /* all Apple ARMv7 chips and later have NEON. */
@@ -671,7 +673,7 @@ SDL_GetCPUCount(void)
             sysctlbyname("hw.ncpu", &SDL_CPUCount, &size, NULL, 0);
         }
 #endif
-#ifdef __WIN32__
+#if defined(__WIN32__) || defined(__GDK__)
         if (SDL_CPUCount <= 0) {
             SYSTEM_INFO info;
             GetSystemInfo(&info);
@@ -912,11 +914,11 @@ SDL_GetCPUFeatures(void)
             SDL_CPUFeatures |= CPU_HAS_NEON;
             SDL_SIMDAlignment = SDL_max(SDL_SIMDAlignment, 16);
         }
-	if (CPU_haveLSX()) {
+        if (CPU_haveLSX()) {
             SDL_CPUFeatures |= CPU_HAS_LSX;
             SDL_SIMDAlignment = SDL_max(SDL_SIMDAlignment, 16);
         }
-	if (CPU_haveLASX()) {
+        if (CPU_haveLASX()) {
             SDL_CPUFeatures |= CPU_HAS_LASX;
             SDL_SIMDAlignment = SDL_max(SDL_SIMDAlignment, 32);
         }
@@ -1053,7 +1055,7 @@ SDL_GetSystemRAM(void)
             }
         }
 #endif
-#ifdef __WIN32__
+#if defined(__WIN32__) || defined(__GDK__)
         if (SDL_SystemRAM <= 0) {
             MEMORYSTATUSEX stat;
             stat.dwLength = sizeof(stat);
@@ -1150,8 +1152,6 @@ SDL_SIMDRealloc(void *mem, const size_t len)
     }
 
     if (mem) {
-        void **realptr = (void **) mem;
-        realptr--;
         mem = *(((void **) mem) - 1);
 
         /* Check the delta between the real pointer and user pointer */
@@ -1191,8 +1191,6 @@ void
 SDL_SIMDFree(void *ptr)
 {
     if (ptr) {
-        void **realptr = (void **) ptr;
-        realptr--;
         SDL_free(*(((void **) ptr) - 1));
     }
 }

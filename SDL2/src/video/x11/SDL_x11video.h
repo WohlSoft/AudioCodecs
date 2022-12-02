@@ -134,6 +134,8 @@ typedef struct SDL_VideoData
     SDL_Point global_mouse_position;
     Uint32 global_mouse_buttons;
 
+    SDL_XInput2DeviceInfo *mouse_device_info;
+
     int xrandr_event_base;
 
 #if SDL_VIDEO_DRIVER_X11_HAS_XKBKEYCODETOKEYSYM
@@ -149,6 +151,10 @@ typedef struct SDL_VideoData
     void *vulkan_xlib_xcb_library;
     PFN_XGetXCBConnection vulkan_XGetXCBConnection;
 #endif
+
+    /* Used to interact with the on-screen keyboard */
+    SDL_bool is_steam_deck;
+    SDL_bool steam_keyboard_open;
 
 } SDL_VideoData;
 
