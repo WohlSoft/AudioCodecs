@@ -40,10 +40,17 @@ option(GME_USE_SYSTEM_ZLIB "Use Zlib from the system" OFF)
 
 add_definitions(
     -DSPC_ISOLATED_ECHO_BUFFER
-    -DSPC_MORE_ACCURACY
     -D_REENTRANT
     -D_USE_MATH_DEFINES
 )
+
+if(NOT NINTENDO_3DS)
+    add_definitions(-DSPC_MORE_ACCURACY)
+else()
+    add_definitions(
+        -DSPC_LESS_ACCURATE
+    )
+endif()
 
 if(GME_ENABLE_ZLIB)
     add_definitions(
