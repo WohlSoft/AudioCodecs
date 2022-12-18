@@ -18,6 +18,9 @@ endif()
 set(EXTRA_LIBS)
 set(EXTRA_LDFLAGS)
 
+set(CMAKE_DEPENDS)
+set(PKGCONFIG_DEPENDS)
+
 # This is a virtual "library" that just exists to collect up compiler and
 #  linker options that used to be global to this CMake project. When you
 #  specify it as part of a real library's target_link_libraries(), that
@@ -27,7 +30,6 @@ set(EXTRA_LDFLAGS)
 add_library(sdl-build-options INTERFACE)
 
 if(WINDOWS_STORE)
-  cmake_minimum_required(VERSION 3.11.0)
   target_compile_definitions(sdl-build-options INTERFACE "-DSDL_BUILDING_WINRT=1")
   target_compile_options(sdl-build-options INTERFACE "-ZW")
 endif()
@@ -74,6 +76,7 @@ find_package(PkgConfig)
 list(APPEND CMAKE_MODULE_PATH "${SDL2_SOURCE_DIR}/cmake")
 include(${SDL2_SOURCE_DIR}/cmake/macros.cmake)
 include(${SDL2_SOURCE_DIR}/cmake/sdlchecks.cmake)
+include(${SDL2_SOURCE_DIR}/cmake/sdlplatform.cmake)
 include(${SDL2_SOURCE_DIR}/cmake/CheckCPUArchitecture.cmake)
 
 # Enable large file support on 32-bit glibc, so that we can access files
@@ -85,8 +88,8 @@ endif()
 
 # See docs/release_checklist.md
 set(SDL_MAJOR_VERSION 2)
-set(SDL_MINOR_VERSION 26)
-set(SDL_MICRO_VERSION 1)
+set(SDL_MINOR_VERSION 27)
+set(SDL_MICRO_VERSION 0)
 set(SDL_VERSION "${SDL_MAJOR_VERSION}.${SDL_MINOR_VERSION}.${SDL_MICRO_VERSION}")
 
 # Set defaults preventing destination file conflicts
@@ -135,8 +138,12 @@ set(SDL_GENERATED_HEADERS)
 
 #message(STATUS "${LT_VERSION} :: ${LT_AGE} :: ${LT_REVISION} :: ${LT_CURRENT} :: ${LT_RELEASE}")
 
-# General settings & flags
-set(LIBRARY_OUTPUT_DIRECTORY "build")
+check_cpu_architecture(x86 SDL_CPU_X86)
+check_cpu_architecture(x64 SDL_CPU_X64)
+check_cpu_architecture(arm32 SDL_CPU_ARM32)
+check_cpu_architecture(arm64 SDL_CPU_ARM64)
+check_cpu_architecture(loongarch64 SDL_CPU_LOONGARCH64)
+
 # Check for 64 or 32 bit
 set(SIZEOF_VOIDP ${CMAKE_SIZEOF_VOID_P})
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -152,56 +159,7 @@ if(NOT LIBTYPE)
 endif()
 
 # Get the platform
-if(WIN32)
-  if(NOT WINDOWS)
-    set(WINDOWS TRUE)
-  endif()
-elseif(UNIX AND NOT APPLE)
-  if(CMAKE_SYSTEM_NAME MATCHES ".*Linux")
-    set(LINUX TRUE)
-  elseif(CMAKE_SYSTEM_NAME MATCHES "kFreeBSD.*")
-    set(FREEBSD TRUE)
-  elseif(CMAKE_SYSTEM_NAME MATCHES "kNetBSD.*|NetBSD.*")
-    set(NETBSD TRUE)
-  elseif(CMAKE_SYSTEM_NAME MATCHES "kOpenBSD.*|OpenBSD.*")
-    set(OPENBSD TRUE)
-  elseif(CMAKE_SYSTEM_NAME MATCHES ".*GNU.*")
-    set(GNU TRUE)
-  elseif(CMAKE_SYSTEM_NAME MATCHES ".*BSDI.*")
-    set(BSDI TRUE)
-  elseif(CMAKE_SYSTEM_NAME MATCHES "DragonFly.*|FreeBSD")
-    set(FREEBSD TRUE)
-  elseif(CMAKE_SYSTEM_NAME MATCHES "SYSV5.*")
-    set(SYSV5 TRUE)
-  elseif(CMAKE_SYSTEM_NAME MATCHES "Solaris.*|SunOS.*")
-    set(SOLARIS TRUE)
-  elseif(CMAKE_SYSTEM_NAME MATCHES "HP-UX.*")
-    set(HPUX TRUE)
-  elseif(CMAKE_SYSTEM_NAME MATCHES "AIX.*")
-    set(AIX TRUE)
-  elseif(CMAKE_SYSTEM_NAME MATCHES "Minix.*")
-    set(MINIX TRUE)
-  endif()
-elseif(APPLE)
-  if(CMAKE_SYSTEM_NAME MATCHES ".*Darwin.*")
-    set(DARWIN TRUE)
-  elseif(CMAKE_SYSTEM_NAME MATCHES ".*MacOS.*")
-    set(MACOSX TRUE)
-  elseif(CMAKE_SYSTEM_NAME MATCHES ".*tvOS.*")
-    set(TVOS TRUE)
-  elseif(CMAKE_SYSTEM_NAME MATCHES ".*iOS.*")
-    # !!! FIXME: remove the version check when we start requiring >= 3.14.0
-    if(CMAKE_VERSION VERSION_LESS 3.14)
-      set(IOS TRUE)
-    endif()
-  endif()
-elseif(CMAKE_SYSTEM_NAME MATCHES "BeOS.*")
-  message_error("BeOS support has been removed as of SDL 2.0.2.")
-elseif(CMAKE_SYSTEM_NAME MATCHES "Haiku.*")
-  set(HAIKU TRUE)
-elseif(NINTENDO_3DS)
-  set(N3DS TRUE)
-endif()
+SDL_DetectCMakePlatform()
 
 # Don't mistake osx for unix
 if(UNIX AND NOT ANDROID AND NOT APPLE AND NOT RISCOS)
@@ -277,11 +235,6 @@ if(USE_GCC OR USE_CLANG)
 endif()
 
 # Default option knobs
-if(APPLE OR ARCH_64 OR MSVC_CLANG)
-  if(NOT "${CMAKE_OSX_ARCHITECTURES}" MATCHES "arm")
-    set(OPT_DEF_SSEMATH ON)
-  endif()
-endif()
 if(UNIX OR MINGW OR MSYS OR (USE_CLANG AND NOT WINDOWS) OR VITA OR PSP OR PS2 OR N3DS)
   set(OPT_DEF_LIBC ON)
 endif()
@@ -369,7 +322,6 @@ endif()
 
 # All these ENABLED_BY_DEFAULT vars will default to ON if not specified, so
 #  you only need to have a platform override them if they are disabling.
-set(OPT_DEF_ASM TRUE)
 if(EMSCRIPTEN)
   # Set up default values for the currently supported set of subsystems:
   # Emscripten/Javascript does not have assembly support, a dynamic library
@@ -433,18 +385,21 @@ set_option(SDL2_DISABLE_UNINSTALL  "Disable uninstallation of SDL2" OFF)
 
 option_string(SDL_ASSERTIONS "Enable internal sanity checks (auto/disabled/release/enabled/paranoid)" "auto")
 #set_option(SDL_DEPENDENCY_TRACKING "Use gcc -MMD -MT dependency tracking" ON)
+set_option(SDL_ASSEMBLY            "Enable assembly routines" ${OPT_DEF_ASM})
+dep_option(SDL_SSEMATH             "Allow GCC to use SSE floating point math" ON "SDL_ASSEMBLY;SDL_CPU_X86 OR SDL_CPU_X64" OFF)
+dep_option(SDL_SSE                 "Use SSE assembly routines" ON "SDL_ASSEMBLY;SDL_CPU_X86 OR SDL_CPU_X64" OFF)
+dep_option(SDL_SSE2                "Use SSE2 assembly routines" ON "SDL_ASSEMBLY;SDL_CPU_X86 OR SDL_CPU_X64" OFF)
+dep_option(SDL_SSE3                "Use SSE3 assembly routines" ON "SDL_ASSEMBLY;SDL_CPU_X86 OR SDL_CPU_X64" OFF)
+dep_option(SDL_MMX                 "Use MMX assembly routines" ON "SDL_ASSEMBLY;SDL_CPU_X86 OR SDL_CPU_X64" OFF)
+dep_option(SDL_3DNOW               "Use 3Dnow! MMX assembly routines" ON "SDL_ASSEMBLY;SDL_CPU_X86 OR SDL_CPU_X64" OFF)
+dep_option(SDL_ALTIVEC             "Use Altivec assembly routines" ON "SDL_ASSEMBLY" OFF)
+dep_option(SDL_ARMSIMD             "Use SIMD assembly blitters on ARM" OFF "SDL_ASSEMBLY;SDL_CPU_ARM32" OFF)
+dep_option(SDL_ARMNEON             "Use NEON assembly blitters on ARM" OFF "SDL_ASSEMBLY;SDL_CPU_ARM32" OFF)
+dep_option(SDL_LSX                 "Use LSX assembly routines" ON "SDL_ASSEMBLY;SDL_CPU_LOONGARCH64" OFF)
+dep_option(SDL_LASX                "Use LASX assembly routines" ON "SDL_ASSEMBLY;SDL_CPU_LOONGARCH64" OFF)
+
 set_option(SDL_LIBC                "Use the system C library" ${OPT_DEF_LIBC})
 set_option(SDL_GCC_ATOMICS         "Use gcc builtin atomics" ${OPT_DEF_GCC_ATOMICS})
-set_option(SDL_ASSEMBLY            "Enable assembly routines" ${OPT_DEF_ASM})
-set_option(SDL_SSEMATH             "Allow GCC to use SSE floating point math" ${OPT_DEF_SSEMATH})
-set_option(SDL_MMX                 "Use MMX assembly routines" ${OPT_DEF_ASM})
-set_option(SDL_3DNOW               "Use 3Dnow! MMX assembly routines" ${OPT_DEF_ASM})
-set_option(SDL_SSE                 "Use SSE assembly routines" ${OPT_DEF_ASM})
-set_option(SDL_SSE2                "Use SSE2 assembly routines" ${OPT_DEF_SSEMATH})
-set_option(SDL_SSE3                "Use SSE3 assembly routines" ${OPT_DEF_SSEMATH})
-set_option(SDL_ALTIVEC             "Use Altivec assembly routines" ${OPT_DEF_ASM})
-set_option(SDL_ARMSIMD             "use SIMD assembly blitters on ARM" OFF)
-set_option(SDL_ARMNEON             "use NEON assembly blitters on ARM" OFF)
 dep_option(SDL_DBUS                "Enable D-Bus support" ON ${UNIX_SYS} OFF)
 set_option(SDL_DISKAUDIO           "Support the disk writer audio driver" ON)
 set_option(SDL_DUMMYAUDIO          "Support the dummy audio driver" ON)
@@ -511,6 +466,7 @@ set_option(SDL_HIDAPI              "Enable the HIDAPI subsystem" ON)
 dep_option(SDL_HIDAPI_LIBUSB       "Use libusb for low level joystick drivers" OFF SDL_HIDAPI OFF)
 dep_option(SDL_HIDAPI_JOYSTICK     "Use HIDAPI for low level joystick drivers" ON SDL_HIDAPI OFF)
 dep_option(SDL_VIRTUAL_JOYSTICK    "Enable the virtual-joystick driver" ON SDL_HIDAPI OFF)
+set_option(SDL_LIBUDEV             "Enable libudev support" ON)
 set_option(SDL_ASAN                "Use AddressSanitizer to detect memory errors" OFF)
 option_string(SDL_VENDOR_INFO      "Vendor name and/or version to add to SDL_REVISION" "")
 set_option(SDL_CCACHE              "Use Ccache to speed up build" ON)
@@ -835,8 +791,9 @@ if(SDL_ASSEMBLY)
           #ifndef __SSE2__
           #error Assembler CPP flag not enabled
           #endif
-          int main(int argc, char **argv) { return 0; }" HAVE_SSE2)
-      if(HAVE_SSE2)
+          int main(int argc, char **argv) { return 0; }" CPU_SUPPORTS_SSE2)
+      if(CPU_SUPPORTS_SSE2)
+        set(HAVE_SSE2 TRUE)
         list(APPEND EXTRA_CFLAGS "-msse2")
       endif()
       set(CMAKE_REQUIRED_FLAGS ${ORIG_CMAKE_REQUIRED_FLAGS})
@@ -858,8 +815,9 @@ if(SDL_ASSEMBLY)
           #ifndef __SSE3__
           #error Assembler CPP flag not enabled
           #endif
-          int main(int argc, char **argv) { return 0; }" HAVE_SSE3)
-      if(HAVE_SSE3)
+          int main(int argc, char **argv) { return 0; }" CPU_SUPPORTS_SSE3)
+      if(CPU_SUPPORTS_SSE3)
+        set(HAVE_SSE3 TRUE)
         list(APPEND EXTRA_CFLAGS "-msse3")
       endif()
       set(CMAKE_REQUIRED_FLAGS ${ORIG_CMAKE_REQUIRED_FLAGS})
@@ -892,15 +850,48 @@ if(SDL_ASSEMBLY)
           vector unsigned int vzero() {
               return vec_splat_u32(0);
           }
-          int main(int argc, char **argv) { return 0; }" HAVE_ALTIVEC)
+          int main(int argc, char **argv) { return 0; }" CPU_SUPPORTS_ALTIVEC)
       set(CMAKE_REQUIRED_FLAGS ${ORIG_CMAKE_REQUIRED_FLAGS})
-      if(HAVE_ALTIVEC OR HAVE_ALTIVEC_H_HDR)
+      if(CPU_SUPPORTS_ALTIVEC OR HAVE_ALTIVEC_H_HDR)
         set(HAVE_ALTIVEC TRUE) # if only HAVE_ALTIVEC_H_HDR is set
         list(APPEND EXTRA_CFLAGS "-maltivec")
         set(SDL_ALTIVEC_BLITTERS 1)
         if(HAVE_ALTIVEC_H_HDR)
           set(HAVE_ALTIVEC_H 1)
         endif()
+      endif()
+    endif()
+
+    if(SDL_LSX)
+      cmake_push_check_state()
+      list(APPEND CMAKE_REQUIRED_FLAGS "-mlsx")
+      check_c_source_compiles([[
+          #ifndef __loongarch_sx
+          #error Assembler CPP flag not enabled
+          #endif
+        ]] CPU_HAS_LSX)
+      check_include_file("lsxintrin.h" HAVE_LSXINTRIN_H)
+      cmake_pop_check_state()
+
+      if(CPU_HAS_LSX AND HAVE_LSXINTRIN_H)
+        list(APPEND EXTRA_CFLAGS "-mlsx")
+        set(HAS_LSX TRUE)
+      endif()
+    endif()
+
+    if(SDL_LASX)
+      cmake_push_check_state()
+      list(APPEND CMAKE_REQUIRED_FLAGS "-mlasx")
+      check_c_source_compiles([[
+          #ifndef __loongarch_asx
+          #error Assembler CPP flag not enabled
+          #endif
+        ]] CPU_HAS_LASX)
+      check_include_file("lasxintrin.h" HAVE_LASXINTRIN_H)
+      cmake_pop_check_state()
+      if(CPU_HAS_LASX AND HAVE_LASXINTRIN_H)
+        list(APPEND EXTRA_CFLAGS "-mlasx")
+        set(HAS_LASX TRUE)
       endif()
     endif()
 
@@ -962,12 +953,22 @@ if(SDL_ASSEMBLY)
     # TODO: SDL_cpuinfo.h needs to support the user's configuration wish
     # for MSVC - right now it is always activated
     if(NOT ARCH_64)
-      set(HAVE_MMX TRUE)
-      set(HAVE_3DNOW TRUE)
+      if(SDL_MMX)
+        set(HAVE_MMX TRUE)
+      endif()
+      if(SDL_3DNOW)
+        set(HAVE_3DNOW TRUE)
+      endif()
     endif()
-    set(HAVE_SSE TRUE)
-    set(HAVE_SSE2 TRUE)
-    set(HAVE_SSE3 TRUE)
+    if(SDL_SSE)
+      set(HAVE_SSE TRUE)
+    endif()
+    if(SDL_SSE2)
+      set(HAVE_SSE2 TRUE)
+    endif()
+    if(SDL_SSE3)
+      set(HAVE_SSE3 TRUE)
+    endif()
     check_include_file("immintrin.h" HAVE_IMMINTRIN_H)
   endif()
 endif()
@@ -1485,6 +1486,18 @@ elseif(UNIX AND NOT APPLE AND NOT RISCOS AND NOT HAIKU)
               ioctl(0, KDENABIO, 1);
               return 0;
           }" HAVE_INPUT_KBIO)
+    elseif(OPENBSD OR NETBSD)
+      check_c_source_compiles("
+          #include <sys/time.h>
+          #include <dev/wscons/wsconsio.h>
+          #include <dev/wscons/wsksymdef.h>
+          #include <dev/wscons/wsksymvar.h>
+          #include <sys/ioctl.h>
+          int main(int argc, char **argv) {
+              struct wskbd_map_data data;
+              ioctl(0, WSKBDIO_GETMAP, &data);
+              return 0;
+          }" HAVE_INPUT_WSCONS)
     endif()
 
     if(HAVE_INPUT_EVENTS)
@@ -1506,7 +1519,11 @@ elseif(UNIX AND NOT APPLE AND NOT RISCOS AND NOT HAIKU)
       set(SDL_INPUT_FBSDKBIO 1)
     endif()
 
-    check_include_file("libudev.h" HAVE_LIBUDEV_H)
+    if(HAVE_INPUT_WSCONS)
+      set(SDL_INPUT_WSCONS 1)
+    endif()
+
+    CheckLibUDev()
     check_include_file("sys/inotify.h" HAVE_SYS_INOTIFY_H)
     check_symbol_exists(inotify_init "sys/inotify.h" HAVE_INOTIFY_INIT)
     check_symbol_exists(inotify_init1 "sys/inotify.h" HAVE_INOTIFY_INIT1)
@@ -3059,6 +3076,7 @@ string(REGEX REPLACE "-lSDL2( |$)" "-l${sdl_static_libname} " SDL_STATIC_LIBS "$
 if(NOT SDL_SHARED)
   string(REGEX REPLACE "-lSDL2( |$)" "-l${sdl_static_libname} " SDL_LIBS "${SDL_LIBS}")
 endif()
+listtostr(PKGCONFIG_DEPENDS PKGCONFIG_DEPENDS)
 
 if(SDL_STATIC AND SDL_SHARED AND NOT sdl_static_libname STREQUAL "SDL2")
   message(STATUS "\"pkg-config --static --libs sdl2\" will return invalid information")
@@ -3139,7 +3157,7 @@ if (SDL_ASAN)
   endif()
 endif()
 
-if(SDL_CCACHE)
+if(SDL_CCACHE AND NOT CMAKE_VERSION VERSION_LESS 3.4)
   cmake_minimum_required(VERSION 3.4)
   find_program(CCACHE_BINARY ccache)
   if(CCACHE_BINARY)
@@ -3150,6 +3168,8 @@ if(SDL_CCACHE)
   else()
     set(HAVE_CCACHE OFF)
   endif()
+else()
+  set(HAVE_CCACHE OFF)
 endif()
 
 if(SDL_TESTS)
@@ -3280,8 +3300,7 @@ if(SDL_SHARED)
   add_library(SDL2::SDL2 ALIAS SDL2)
   set_target_properties(SDL2 PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
   if(NOT SDL_LIBC)
-    check_cpu_architecture(x86 HAS_X86)
-    if(HAS_X86)
+    if(SDL_CPU_X86)
       # FIXME: should be added for all architectures (missing symbols for ARM)
       target_link_libraries(SDL2 PRIVATE "-nodefaultlib:MSVCRT")
     endif()
@@ -3320,12 +3339,13 @@ if(SDL_SHARED)
     set_target_properties(SDL2 PROPERTIES STATIC_LIBRARY_FLAGS "/NODEFAULTLIB")
   endif()
   # FIXME: if CMAKE_VERSION >= 3.13, use target_link_options for EXTRA_LDFLAGS
-  target_link_libraries(SDL2 PRIVATE ${EXTRA_LIBS} ${EXTRA_LDFLAGS} ${EXTRA_LDFLAGS_BUILD})
+  target_link_libraries(SDL2 PRIVATE ${EXTRA_LIBS} ${EXTRA_LDFLAGS} ${EXTRA_LDFLAGS_BUILD} ${CMAKE_DEPENDS})
   target_include_directories(SDL2 PUBLIC
       "$<BUILD_INTERFACE:${SDL2_BINARY_DIR}/include>"
       "$<BUILD_INTERFACE:${SDL2_BINARY_DIR}/include-config-$<LOWER_CASE:$<CONFIG>>>"
       "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
-      "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/SDL2>")
+      "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/SDL2>"
+  )
   # This picks up all the compiler options and such we've accumulated up to here.
   target_link_libraries(SDL2 PRIVATE $<BUILD_INTERFACE:sdl-build-options>)
   if(MINGW OR CYGWIN)
@@ -3352,12 +3372,13 @@ if(SDL_STATIC)
   target_compile_definitions(SDL2-static PRIVATE SDL_STATIC_LIB)
   # TODO: Win32 platforms keep the same suffix .lib for import and static
   # libraries - do we need to consider this?
-  target_link_libraries(SDL2-static PRIVATE ${EXTRA_LIBS} ${EXTRA_LDFLAGS})
+  target_link_libraries(SDL2-static PRIVATE ${EXTRA_LIBS} ${EXTRA_LDFLAGS} ${CMAKE_DEPENDS})
   target_include_directories(SDL2-static PUBLIC
       "$<BUILD_INTERFACE:${SDL2_BINARY_DIR}/include>"
       "$<BUILD_INTERFACE:${SDL2_BINARY_DIR}/include-config-$<LOWER_CASE:$<CONFIG>>>"
       "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
-      "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/SDL2>")
+      "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/SDL2>"
+  )
   # This picks up all the compiler options and such we've accumulated up to here.
   target_link_libraries(SDL2-static PRIVATE $<BUILD_INTERFACE:sdl-build-options>)
   if(NOT ANDROID)
@@ -3491,6 +3512,7 @@ if(NOT SDL2_DISABLE_INSTALL)
     FILES
       ${CMAKE_CURRENT_BINARY_DIR}/SDL2Config.cmake
       ${CMAKE_CURRENT_BINARY_DIR}/SDL2ConfigVersion.cmake
+      ${SDL2_SOURCE_DIR}/cmake/sdlfind.cmake
     DESTINATION "${SDL_INSTALL_CMAKEDIR}"
     COMPONENT Devel
   )
