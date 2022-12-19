@@ -53,13 +53,35 @@ SDL_SYS_CreateThread(SDL_Thread *thread)
 {
     s32 priority = N3DS_THREAD_PRIORITY_MEDIUM;
     size_t stack_size = GetStackSize(thread->stacksize);
+    int cpu = -1;
+    bool detatched = false;
+
+    if (SDL_strcmp(thread->name, "SDLAudioP0") == 0 ||
+        SDL_strcmp(thread->name, "SDLAudioP1") == 0 ||
+        SDL_strcmp(thread->name, "SDLAudioP2") == 0) {
+        /* stack_size = 32 * 1024;*/
+        detatched = true;
+        cpu = 0; /* application core */
+        if (R_SUCCEEDED(APT_SetAppCpuTimeLimit(30))) {
+            cpu = 1; /* system core */
+        }
+        /*
+        // Set the thread priority to the main thread's priority ...
+        priority = 0x30;
+        svcGetThreadPriority(&priority, CUR_THREAD_HANDLE);
+        // ... then subtract 1, as lower number => higher actual priority ...
+        priority -= 1;
+        // ... finally, clamp it between 0x18 and 0x3F to guarantee that it's valid.
+        priority = SDL_clamp(priority, 0x19, 0x3F);
+        */
+    }
 
     thread->handle = threadCreate(ThreadEntry,
                                   thread,
                                   stack_size,
                                   priority,
-                                  -1,
-                                  false);
+                                  cpu,
+                                  detatched);
 
     if (thread->handle == NULL) {
         return SDL_SetError("Couldn't create thread");
