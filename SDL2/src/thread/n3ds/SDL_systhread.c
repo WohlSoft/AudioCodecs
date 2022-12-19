@@ -37,10 +37,9 @@
 
 static size_t GetStackSize(size_t requested_size);
 
-static void
-ThreadEntry(void *arg)
+static void ThreadEntry(void *arg)
 {
-    SDL_RunThread((SDL_Thread *) arg);
+    SDL_RunThread((SDL_Thread *)arg);
     threadExit(0);
 }
 
@@ -48,13 +47,14 @@ ThreadEntry(void *arg)
 #error "SDL_PASSED_BEGINTHREAD_ENDTHREAD is not supported on N3DS"
 #endif
 
-int
-SDL_SYS_CreateThread(SDL_Thread *thread)
+int SDL_SYS_CreateThread(SDL_Thread *thread)
 {
-    s32 priority = N3DS_THREAD_PRIORITY_MEDIUM;
+    s32 priority;
     size_t stack_size = GetStackSize(thread->stacksize);
     int cpu = -1;
     bool detatched = false;
+
+    svcGetThreadPriority(&priority, CUR_THREAD_HANDLE);
 
     if (SDL_strcmp(thread->name, "SDLAudioP0") == 0 ||
         SDL_strcmp(thread->name, "SDLAudioP1") == 0 ||
@@ -108,8 +108,7 @@ GetStackSize(size_t requested_size)
     return requested_size;
 }
 
-void
-SDL_SYS_SetupThread(const char *name)
+void SDL_SYS_SetupThread(const char *name)
 {
     return;
 }
@@ -119,11 +118,10 @@ SDL_ThreadID(void)
 {
     u32 thread_ID = 0;
     svcGetThreadId(&thread_ID, CUR_THREAD_HANDLE);
-    return (SDL_threadID) thread_ID;
+    return (SDL_threadID)thread_ID;
 }
 
-int
-SDL_SYS_SetThreadPriority(SDL_ThreadPriority sdl_priority)
+int SDL_SYS_SetThreadPriority(SDL_ThreadPriority sdl_priority)
 {
     s32 svc_priority;
     switch (sdl_priority) {
@@ -142,11 +140,10 @@ SDL_SYS_SetThreadPriority(SDL_ThreadPriority sdl_priority)
     default:
         svc_priority = N3DS_THREAD_PRIORITY_MEDIUM;
     }
-    return (int) svcSetThreadPriority(CUR_THREAD_HANDLE, svc_priority);
+    return (int)svcSetThreadPriority(CUR_THREAD_HANDLE, svc_priority);
 }
 
-void
-SDL_SYS_WaitThread(SDL_Thread *thread)
+void SDL_SYS_WaitThread(SDL_Thread *thread)
 {
     Result res = threadJoin(thread->handle, U64_MAX);
 
@@ -159,8 +156,7 @@ SDL_SYS_WaitThread(SDL_Thread *thread)
     }
 }
 
-void
-SDL_SYS_DetachThread(SDL_Thread *thread)
+void SDL_SYS_DetachThread(SDL_Thread *thread)
 {
     threadDetach(thread->handle);
 }

@@ -3,9 +3,11 @@
 VER=2.26.1
 pre=
 
-wget --content-disposition https://github.com/libsdl-org/SDL/archive/${pre}release-${VER}.tar.gz -O SDL-repo.tar.gz
-tar -xf SDL-repo.tar.gz
-mv SDL-${pre}release-${VER} SDL2
+#wget --content-disposition https://github.com/libsdl-org/SDL/archive/${pre}release-${VER}.tar.gz -O SDL-repo.tar.gz
+#tar -xf SDL-repo.tar.gz
+#mv SDL-${pre}release-${VER} SDL2
+git clone --depth 1 -b SDL2 https://github.com/libsdl-org/SDL SDL2
+
 rm -Rf SDL2/VisualC/
 rm -Rf SDL2/VisualC-GDK/
 rm -Rf SDL2/VisualC-WinRT/
@@ -23,4 +25,4 @@ rm -Rf SDL2/autogen.sh
 
 rm -Rf ../SDL2
 mv SDL2 ../SDL2
-rm SDL-repo.tar.gz
+#rm SDL-repo.tar.gz
