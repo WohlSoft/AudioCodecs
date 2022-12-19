@@ -271,7 +271,6 @@ static SDL_bool N3DSAUDIO_Init(SDL_AudioDriverImpl *impl)
     impl->GetDeviceBuf = N3DSAUDIO_GetDeviceBuf;
     impl->CloseDevice = N3DSAUDIO_CloseDevice;
     impl->ThreadInit = N3DSAUDIO_ThreadInit;
-    impl->ThreadDeinit = N3DSAUDIO_ThreadDeinit;
     impl->LockDevice = N3DSAUD_LockAudio;
     impl->UnlockDevice = N3DSAUD_UnlockAudio;
     impl->OnlyHasDefaultOutputDevice = SDL_TRUE;
