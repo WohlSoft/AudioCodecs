@@ -181,7 +181,7 @@ if(BUILD_WAVPACK)
     set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
     add_subdirectory(WavPack)
     # Avoid the Windows version to have "wavpackdll" name
-    set_target_properties(wavpack PROPERTIES OUTPUT_NAME libwavpack)
+    set_target_properties(wavpack PROPERTIES OUTPUT_NAME wavpack)
     unset(WAVPACK_BUILD_DOCS)
     unset(WAVPACK_INSTALL_DOCS)
     unset(WAVPACK_BUILD_PROGRAMS)
