@@ -144,6 +144,7 @@ rem Tip: instead of "release" you can have "debug" to build debug versions. Inst
 * **libSDL2:** ZLib
 * **libTimidity-SDL:** The "Artistic License"
 * **libVorbis:** BSD 3-clause "New" or "Revised" License
+* **libWavPack:** BSD 3-clause "New" or "Revised" License
 * **libXMP:** GNU LGPLv2+, partially MIT
 * **libZlib:** ZLib license
 * **libEDMIDI:** ZLib license
@@ -160,6 +161,7 @@ rem Tip: instead of "release" you can have "debug" to build debug versions. Inst
 * libSDL2
 * libTimidity-SDL
 * libVorbis
+* libWavPack
 * libZlib
 * libEDMIDI
 
@@ -175,6 +177,7 @@ rem Tip: instead of "release" you can have "debug" to build debug versions. Inst
 * libSDL2
 * libTimidity
 * libVorbis
+* libWavPack
 * libXMP
 * libZlib
 * libEDMIDI
