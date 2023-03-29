@@ -61,8 +61,8 @@ set(LIBXMP_SRC_LIST
     src/loaders/liq_load.c
     src/loaders/ims_load.c
     src/loaders/masi_load.c
+    src/loaders/masi16_load.c
     src/loaders/amf_load.c
-    src/loaders/psm_load.c
     src/loaders/stim_load.c
     src/loaders/mmd_common.c
     src/loaders/mmd1_load.c
@@ -89,6 +89,7 @@ set(LIBXMP_SRC_LIST
     src/loaders/chip_load.c
     src/loaders/abk_load.c
     src/loaders/coco_load.c
+    src/loaders/xmf_load.c
 )
 
 set(LIBXMP_SRC_LIST_PROWIZARD 

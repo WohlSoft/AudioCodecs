@@ -46,10 +46,10 @@ const struct format_loader *const format_loaders[NUM_FORMATS + 2] = {
 	&libxmp_loader_liq,
 	&libxmp_loader_no,
 	&libxmp_loader_masi,
+	&libxmp_loader_masi16,
 	&libxmp_loader_muse,
 	&libxmp_loader_gal5,
 	&libxmp_loader_gal4,
-	&libxmp_loader_psm,
 	&libxmp_loader_amf,
 	&libxmp_loader_asylum,
 	&libxmp_loader_gdm,
@@ -91,6 +91,7 @@ const struct format_loader *const format_loaders[NUM_FORMATS + 2] = {
 	/* &libxmp_loader_alm, */
 	/* &libxmp_loader_polly, */
 	/* &libxmp_loader_stc, */
+	&libxmp_loader_xmf,
 #ifndef LIBXMP_NO_PROWIZARD
 	&libxmp_loader_pw,
 #endif
