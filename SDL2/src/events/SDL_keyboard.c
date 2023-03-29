@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -997,7 +997,7 @@ SDL_HardwareKeyboardKeyPressed(void)
     SDL_Scancode scancode;
 
     for (scancode = SDL_SCANCODE_UNKNOWN; scancode < SDL_NUM_SCANCODES; ++scancode) {
-        if ((keyboard->keysource[scancode] & KEYBOARD_HARDWARE) != 0) {
+        if (keyboard->keysource[scancode] & KEYBOARD_HARDWARE) {
             return SDL_TRUE;
         }
     }

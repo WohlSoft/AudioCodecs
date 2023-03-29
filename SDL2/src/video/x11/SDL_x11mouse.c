@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -416,6 +416,9 @@ static Uint32 X11_GetGlobalMouseState(int *x, int *y)
 
 #if !SDL_VIDEO_DRIVER_X11_XINPUT2
     videodata->global_mouse_changed = SDL_TRUE;
+#else
+    if (!SDL_X11_HAVE_XINPUT2)
+        videodata->global_mouse_changed = SDL_TRUE;
 #endif
 
     /* check if we have this cached since XInput last saw the mouse move. */

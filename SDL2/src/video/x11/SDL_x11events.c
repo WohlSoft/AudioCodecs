@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -414,9 +414,9 @@ void X11_ReconcileKeyboardState(_THIS)
 
     /* Sync up the keyboard modifier state */
     if (X11_XQueryPointer(display, DefaultRootWindow(display), &junk_window, &junk_window, &x, &y, &x, &y, &mask)) {
-        SDL_ToggleModState(KMOD_CAPS, (mask & LockMask) != 0);
-        SDL_ToggleModState(KMOD_NUM, (mask & X11_GetNumLockModifierMask(_this)) != 0);
-        SDL_ToggleModState(KMOD_SCROLL, (mask & X11_GetScrollLockModifierMask(_this)) != 0);
+        SDL_ToggleModState(KMOD_CAPS, (mask & LockMask) ? SDL_TRUE : SDL_FALSE);
+        SDL_ToggleModState(KMOD_NUM, (mask & X11_GetNumLockModifierMask(_this)) ? SDL_TRUE : SDL_FALSE);
+        SDL_ToggleModState(KMOD_SCROLL, (mask & X11_GetScrollLockModifierMask(_this)) ? SDL_TRUE : SDL_FALSE);
     }
 
     keyboardState = SDL_GetKeyboardState(0);
@@ -753,6 +753,31 @@ static int XLookupStringAsUTF8(XKeyEvent *event_struct, char *buffer_return, int
         }
     }
     return result;
+}
+
+void X11_GetBorderValues(void /* SDL_WindowData */ *data_)
+{
+    SDL_WindowData *data = (SDL_WindowData *)data_;
+    SDL_VideoData *videodata = data->videodata;
+    Display *display = videodata->display;
+
+    Atom type;
+    int format;
+    unsigned long nitems, bytes_after;
+    unsigned char *property;
+    if (X11_XGetWindowProperty(display, data->xwindow, videodata->_NET_FRAME_EXTENTS, 0, 16, 0, XA_CARDINAL, &type, &format, &nitems, &bytes_after, &property) == Success) {
+        if (type != None && nitems == 4) {
+            data->border_left = (int)((long *)property)[0];
+            data->border_right = (int)((long *)property)[1];
+            data->border_top = (int)((long *)property)[2];
+            data->border_bottom = (int)((long *)property)[3];
+        }
+        X11_XFree(property);
+
+#ifdef DEBUG_XEVENTS
+        printf("New _NET_FRAME_EXTENTS: left=%d right=%d, top=%d, bottom=%d\n", data->border_left, data->border_right, data->border_top, data->border_bottom);
+#endif
+    }
 }
 
 static void X11_DispatchEvent(_THIS, XEvent *xevent)
@@ -1490,23 +1515,7 @@ static void X11_DispatchEvent(_THIS, XEvent *xevent)
                right approach, but it seems to work. */
             X11_UpdateKeymap(_this, SDL_TRUE);
         } else if (xevent->xproperty.atom == videodata->_NET_FRAME_EXTENTS) {
-            Atom type;
-            int format;
-            unsigned long nitems, bytes_after;
-            unsigned char *property;
-            if (X11_XGetWindowProperty(display, data->xwindow, videodata->_NET_FRAME_EXTENTS, 0, 16, 0, XA_CARDINAL, &type, &format, &nitems, &bytes_after, &property) == Success) {
-                if (type != None && nitems == 4) {
-                    data->border_left = (int)((long *)property)[0];
-                    data->border_right = (int)((long *)property)[1];
-                    data->border_top = (int)((long *)property)[2];
-                    data->border_bottom = (int)((long *)property)[3];
-                }
-                X11_XFree(property);
-
-#ifdef DEBUG_XEVENTS
-                printf("New _NET_FRAME_EXTENTS: left=%d right=%d, top=%d, bottom=%d\n", data->border_left, data->border_right, data->border_top, data->border_bottom);
-#endif
-            }
+            X11_GetBorderValues(data);
         }
     } break;
 

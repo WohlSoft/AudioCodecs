@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -993,6 +993,7 @@ static void PSP_SetBlendState(PSP_RenderData *data, PSP_BlendState *state)
             break;
         case SDL_BLENDMODE_MUL:
             sceGuTexFunc(GU_TFX_MODULATE, GU_TCC_RGBA);
+            /* FIXME SDL_BLENDMODE_MUL is simplified, and dstA is in fact un-changed.*/
             sceGuBlendFunc(GU_ADD, GU_DST_COLOR, GU_ONE_MINUS_SRC_ALPHA, 0, 0);
             sceGuEnable(GU_BLEND);
             break;

@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -197,7 +197,7 @@ static int KMSDRM_Available(void)
 
     kmsdrm_dri_pathsize = SDL_strlen(kmsdrm_dri_path);
     kmsdrm_dri_devnamesize = SDL_strlen(kmsdrm_dri_devname);
-    (void)SDL_snprintf(kmsdrm_dri_cardpath, sizeof kmsdrm_dri_cardpath, "%s%s",
+    (void)SDL_snprintf(kmsdrm_dri_cardpath, sizeof(kmsdrm_dri_cardpath), "%s%s",
                        kmsdrm_dri_path, kmsdrm_dri_devname);
 
     ret = get_driindex();
@@ -897,7 +897,7 @@ static int KMSDRM_InitDisplays(_THIS)
     int i;
 
     /* Open /dev/dri/cardNN (/dev/drmN if on OpenBSD version less than 6.9) */
-    (void)SDL_snprintf(viddata->devpath, sizeof viddata->devpath, "%s%d",
+    (void)SDL_snprintf(viddata->devpath, sizeof(viddata->devpath), "%s%d",
                        kmsdrm_dri_cardpath, viddata->devindex);
 
     SDL_LogDebug(SDL_LOG_CATEGORY_VIDEO, "Opening device %s", viddata->devpath);
@@ -1492,7 +1492,7 @@ int KMSDRM_CreateWindow(_THIS, SDL_Window *window)
         /* Create the window surfaces with the size we have just chosen.
            Needs the window diverdata in place. */
         ret = KMSDRM_CreateSurfaces(_this, window);
-        if (ret == 0) {
+        if (ret != 0) {
             return SDL_SetError("Can't window GBM/EGL surfaces on window creation.");
         }
     } /* NON-Vulkan block ends. */

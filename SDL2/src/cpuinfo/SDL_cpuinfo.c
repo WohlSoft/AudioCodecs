@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -159,7 +159,7 @@ static int CPU_haveCPUID(void)
     : "%eax", "%ecx"
     );
 #elif (defined(__GNUC__) || defined(__llvm__)) && defined(__x86_64__)
-/* Technically, if this is being compiled under __x86_64__ then it has 
+/* Technically, if this is being compiled under __x86_64__ then it has
    CPUid by definition.  But it's nice to be able to prove it.  :)      */
     __asm__ (
 "        pushfq                      # Get original EFLAGS             \n"
@@ -262,15 +262,16 @@ done:
         __asm mov c, ecx \
         __asm mov d, edx                   \
     }
-#elif defined(_MSC_VER) && defined(_M_X64)
-#define cpuid(func, a, b, c, d) \
-    {                           \
-        int CPUInfo[4];         \
-        __cpuid(CPUInfo, func); \
-        a = CPUInfo[0];         \
-        b = CPUInfo[1];         \
-        c = CPUInfo[2];         \
-        d = CPUInfo[3];         \
+#elif (defined(_MSC_VER) && defined(_M_X64))
+/* Use __cpuidex instead of __cpuid because ICL does not clear ecx register */
+#define cpuid(func, a, b, c, d)      \
+    {                                \
+        int CPUInfo[4];              \
+        __cpuidex(CPUInfo, func, 0); \
+        a = CPUInfo[0];              \
+        b = CPUInfo[1];              \
+        c = CPUInfo[2];              \
+        d = CPUInfo[3];              \
     }
 #else
 #define cpuid(func, a, b, c, d) \
@@ -386,7 +387,7 @@ static int CPU_haveARMSIMD(void)
     fd = open("/proc/self/auxv", O_RDONLY | O_CLOEXEC);
     if (fd >= 0) {
         Elf32_auxv_t aux;
-        while (read(fd, &aux, sizeof aux) == sizeof aux) {
+        while (read(fd, &aux, sizeof(aux)) == sizeof(aux)) {
             if (aux.a_type == AT_PLATFORM) {
                 const char *plat = (const char *)aux.a_un.a_val;
                 if (plat) {
@@ -498,7 +499,7 @@ static int CPU_haveNEON(void)
         AndroidCpuFamily cpu_family = android_getCpuFamily();
         if (cpu_family == ANDROID_CPU_FAMILY_ARM) {
             uint64_t cpu_features = android_getCpuFeatures();
-            if ((cpu_features & ANDROID_CPU_ARM_FEATURE_NEON) != 0) {
+            if (cpu_features & ANDROID_CPU_ARM_FEATURE_NEON) {
                 return 1;
             }
         }
@@ -1173,7 +1174,7 @@ SDL_SIMDAlloc(const size_t len)
     Uint8 *ptr;
     size_t to_allocate;
 
-    /* alignment + padding + sizeof (void *) is bounded (a few hundred
+    /* alignment + padding + sizeof(void *) is bounded (a few hundred
      * bytes max), so no need to check for overflow within that argument */
     if (SDL_size_add_overflow(len, alignment + padding + sizeof(void *), &to_allocate)) {
         return NULL;
@@ -1200,7 +1201,7 @@ SDL_SIMDRealloc(void *mem, const size_t len)
     Uint8 *ptr;
     size_t to_allocate;
 
-    /* alignment + padding + sizeof (void *) is bounded (a few hundred
+    /* alignment + padding + sizeof(void *) is bounded (a few hundred
      * bytes max), so no need to check for overflow within that argument */
     if (SDL_size_add_overflow(len, alignment + padding + sizeof(void *), &to_allocate)) {
         return NULL;

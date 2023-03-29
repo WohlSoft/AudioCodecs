@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -332,9 +332,19 @@ static void BlitRGBtoRGBPixelAlphaMMX(SDL_BlitInfo *info)
     Uint32 ashift = sf->Ashift;
     Uint64 multmask, multmask2;
 
-    __m64 src1, dst1, mm_alpha, mm_zero, mm_alpha2;
+    __m64 src1, dst1, mm_alpha, mm_zero, mm_alpha2, mm_one_alpha;
 
     mm_zero = _mm_setzero_si64(); /* 0 -> mm_zero */
+    if (amask == 0xFF000000) { /* 1 in the alpha channel -> mm_one_alpha */
+        mm_one_alpha = _mm_set_pi16(1, 0, 0, 0);
+    } else if (amask == 0x00FF0000) {
+        mm_one_alpha = _mm_set_pi16(0, 1, 0, 0);
+    } else if (amask == 0x0000FF00) {
+        mm_one_alpha = _mm_set_pi16(0, 0, 1, 0);
+    } else {
+        mm_one_alpha = _mm_set_pi16(0, 0, 0, 1);
+    }
+
     multmask = 0x00FF;
     multmask <<= (ashift * 2);
     multmask2 = 0x00FF00FF00FF00FFULL;
@@ -361,14 +371,33 @@ static void BlitRGBtoRGBPixelAlphaMMX(SDL_BlitInfo *info)
             mm_alpha = _mm_or_si64(mm_alpha2, *(__m64 *) & multmask);    /* 0F0A0A0A -> mm_alpha */
             mm_alpha2 = _mm_xor_si64(mm_alpha2, *(__m64 *) & multmask2);    /* 255 - mm_alpha -> mm_alpha */
 
-            /* blend */            
+            /*
+                Alpha blending is:
+                    dstRGB = (srcRGB * srcA) + (dstRGB * (1-srcA))
+                    dstA = srcA + (dstA * (1-srcA)) *
+
+                Here, 'src1' is:
+                    srcRGB * srcA
+                    srcA
+                And 'dst1' is:
+                    dstRGB * (1-srcA)
+                    dstA * (1-srcA)
+                so that *dstp is 'src1 + dst1'
+
+                src1 is computed using mullo_pi16: (X * mask) >> 8, but is approximate for srcA ((srcA * 255) >> 8).
+
+                need to a 1 to get an exact result: (srcA * 256) >> 8 == srcA
+             */
+            mm_alpha = _mm_add_pi16(mm_alpha, mm_one_alpha);
+
+            /* blend */
             src1 = _mm_mullo_pi16(src1, mm_alpha);
             src1 = _mm_srli_pi16(src1, 8);
             dst1 = _mm_mullo_pi16(dst1, mm_alpha2);
             dst1 = _mm_srli_pi16(dst1, 8);
             dst1 = _mm_add_pi16(src1, dst1);
             dst1 = _mm_packs_pu16(dst1, mm_zero);
-            
+
             *dstp = _mm_cvtsi64_si32(dst1); /* dst1 -> pixel */
         }
         ++srcp;
@@ -629,9 +658,19 @@ static void BlitRGBtoRGBPixelAlphaMMX3DNOW(SDL_BlitInfo *info)
     Uint32 ashift = sf->Ashift;
     Uint64 multmask, multmask2;
 
-    __m64 src1, dst1, mm_alpha, mm_zero, mm_alpha2;
+    __m64 src1, dst1, mm_alpha, mm_zero, mm_alpha2, mm_one_alpha;
 
     mm_zero = _mm_setzero_si64(); /* 0 -> mm_zero */
+    if (amask == 0xFF000000) { /* 1 in the alpha channel -> mm_one_alpha */
+        mm_one_alpha = _mm_set_pi16(1, 0, 0, 0);
+    } else if (amask == 0x00FF0000) {
+        mm_one_alpha = _mm_set_pi16(0, 1, 0, 0);
+    } else if (amask == 0x0000FF00) {
+        mm_one_alpha = _mm_set_pi16(0, 0, 1, 0);
+    } else {
+        mm_one_alpha = _mm_set_pi16(0, 0, 0, 1);
+    }
+
     multmask = 0x00FF;
     multmask <<= (ashift * 2);
     multmask2 = 0x00FF00FF00FF00FFULL;
@@ -663,15 +702,33 @@ static void BlitRGBtoRGBPixelAlphaMMX3DNOW(SDL_BlitInfo *info)
             mm_alpha = _mm_or_si64(mm_alpha2, *(__m64 *) & multmask);    /* 0F0A0A0A -> mm_alpha */
             mm_alpha2 = _mm_xor_si64(mm_alpha2, *(__m64 *) & multmask2);    /* 255 - mm_alpha -> mm_alpha */
 
+            /*
+                Alpha blending is:
+                    dstRGB = (srcRGB * srcA) + (dstRGB * (1-srcA))
+                    dstA = srcA + (dstA * (1-srcA)) *
 
-            /* blend */            
+                Here, 'src1' is:
+                    srcRGB * srcA
+                    srcA
+                And 'dst1' is:
+                    dstRGB * (1-srcA)
+                    dstA * (1-srcA)
+                so that *dstp is 'src1 + dst1'
+
+                src1 is computed using mullo_pi16: (X * mask) >> 8, but is approximate for srcA ((srcA * 255) >> 8).
+
+                need to a 1 to get an exact result: (srcA * 256) >> 8 == srcA
+             */
+            mm_alpha = _mm_add_pi16(mm_alpha, mm_one_alpha);
+
+            /* blend */
             src1 = _mm_mullo_pi16(src1, mm_alpha);
             src1 = _mm_srli_pi16(src1, 8);
             dst1 = _mm_mullo_pi16(dst1, mm_alpha2);
             dst1 = _mm_srli_pi16(dst1, 8);
             dst1 = _mm_add_pi16(src1, dst1);
             dst1 = _mm_packs_pu16(dst1, mm_zero);
-            
+
             *dstp = _mm_cvtsi64_si32(dst1); /* dst1 -> pixel */
         }
         ++srcp;
@@ -811,6 +868,7 @@ static void Blit565to565SurfaceAlphaMMX(SDL_BlitInfo *info)
         int dstskip = info->dst_skip >> 1;
         Uint32 s, d;
 
+#ifdef USE_DUFFS_LOOP
         __m64 src1, dst1, src2, dst2, gmask, bmask, mm_res, mm_alpha;
 
         alpha &= ~(1 + 2 + 4);             /* cut alpha to get the exact same behaviour */
@@ -826,6 +884,7 @@ static void Blit565to565SurfaceAlphaMMX(SDL_BlitInfo *info)
         /* Setup the 565 color channel masks */
         gmask = _mm_set_pi32(0x07E007E0, 0x07E007E0); /* MASKGREEN -> gmask */
         bmask = _mm_set_pi32(0x001F001F, 0x001F001F); /* MASKBLUE -> bmask */
+#endif
 
         while (height--) {
             /* *INDENT-OFF* */ /* clang-format off */
@@ -947,6 +1006,7 @@ static void Blit555to555SurfaceAlphaMMX(SDL_BlitInfo *info)
         int dstskip = info->dst_skip >> 1;
         Uint32 s, d;
 
+#ifdef USE_DUFFS_LOOP
         __m64 src1, dst1, src2, dst2, rmask, gmask, bmask, mm_res, mm_alpha;
 
         alpha &= ~(1 + 2 + 4);             /* cut alpha to get the exact same behaviour */
@@ -963,7 +1023,7 @@ static void Blit555to555SurfaceAlphaMMX(SDL_BlitInfo *info)
         rmask = _mm_set_pi32(0x7C007C00, 0x7C007C00); /* MASKRED -> rmask */
         gmask = _mm_set_pi32(0x03E003E0, 0x03E003E0); /* MASKGREEN -> gmask */
         bmask = _mm_set_pi32(0x001F001F, 0x001F001F); /* MASKBLUE -> bmask */
-
+#endif
         while (height--) {
             /* *INDENT-OFF* */ /* clang-format off */
             DUFFS_LOOP_124(
@@ -1024,7 +1084,7 @@ static void Blit555to555SurfaceAlphaMMX(SDL_BlitInfo *info)
                 dst2 = _mm_and_si64(dst2, rmask); /* dst2 & MASKRED -> dst2 */
 
                 mm_res = dst2; /* RED -> mm_res */
-                
+
                 /* green -- process the bits in place */
                 src2 = src1;
                 src2 = _mm_and_si64(src2, gmask); /* src & MASKGREEN -> src2 */
@@ -1166,7 +1226,7 @@ static void BlitARGBto565PixelAlpha(SDL_BlitInfo *info)
            compositioning used (>>8 instead of /255) doesn't handle
            it correctly. Also special-case alpha=0 for speed?
            Benchmark this! */
-        if (alpha) {   
+        if (alpha) {
           if (alpha == (SDL_ALPHA_OPAQUE >> 3)) {
             *dstp = (Uint16)((s >> 8 & 0xf800) + (s >> 5 & 0x7e0) + (s >> 3  & 0x1f));
           } else {
@@ -1212,7 +1272,7 @@ static void BlitARGBto555PixelAlpha(SDL_BlitInfo *info)
            compositioning used (>>8 instead of /255) doesn't handle
            it correctly. Also special-case alpha=0 for speed?
            Benchmark this! */
-        if (alpha) {   
+        if (alpha) {
           if (alpha == (SDL_ALPHA_OPAQUE >> 3)) {
             *dstp = (Uint16)((s >> 9 & 0x7c00) + (s >> 6 & 0x3e0) + (s >> 3  & 0x1f));
           } else {

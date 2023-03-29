@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -211,7 +211,7 @@ static int SDL_FindFreePlayerIndex()
             return player_index;
         }
     }
-    return player_index;
+    return -1;
 }
 
 static int SDL_GetPlayerIndexForJoystickID(SDL_JoystickID instance_id)
@@ -1869,7 +1869,7 @@ void SDL_GetJoystickGUIDInfo(SDL_JoystickGUID guid, Uint16 *vendor, Uint16 *prod
     Uint16 *guid16 = (Uint16 *)guid.data;
     Uint16 bus = SDL_SwapLE16(guid16[0]);
 
-    if (bus < ' ' && guid16[3] == 0x0000 && guid16[5] == 0x0000) {
+    if ((bus < ' ' || bus == SDL_HARDWARE_BUS_VIRTUAL) && guid16[3] == 0x0000 && guid16[5] == 0x0000) {
         /* This GUID fits the standard form:
          * 16-bit bus
          * 16-bit CRC16 of the joystick name (can be zero)
@@ -2315,6 +2315,23 @@ SDL_bool SDL_IsJoystickXboxSeriesX(Uint16 vendor_id, Uint16 product_id)
             return SDL_TRUE;
         }
     }
+    if (vendor_id == USB_VENDOR_RAZER) {
+        if (product_id == USB_PRODUCT_RAZER_WOLVERINE_V2 ||
+            product_id == USB_PRODUCT_RAZER_WOLVERINE_V2_CHROMA) {
+            return SDL_TRUE;
+        }
+    }
+    if (vendor_id == USB_VENDOR_THRUSTMASTER) {
+        if (product_id == USB_PRODUCT_THRUSTMASTER_ESWAPX_PRO) {
+            return SDL_TRUE;
+        }
+    }
+    if (vendor_id == USB_VENDOR_TURTLE_BEACH) {
+        if (product_id == USB_PRODUCT_TURTLE_BEACH_SERIES_X_REACT_R ||
+            product_id == USB_PRODUCT_TURTLE_BEACH_SERIES_X_RECON) {
+            return SDL_TRUE;
+        }
+    }
     if (vendor_id == USB_VENDOR_8BITDO) {
         if (product_id == USB_PRODUCT_8BITDO_XBOX_CONTROLLER) {
             return SDL_TRUE;
@@ -2436,7 +2453,7 @@ SDL_bool SDL_IsJoystickVirtual(SDL_JoystickGUID guid)
 static SDL_bool SDL_IsJoystickProductWheel(Uint32 vidpid)
 {
     static Uint32 wheel_joysticks[] = {
-        MAKE_VIDPID(0x0079, 0x1864), /* PXN V900 (PS3) */
+        MAKE_VIDPID(0x0079, 0x1864), /* DragonRise Inc. Wired Wheel (active mode) (also known as PXN V900 (PS3), Superdrive SV-750, or a Genesis Seaborg 400) */
         MAKE_VIDPID(0x046d, 0xc294), /* Logitech generic wheel */
         MAKE_VIDPID(0x046d, 0xc295), /* Logitech Momo Force */
         MAKE_VIDPID(0x046d, 0xc298), /* Logitech Driving Force Pro */
@@ -2462,6 +2479,7 @@ static SDL_bool SDL_IsJoystickProductWheel(Uint32 vidpid)
         MAKE_VIDPID(0x044f, 0xb65e), /* Thrustmaster T500RS */
         MAKE_VIDPID(0x044f, 0xb664), /* Thrustmaster TX (initial mode) */
         MAKE_VIDPID(0x044f, 0xb669), /* Thrustmaster TX (active mode) */
+        MAKE_VIDPID(0x11ff, 0x0511), /* DragonRise Inc. Wired Wheel (initial mode) (also known as PXN V900 (PS3), Superdrive SV-750, or a Genesis Seaborg 400) */
     };
     int i;
 
@@ -2736,7 +2754,6 @@ SDL_bool SDL_ShouldIgnoreJoystick(const char *name, SDL_JoystickGUID guid)
         MAKE_VIDPID(0x04d9, 0x8009), /* OBINLB USB-HID Keyboard (Anne Pro II) */
         MAKE_VIDPID(0x04d9, 0xa292), /* OBINLB USB-HID Keyboard (Anne Pro II) */
         MAKE_VIDPID(0x04d9, 0xa293), /* OBINLB USB-HID Keyboard (Anne Pro II) */
-        MAKE_VIDPID(0x1532, 0x0226), /* Razer Huntsman Elite */
         MAKE_VIDPID(0x1532, 0x0266), /* Razer Huntsman V2 Analog, non-functional DInput device */
         MAKE_VIDPID(0x1532, 0x0282), /* Razer Huntsman Mini Analog, non-functional DInput device */
         MAKE_VIDPID(0x26ce, 0x01a2), /* ASRock LED Controller */

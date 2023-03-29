@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -407,13 +407,13 @@ static char *IBus_GetDBusAddressFilename(void)
             SDL_free(display);
             return NULL;
         }
-        (void)SDL_snprintf(config_dir, sizeof config_dir, "%s/.config", home_env);
+        (void)SDL_snprintf(config_dir, sizeof(config_dir), "%s/.config", home_env);
     }
 
     key = dbus->get_local_machine_id();
 
     SDL_memset(file_path, 0, sizeof(file_path));
-    (void)SDL_snprintf(file_path, sizeof file_path, "%s/ibus/bus/%s-%s-%s",
+    (void)SDL_snprintf(file_path, sizeof(file_path), "%s/ibus/bus/%s-%s-%s",
                        config_dir, key, host, disp_num);
     dbus->free(key);
     SDL_free(display);
@@ -491,7 +491,7 @@ static SDL_bool IBus_SetupConnection(SDL_DBusContext *dbus, const char *addr)
 
     if (result) {
         char matchstr[128];
-        (void)SDL_snprintf(matchstr, sizeof matchstr, "type='signal',interface='%s'", ibus_input_interface);
+        (void)SDL_snprintf(matchstr, sizeof(matchstr), "type='signal',interface='%s'", ibus_input_interface);
         SDL_free(input_ctx_path);
         input_ctx_path = SDL_strdup(path);
         SDL_AddHintCallback(SDL_HINT_IME_INTERNAL_EDITING, IBus_SetCapabilities, NULL);

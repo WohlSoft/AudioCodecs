@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -57,7 +57,7 @@ static SDL_INLINE void SDL_memcpySSE(Uint8 *dst, const Uint8 *src, int len)
 #endif
 static SDL_INLINE void SDL_memcpyMMX(Uint8 *dst, const Uint8 *src, int len)
 {
-    const int remain = (len & 63);
+    int remain = len & 63;
     int i;
 
     __m64 *d64 = (__m64 *)dst;
@@ -79,7 +79,11 @@ static SDL_INLINE void SDL_memcpyMMX(Uint8 *dst, const Uint8 *src, int len)
 
     if (remain) {
         const int skip = len - remain;
-        SDL_memcpy(dst + skip, src + skip, remain);
+        dst += skip;
+        src += skip;
+        while (remain--) {
+            *dst++ = *src++;
+        }
     }
 }
 #endif /* __MMX__ */

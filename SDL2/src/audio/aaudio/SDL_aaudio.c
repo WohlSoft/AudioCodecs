@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -70,45 +70,6 @@ void aaudio_errorCallback(AAudioStream *stream, void *userData, aaudio_result_t 
 
 #define LIB_AAUDIO_SO "libaaudio.so"
 
-static void aaudio_DetectDevices(void)
-{
-    int *inputs;
-    inputs = SDL_malloc(sizeof(int) * 100);
-    SDL_zerop(inputs);
-    int inputs_length = 0;
-
-    Android_JNI_GetAudioInputDevices(inputs, &inputs_length);
-
-    for (int i = 0; i < inputs_length; ++i) {
-        int device_id = inputs[i];
-        int n = (int) (log10(device_id) + 1);
-        char device_name[n];
-        SDL_itoa(device_id, device_name, 10);
-        SDL_Log("Adding input device with name %s", device_name);
-        SDL_AddAudioDevice(SDL_FALSE, SDL_strdup(device_name), NULL, (void *) ((size_t) device_id + 1));
-    }
-
-    SDL_free(inputs);
-
-    int *outputs;
-    outputs = SDL_malloc(sizeof(int) * 100);
-    SDL_zerop(outputs);
-    int outputs_length = 0;
-
-    Android_JNI_GetAudioOutputDevices(outputs, &outputs_length);
-
-    for (int i = 0; i < outputs_length; ++i) {
-        int device_id = outputs[i];
-        int n = (int) (log10(device_id) + 1);
-        char device_name[n];
-        SDL_itoa(device_id, device_name, 10);
-        SDL_Log("Adding output device with name %s", device_name);
-        SDL_AddAudioDevice(SDL_TRUE, SDL_strdup(device_name), NULL, (void *) ((size_t) device_id + 1));
-    }
-
-    SDL_free(outputs);
-}
-
 static int aaudio_OpenDevice(_THIS, const char *devname)
 {
     struct SDL_PrivateAudioData *private;
@@ -132,7 +93,7 @@ static int aaudio_OpenDevice(_THIS, const char *devname)
         audioDevice = this;
     }
 
-    this->hidden = (struct SDL_PrivateAudioData *)SDL_calloc(1, (sizeof *this->hidden));
+    this->hidden = (struct SDL_PrivateAudioData *)SDL_calloc(1, sizeof(*this->hidden));
     if (this->hidden == NULL) {
         return SDL_OutOfMemory();
     }
@@ -344,7 +305,7 @@ static SDL_bool aaudio_Init(SDL_AudioDriverImpl *impl)
         goto failure;
     }
 
-    impl->DetectDevices = aaudio_DetectDevices;
+    impl->DetectDevices = Android_DetectDevices;
     impl->Deinitialize = aaudio_Deinitialize;
     impl->OpenDevice = aaudio_OpenDevice;
     impl->CloseDevice = aaudio_CloseDevice;

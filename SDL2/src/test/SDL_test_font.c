@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -3299,7 +3299,7 @@ static Uint32 UTF8_getch(const char *src, size_t srclen, int *inc)
             left = 1;
         }
     } else {
-        if ((p[0] & 0x80) == 0x00) {
+        if (!(p[0] & 0x80)) {
             ch = (Uint32)p[0];
         }
     }
@@ -3393,7 +3393,7 @@ void SDLTest_TextWindowAddText(SDLTest_TextWindow *textwin, const char *fmt, ...
     va_list ap;
 
     va_start(ap, fmt);
-    (void)SDL_vsnprintf(text, sizeof text, fmt, ap);
+    (void)SDL_vsnprintf(text, sizeof(text), fmt, ap);
     va_end(ap);
 
     SDLTest_TextWindowAddTextWithLength(textwin, text, SDL_strlen(text));

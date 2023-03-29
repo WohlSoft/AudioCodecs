@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -161,7 +161,7 @@ static void SDLCALL SDL_EventLoggingChanged(void *userdata, const char *name, co
 
 static void SDL_LogEvent(const SDL_Event *event)
 {
-    char name[32];
+    char name[64];
     char details[128];
 
     /* sensor/mouse/finger motion are spammy, ignore these if they aren't demanded. */

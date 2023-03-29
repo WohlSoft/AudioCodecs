@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -64,9 +64,9 @@ static char *GetAppName()
     int linksize;
 
 #if defined(__LINUX__)
-    (void)SDL_snprintf(procfile, sizeof procfile, "/proc/%d/exe", getpid());
+    (void)SDL_snprintf(procfile, sizeof(procfile), "/proc/%d/exe", getpid());
 #elif defined(__FREEBSD__)
-    (void)SDL_snprintf(procfile, sizeof procfile, "/proc/%d/file", getpid());
+    (void)SDL_snprintf(procfile, sizeof(procfile), "/proc/%d/file", getpid());
 #endif
     linksize = readlink(procfile, linkfile, sizeof(linkfile) - 1);
     if (linksize > 0) {

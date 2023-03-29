@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -476,11 +476,11 @@ void SDL_EVDEV_kbd_keycode(SDL_EVDEV_keyboard_state *kbd, unsigned int keycode, 
     unsigned int final_key_state;
     unsigned int map_from_key_sym;
 
-    key_map = *kbd->key_map;
-
     if (kbd == NULL) {
         return;
     }
+
+    key_map = *kbd->key_map;
 
     kbd->rep = (down == 2);
 

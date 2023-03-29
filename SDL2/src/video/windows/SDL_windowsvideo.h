@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -41,12 +41,12 @@
 
 #include "SDL_windowsclipboard.h"
 #include "SDL_windowsevents.h"
+#include "SDL_windowsopengl.h"
 
 #if !defined(__XBOXONE__) && !defined(__XBOXSERIES__)
 #include "SDL_windowskeyboard.h"
 #include "SDL_windowsmodes.h"
 #include "SDL_windowsmouse.h"
-#include "SDL_windowsopengl.h"
 #include "SDL_windowsopengles.h"
 #endif
 
@@ -462,6 +462,7 @@ typedef struct SDL_VideoData
 } SDL_VideoData;
 
 extern SDL_bool g_WindowsEnableMessageLoop;
+extern SDL_bool g_WindowsEnableMenuMnemonics;
 extern SDL_bool g_WindowFrameUsableWhileCursorHidden;
 
 typedef struct IDirect3D9 IDirect3D9;

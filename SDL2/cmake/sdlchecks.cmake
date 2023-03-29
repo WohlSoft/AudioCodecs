@@ -734,6 +734,17 @@ macro(CheckWayland)
             else()
               list(APPEND EXTRA_LIBS ${PKG_LIBDECOR_LIBRARIES})
             endif()
+
+            cmake_push_check_state()
+            list(APPEND CMAKE_REQUIRED_FLAGS ${PKG_LIBDECOR_CFLAGS})
+            list(APPEND CMAKE_REQUIRED_INCLUDES ${PKG_LIBDECOR_INCLUDE_DIRS})
+            list(APPEND CMAKE_REQUIRED_LIBRARIES ${PKG_LIBDECOR_LINK_LIBRARIES})
+            check_symbol_exists(libdecor_frame_get_max_content_size "libdecor.h" HAVE_LIBDECOR_FRAME_GET_MAX_CONTENT_SIZE)
+            check_symbol_exists(libdecor_frame_get_min_content_size "libdecor.h" HAVE_LIBDECOR_FRAME_GET_MIN_CONTENT_SIZE)
+            if(HAVE_LIBDECOR_FRAME_GET_MAX_CONTENT_SIZE AND HAVE_LIBDECOR_FRAME_GET_MIN_CONTENT_SIZE)
+              set(SDL_HAVE_LIBDECOR_GET_MIN_MAX 1)
+            endif()
+            cmake_pop_check_state()
         endif()
       endif()
 
@@ -966,7 +977,6 @@ macro(CheckPTHREAD)
       list(APPEND SDL_CFLAGS ${PTHREAD_CFLAGS})
 
       check_c_source_compiles("
-        #define _GNU_SOURCE 1
         #include <pthread.h>
         int main(int argc, char **argv) {
           pthread_mutexattr_t attr;
@@ -977,7 +987,6 @@ macro(CheckPTHREAD)
         set(SDL_THREAD_PTHREAD_RECURSIVE_MUTEX 1)
       else()
         check_c_source_compiles("
-            #define _GNU_SOURCE 1
             #include <pthread.h>
             int main(int argc, char **argv) {
               pthread_mutexattr_t attr;
@@ -1008,10 +1017,13 @@ macro(CheckPTHREAD)
       check_include_files("pthread_np.h" HAVE_PTHREAD_NP_H)
       if (HAVE_PTHREAD_H)
         check_c_source_compiles("
-            #define _GNU_SOURCE 1
             #include <pthread.h>
             int main(int argc, char **argv) {
-              pthread_setname_np(pthread_self(), \"\");
+              #ifdef __APPLE__
+              pthread_setname_np(\"\");
+              #else
+              pthread_setname_np(pthread_self(),\"\");
+              #endif
               return 0;
             }" HAVE_PTHREAD_SETNAME_NP)
         if (HAVE_PTHREAD_NP_H)

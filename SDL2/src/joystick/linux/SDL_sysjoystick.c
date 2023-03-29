@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -1454,7 +1454,7 @@ static void HandleInputEvents(SDL_Joystick *joystick)
         joystick->hwdata->fresh = SDL_FALSE;
     }
 
-    while ((len = read(joystick->hwdata->fd, events, (sizeof events))) > 0) {
+    while ((len = read(joystick->hwdata->fd, events, sizeof(events))) > 0) {
         len /= sizeof(events[0]);
         for (i = 0; i < len; ++i) {
             code = events[i].code;
@@ -1487,6 +1487,7 @@ static void HandleInputEvents(SDL_Joystick *joystick)
                         HandleHat(joystick, hat_index, code % 2, events[i].value);
                         break;
                     }
+                    SDL_FALLTHROUGH;
                 default:
                     events[i].value = AxisCorrect(joystick, code, events[i].value);
                     SDL_PrivateJoystickAxis(joystick,
@@ -1543,7 +1544,7 @@ static void HandleClassicEvents(SDL_Joystick *joystick)
     SDL_AssertJoysticksLocked();
 
     joystick->hwdata->fresh = SDL_FALSE;
-    while ((len = read(joystick->hwdata->fd, events, (sizeof events))) > 0) {
+    while ((len = read(joystick->hwdata->fd, events, sizeof(events))) > 0) {
         len /= sizeof(events[0]);
         for (i = 0; i < len; ++i) {
             switch (events[i].type) {
@@ -1569,6 +1570,7 @@ static void HandleClassicEvents(SDL_Joystick *joystick)
                         HandleHat(joystick, hat_index, code % 2, events[i].value);
                         break;
                     }
+                    SDL_FALLTHROUGH;
                 default:
                     SDL_PrivateJoystickAxis(joystick,
                                             joystick->hwdata->abs_map[code],

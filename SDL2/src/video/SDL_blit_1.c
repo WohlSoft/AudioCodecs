@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -140,6 +140,7 @@ static void Blit1to2(SDL_BlitInfo *info)
             case 3:
                 *(Uint16 *)dst = map[*src++];
                 dst += 2;
+                SDL_FALLTHROUGH;
             case 2:
                 *(Uint32 *)dst = (map[src[HI]] << 16) | (map[src[LO]]);
                 src += 2;
@@ -169,6 +170,7 @@ static void Blit1to2(SDL_BlitInfo *info)
             case 3:
                 *(Uint16 *)dst = map[*src++];
                 dst += 2;
+                SDL_FALLTHROUGH;
             case 2:
                 *(Uint32 *)dst = (map[src[HI]] << 16) | (map[src[LO]]);
                 src += 2;
@@ -270,8 +272,10 @@ static void Blit1to4(SDL_BlitInfo *info)
         switch (width & 3) {
         case 3:
             *dst++ = map[*src++];
+            SDL_FALLTHROUGH;
         case 2:
             *dst++ = map[*src++];
+            SDL_FALLTHROUGH;
         case 1:
             *dst++ = map[*src++];
         }

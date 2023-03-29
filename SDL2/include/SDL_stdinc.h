@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -85,7 +85,9 @@
    Visual Studio.  See http://msdn.microsoft.com/en-us/library/4hwaceh6.aspx
    for more information.
 */
-#  define _USE_MATH_DEFINES
+#  ifndef _USE_MATH_DEFINES
+#    define _USE_MATH_DEFINES
+#  endif
 # endif
 # include <math.h>
 #endif
@@ -721,6 +723,11 @@ size_t strlcpy(char* dst, const char* src, size_t size);
 #ifndef HAVE_STRLCAT
 size_t strlcat(char* dst, const char* src, size_t size);
 #endif
+
+/* Starting LLVM 16, the analyser errors out if these functions do not have
+   their prototype defined (clang-diagnostic-implicit-function-declaration) */
+#include <stdlib.h>
+#include <string.h>
 
 #define SDL_malloc malloc
 #define SDL_calloc calloc

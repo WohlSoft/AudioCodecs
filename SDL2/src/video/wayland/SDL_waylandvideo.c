@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -638,7 +638,7 @@ static void display_handle_done(void *data,
 
     /* Add emulated modes if wp_viewporter is supported and mode emulation is enabled. */
     if (video->viewporter && mode_emulation_enabled) {
-        const SDL_bool rot_90 = ((driverdata->transform & WL_OUTPUT_TRANSFORM_90) != 0) ||
+        const SDL_bool rot_90 = (driverdata->transform & WL_OUTPUT_TRANSFORM_90) ||
                                 (driverdata->width < driverdata->height);
         AddEmulatedModes(dpy, rot_90);
     }
@@ -681,7 +681,7 @@ static void Wayland_add_display(SDL_VideoData *d, uint32_t id)
         SDL_SetError("Failed to retrieve output.");
         return;
     }
-    data = SDL_malloc(sizeof *data);
+    data = (SDL_WaylandOutputData *)SDL_malloc(sizeof(*data));
     SDL_zerop(data);
     data->videodata = d;
     data->output = output;

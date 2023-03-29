@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -90,9 +90,9 @@ SDL_DYNAPI_PROC(int,SDL_InitSubSystem,(Uint32 a),(a),return)
 SDL_DYNAPI_PROC(void,SDL_QuitSubSystem,(Uint32 a),(a),)
 SDL_DYNAPI_PROC(Uint32,SDL_WasInit,(Uint32 a),(a),return)
 SDL_DYNAPI_PROC(void,SDL_Quit,(void),(),)
-SDL_DYNAPI_PROC(SDL_assert_state,SDL_ReportAssertion,(SDL_assert_data *a, const char *b, const char *c, int d),(a,b,c,d),return)
+SDL_DYNAPI_PROC(SDL_AssertState,SDL_ReportAssertion,(SDL_AssertData *a, const char *b, const char *c, int d),(a,b,c,d),return)
 SDL_DYNAPI_PROC(void,SDL_SetAssertionHandler,(SDL_AssertionHandler a, void *b),(a,b),)
-SDL_DYNAPI_PROC(const SDL_assert_data*,SDL_GetAssertionReport,(void),(),return)
+SDL_DYNAPI_PROC(const SDL_AssertData*,SDL_GetAssertionReport,(void),(),return)
 SDL_DYNAPI_PROC(void,SDL_ResetAssertionReport,(void),(),)
 SDL_DYNAPI_PROC(SDL_bool,SDL_AtomicTryLock,(SDL_SpinLock *a),(a),return)
 SDL_DYNAPI_PROC(void,SDL_AtomicLock,(SDL_SpinLock *a),(a),)
@@ -977,5 +977,5 @@ SDL_DYNAPI_PROC(int,SDL_SensorGetDataWithTimestamp,(SDL_Sensor *a, Uint64 *b, fl
 SDL_DYNAPI_PROC(void,SDL_ResetHints,(void),(),)
 SDL_DYNAPI_PROC(char*,SDL_strcasestr,(const char *a, const char *b),(a,b),return)
 #if defined(__GDK__)
-SDL_DYNAPI_PROC(void,SDL_GDKSuspendComplete,(void),(),return)
+SDL_DYNAPI_PROC(void,SDL_GDKSuspendComplete,(void),(),)
 #endif

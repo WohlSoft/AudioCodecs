@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -159,6 +159,8 @@ extern SDL_bool HIDAPI_JoystickConnected(SDL_HIDAPI_Device *device, SDL_Joystick
 extern void HIDAPI_JoystickDisconnected(SDL_HIDAPI_Device *device, SDL_JoystickID joystickID);
 
 extern void HIDAPI_DumpPacket(const char *prefix, const Uint8 *data, int size);
+
+extern SDL_bool HIDAPI_SupportsPlaystationDetection(Uint16 vendor, Uint16 product);
 
 extern float HIDAPI_RemapVal(float val, float val_min, float val_max, float output_min, float output_max);
 

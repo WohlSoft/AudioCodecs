@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -289,7 +289,7 @@ int VITA_CreateWindow(_THIS, SDL_Window *window)
     else {
         win.windowSize = PSP2_WINDOW_960X544;
     }
-    if ((window->flags & SDL_WINDOW_OPENGL) != 0) {
+    if (window->flags & SDL_WINDOW_OPENGL) {
         if (SDL_getenv("VITA_PVR_OGL") != NULL) {
             /* Set version to 2.1 and PROFILE to ES */
             temp_major = _this->gl_config.major_version;
@@ -405,9 +405,9 @@ static void utf16_to_utf8(const uint16_t *src, uint8_t *dst)
 {
     int i;
     for (i = 0; src[i]; i++) {
-        if ((src[i] & 0xFF80) == 0) {
+        if (!(src[i] & 0xFF80)) {
             *(dst++) = src[i] & 0xFF;
-        } else if ((src[i] & 0xF800) == 0) {
+        } else if (!(src[i] & 0xF800)) {
             *(dst++) = ((src[i] >> 6) & 0xFF) | 0xC0;
             *(dst++) = (src[i] & 0x3F) | 0x80;
         } else if ((src[i] & 0xFC00) == 0xD800 && (src[i + 1] & 0xFC00) == 0xDC00) {

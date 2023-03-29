@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -111,9 +111,13 @@ typedef enum
 #define k_unSwitchBluetoothPacketLength  k_unSwitchOutputPacketDataLength
 #define k_unSwitchUSBPacketLength        k_unSwitchMaxOutputPacketLength
 
-#define k_unSPIStickCalibrationStartOffset 0x603D
-#define k_unSPIStickCalibrationEndOffset   0x604E
-#define k_unSPIStickCalibrationLength      (k_unSPIStickCalibrationEndOffset - k_unSPIStickCalibrationStartOffset + 1)
+#define k_unSPIStickFactoryCalibrationStartOffset 0x603D
+#define k_unSPIStickFactoryCalibrationEndOffset   0x604E
+#define k_unSPIStickFactoryCalibrationLength      (k_unSPIStickFactoryCalibrationEndOffset - k_unSPIStickFactoryCalibrationStartOffset + 1)
+
+#define k_unSPIStickUserCalibrationStartOffset 0x8010
+#define k_unSPIStickUserCalibrationEndOffset   0x8025
+#define k_unSPIStickUserCalibrationLength      (k_unSPIStickUserCalibrationEndOffset - k_unSPIStickUserCalibrationStartOffset + 1)
 
 #define k_unSPIIMUScaleStartOffset 0x6020
 #define k_unSPIIMUScaleEndOffset   0x6037
@@ -199,6 +203,22 @@ typedef struct
             Uint8 ucFiller2;
             Uint8 ucColorLocation;
         } deviceInfo;
+
+        struct
+        {
+            SwitchSPIOpData_t opData;
+            Uint8 rgucLeftCalibration[9];
+            Uint8 rgucRightCalibration[9];
+        } stickFactoryCalibration;
+
+        struct
+        {
+            SwitchSPIOpData_t opData;
+            Uint8 rgucLeftMagic[2];
+            Uint8 rgucLeftCalibration[9];
+            Uint8 rgucRightMagic[2];
+            Uint8 rgucRightCalibration[9];
+        } stickUserCalibration;
     };
 } SwitchSubcommandInputPacket_t;
 
@@ -708,17 +728,41 @@ static SDL_bool SetIMUEnabled(SDL_DriverSwitch_Context *ctx, SDL_bool enabled)
 
 static SDL_bool LoadStickCalibration(SDL_DriverSwitch_Context *ctx, Uint8 input_mode)
 {
-    Uint8 *pStickCal;
+    Uint8 *pLeftStickCal;
+    Uint8 *pRightStickCal;
     size_t stick, axis;
-    SwitchSubcommandInputPacket_t *reply = NULL;
+    SwitchSubcommandInputPacket_t *user_reply = NULL;
+    SwitchSubcommandInputPacket_t *factory_reply = NULL;
+    SwitchSPIOpData_t readUserParams;
+    SwitchSPIOpData_t readFactoryParams;
 
-    /* Read Calibration Info */
-    SwitchSPIOpData_t readParams;
-    readParams.unAddress = k_unSPIStickCalibrationStartOffset;
-    readParams.ucLength = k_unSPIStickCalibrationLength;
+    /* Read User Calibration Info */
+    readUserParams.unAddress = k_unSPIStickUserCalibrationStartOffset;
+    readUserParams.ucLength = k_unSPIStickUserCalibrationLength;
 
-    if (!WriteSubcommand(ctx, k_eSwitchSubcommandIDs_SPIFlashRead, (uint8_t *)&readParams, sizeof(readParams), &reply)) {
+    if (!WriteSubcommand(ctx, k_eSwitchSubcommandIDs_SPIFlashRead, (uint8_t *)&readUserParams, sizeof(readUserParams), &user_reply)) {
         return SDL_FALSE;
+    }
+
+    /* Read Factory Calibration Info */
+    readFactoryParams.unAddress = k_unSPIStickFactoryCalibrationStartOffset;
+    readFactoryParams.ucLength = k_unSPIStickFactoryCalibrationLength;
+
+    if (!WriteSubcommand(ctx, k_eSwitchSubcommandIDs_SPIFlashRead, (uint8_t *)&readFactoryParams, sizeof(readFactoryParams), &factory_reply)) {
+        return SDL_FALSE;
+    }
+
+    /* Automatically select the user calibration if magic bytes are set */
+    if (user_reply->stickUserCalibration.rgucLeftMagic[0] == 0xB2 && user_reply->stickUserCalibration.rgucLeftMagic[1] == 0xA1) {
+        pLeftStickCal = user_reply->stickUserCalibration.rgucLeftCalibration;
+    } else {
+        pLeftStickCal = factory_reply->stickFactoryCalibration.rgucLeftCalibration;
+    }
+
+    if (user_reply->stickUserCalibration.rgucRightMagic[0] == 0xB2 && user_reply->stickUserCalibration.rgucRightMagic[1] == 0xA1) {
+        pRightStickCal = user_reply->stickUserCalibration.rgucRightCalibration;
+    } else {
+        pRightStickCal = factory_reply->stickFactoryCalibration.rgucRightCalibration;
     }
 
     /* Stick calibration values are 12-bits each and are packed by bit
@@ -726,23 +770,22 @@ static SDL_bool LoadStickCalibration(SDL_DriverSwitch_Context *ctx, Uint8 input_
      * Left:  X-Max, Y-Max, X-Center, Y-Center, X-Min, Y-Min
      * Right: X-Center, Y-Center, X-Min, Y-Min, X-Max, Y-Max
      */
-    pStickCal = reply->spiReadData.rgucReadData;
 
     /* Left stick */
-    ctx->m_StickCalData[0].axis[0].sMax = ((pStickCal[1] << 8) & 0xF00) | pStickCal[0];    /* X Axis max above center */
-    ctx->m_StickCalData[0].axis[1].sMax = (pStickCal[2] << 4) | (pStickCal[1] >> 4);       /* Y Axis max above center */
-    ctx->m_StickCalData[0].axis[0].sCenter = ((pStickCal[4] << 8) & 0xF00) | pStickCal[3]; /* X Axis center */
-    ctx->m_StickCalData[0].axis[1].sCenter = (pStickCal[5] << 4) | (pStickCal[4] >> 4);    /* Y Axis center */
-    ctx->m_StickCalData[0].axis[0].sMin = ((pStickCal[7] << 8) & 0xF00) | pStickCal[6];    /* X Axis min below center */
-    ctx->m_StickCalData[0].axis[1].sMin = (pStickCal[8] << 4) | (pStickCal[7] >> 4);       /* Y Axis min below center */
+    ctx->m_StickCalData[0].axis[0].sMax = ((pLeftStickCal[1] << 8) & 0xF00) | pLeftStickCal[0];    /* X Axis max above center */
+    ctx->m_StickCalData[0].axis[1].sMax = (pLeftStickCal[2] << 4) | (pLeftStickCal[1] >> 4);       /* Y Axis max above center */
+    ctx->m_StickCalData[0].axis[0].sCenter = ((pLeftStickCal[4] << 8) & 0xF00) | pLeftStickCal[3]; /* X Axis center */
+    ctx->m_StickCalData[0].axis[1].sCenter = (pLeftStickCal[5] << 4) | (pLeftStickCal[4] >> 4);    /* Y Axis center */
+    ctx->m_StickCalData[0].axis[0].sMin = ((pLeftStickCal[7] << 8) & 0xF00) | pLeftStickCal[6];    /* X Axis min below center */
+    ctx->m_StickCalData[0].axis[1].sMin = (pLeftStickCal[8] << 4) | (pLeftStickCal[7] >> 4);       /* Y Axis min below center */
 
     /* Right stick */
-    ctx->m_StickCalData[1].axis[0].sCenter = ((pStickCal[10] << 8) & 0xF00) | pStickCal[9]; /* X Axis center */
-    ctx->m_StickCalData[1].axis[1].sCenter = (pStickCal[11] << 4) | (pStickCal[10] >> 4);   /* Y Axis center */
-    ctx->m_StickCalData[1].axis[0].sMin = ((pStickCal[13] << 8) & 0xF00) | pStickCal[12];   /* X Axis min below center */
-    ctx->m_StickCalData[1].axis[1].sMin = (pStickCal[14] << 4) | (pStickCal[13] >> 4);      /* Y Axis min below center */
-    ctx->m_StickCalData[1].axis[0].sMax = ((pStickCal[16] << 8) & 0xF00) | pStickCal[15];   /* X Axis max above center */
-    ctx->m_StickCalData[1].axis[1].sMax = (pStickCal[17] << 4) | (pStickCal[16] >> 4);      /* Y Axis max above center */
+    ctx->m_StickCalData[1].axis[0].sCenter = ((pRightStickCal[1] << 8) & 0xF00) | pRightStickCal[0]; /* X Axis center */
+    ctx->m_StickCalData[1].axis[1].sCenter = (pRightStickCal[2] << 4) | (pRightStickCal[1] >> 4);    /* Y Axis center */
+    ctx->m_StickCalData[1].axis[0].sMin = ((pRightStickCal[4] << 8) & 0xF00) | pRightStickCal[3];    /* X Axis min below center */
+    ctx->m_StickCalData[1].axis[1].sMin = (pRightStickCal[5] << 4) | (pRightStickCal[4] >> 4);       /* Y Axis min below center */
+    ctx->m_StickCalData[1].axis[0].sMax = ((pRightStickCal[7] << 8) & 0xF00) | pRightStickCal[6];    /* X Axis max above center */
+    ctx->m_StickCalData[1].axis[1].sMax = (pRightStickCal[8] << 4) | (pRightStickCal[7] >> 4);       /* Y Axis max above center */
 
     /* Filter out any values that were uninitialized (0xFFF) in the SPI read */
     for (stick = 0; stick < 2; ++stick) {
@@ -1177,7 +1220,7 @@ static void UpdateDeviceIdentity(SDL_HIDAPI_Device *device)
     }
     device->guid.data[15] = ctx->m_eControllerType;
 
-    (void)SDL_snprintf(serial, sizeof serial, "%.2x-%.2x-%.2x-%.2x-%.2x-%.2x",
+    (void)SDL_snprintf(serial, sizeof(serial), "%.2x-%.2x-%.2x-%.2x-%.2x-%.2x",
                        ctx->m_rgucMACAddress[0],
                        ctx->m_rgucMACAddress[1],
                        ctx->m_rgucMACAddress[2],
@@ -1506,8 +1549,10 @@ static Uint32 HIDAPI_DriverSwitch_GetJoystickCapabilities(SDL_HIDAPI_Device *dev
     if (ctx->m_eControllerType == k_eSwitchDeviceInfoControllerType_ProController && !ctx->m_bInputOnly) {
         /* Doesn't have an RGB LED, so don't return SDL_JOYCAP_LED here */
         result |= SDL_JOYCAP_RUMBLE;
+    } else if (ctx->m_eControllerType == k_eSwitchDeviceInfoControllerType_JoyConLeft ||
+               ctx->m_eControllerType == k_eSwitchDeviceInfoControllerType_JoyConRight) {
+        result |= SDL_JOYCAP_RUMBLE;
     }
-
     return result;
 }
 
@@ -2120,7 +2165,11 @@ static SDL_bool HIDAPI_DriverSwitch_UpdateDevice(SDL_HIDAPI_Device *device)
                 const Uint32 INPUT_WAIT_TIMEOUT_MS = 100;
                 if (SDL_TICKS_PASSED(now, ctx->m_unLastInput + INPUT_WAIT_TIMEOUT_MS)) {
                     /* Steam may have put the controller back into non-reporting mode */
+                    SDL_bool wasSyncWrite = ctx->m_bSyncWrite;
+
+                    ctx->m_bSyncWrite = SDL_TRUE;
                     WriteProprietary(ctx, k_eSwitchProprietaryCommandIDs_ForceUSB, NULL, 0, SDL_FALSE);
+                    ctx->m_bSyncWrite = wasSyncWrite;
                 }
             } else if (device->is_bluetooth) {
                 const Uint32 INPUT_WAIT_TIMEOUT_MS = 3000;

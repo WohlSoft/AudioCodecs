@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -655,6 +655,16 @@ static void HIDAPI_DriverXboxOne_HandleStatePacket(SDL_Joystick *joystick, SDL_D
 {
     Sint16 axis;
 
+    /* Some controllers have larger packets over NDIS, but the real size is in data[3] */
+    size = SDL_min(4 + data[3], size);
+
+    /* Enable paddles on the Xbox Elite controller when connected over USB */
+    if (ctx->has_paddles && !ctx->has_unmapped_state && size == 50) {
+        Uint8 packet[] = { 0x4d, 0x00, 0x00, 0x02, 0x07, 0x00 };
+
+        SDL_HIDAPI_SendRumble(ctx->device, packet, sizeof(packet));
+    }
+
     if (ctx->last_state[4] != data[4]) {
         SDL_PrivateJoystickButton(joystick, SDL_CONTROLLER_BUTTON_START, (data[4] & 0x04) ? SDL_PRESSED : SDL_RELEASED);
         SDL_PrivateJoystickButton(joystick, SDL_CONTROLLER_BUTTON_BACK, (data[4] & 0x08) ? SDL_PRESSED : SDL_RELEASED);
@@ -686,6 +696,7 @@ static void HIDAPI_DriverXboxOne_HandleStatePacket(SDL_Joystick *joystick, SDL_D
          * Xbox Series X firmware version 5.1, report is 44 bytes, share button is in byte 18
          * Xbox Series X firmware version 5.5, report is 48 bytes, share button is in byte 22
          * Victrix Gambit Tournament Controller, report is 50 bytes, share button is in byte 32
+         * ThrustMaster eSwap PRO Controller Xbox, report is 64 bytes, share button is in byte 46
          */
         if (size < 48) {
             if (ctx->last_state[18] != data[18]) {
@@ -698,6 +709,10 @@ static void HIDAPI_DriverXboxOne_HandleStatePacket(SDL_Joystick *joystick, SDL_D
         } else if (size == 50) {
             if (ctx->last_state[32] != data[32]) {
                 SDL_PrivateJoystickButton(joystick, SDL_CONTROLLER_BUTTON_MISC1, (data[32] & 0x01) ? SDL_PRESSED : SDL_RELEASED);
+            }
+        } else if (size == 64) {
+            if (ctx->last_state[46] != data[46]) {
+                SDL_PrivateJoystickButton(joystick, SDL_CONTROLLER_BUTTON_MISC1, (data[46] & 0x01) ? SDL_PRESSED : SDL_RELEASED);
             }
         }
     }
@@ -781,13 +796,13 @@ static void HIDAPI_DriverXboxOne_HandleStatePacket(SDL_Joystick *joystick, SDL_D
     if (axis == 32704) {
         axis = 32767;
     }
-    if (axis == -32768 && size == 30 && (data[22] & 0x80) != 0) {
+    if (axis == -32768 && size == 30 && (data[22] & 0x80)) {
         axis = 32767;
     }
     SDL_PrivateJoystickAxis(joystick, SDL_CONTROLLER_AXIS_TRIGGERLEFT, axis);
 
     axis = ((int)SDL_SwapLE16(*(Sint16 *)(&data[8])) * 64) - 32768;
-    if (axis == -32768 && size == 30 && (data[22] & 0x40) != 0) {
+    if (axis == -32768 && size == 30 && (data[22] & 0x40)) {
         axis = 32767;
     }
     if (axis == 32704) {
@@ -805,6 +820,9 @@ static void HIDAPI_DriverXboxOne_HandleStatePacket(SDL_Joystick *joystick, SDL_D
     SDL_PrivateJoystickAxis(joystick, SDL_CONTROLLER_AXIS_RIGHTY, ~axis);
 
     SDL_memcpy(ctx->last_state, data, SDL_min(size, sizeof(ctx->last_state)));
+
+    /* We don't have the unmapped state for this packet */
+    ctx->has_unmapped_state = SDL_FALSE;
 }
 
 static void HIDAPI_DriverXboxOne_HandleStatusPacket(SDL_Joystick *joystick, SDL_DriverXboxOne_Context *ctx, Uint8 *data, int size)

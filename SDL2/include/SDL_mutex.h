@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -39,7 +39,7 @@
     defined(__clang__) && (!defined(SWIG))
 #define SDL_THREAD_ANNOTATION_ATTRIBUTE__(x)   __attribute__((x))
 #else
-#define SDL_THREAD_ANNOTATION_ATTRIBUTE__(x)   /* no-op */
+#define SDL_THREAD_ANNOTATION_ATTRIBUTE__(x)   // no-op
 #endif
 
 #define SDL_CAPABILITY(x) \

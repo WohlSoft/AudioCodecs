@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -188,7 +188,7 @@ static SDL_bool HIDAPI_DriverGameCube_InitDevice(SDL_HIDAPI_Device *device)
                 ctx->wireless[i] = (curSlot[0] & 0x20) != 0;
 
                 /* Only allow rumble if the adapter's second USB cable is connected */
-                ctx->rumbleAllowed[i] = (curSlot[0] & 0x04) != 0 && !ctx->wireless[i];
+                ctx->rumbleAllowed[i] = (curSlot[0] & 0x04) && !ctx->wireless[i];
 
                 if (curSlot[0] & 0x30) { /* 0x10 - Wired, 0x20 - Wireless */
                     if (ctx->joysticks[i] == -1) {
@@ -313,7 +313,7 @@ static void HIDAPI_DriverGameCube_HandleNintendoPacket(SDL_HIDAPI_Device *device
         ctx->wireless[i] = (curSlot[0] & 0x20) != 0;
 
         /* Only allow rumble if the adapter's second USB cable is connected */
-        ctx->rumbleAllowed[i] = (curSlot[0] & 0x04) != 0 && !ctx->wireless[i];
+        ctx->rumbleAllowed[i] = (curSlot[0] & 0x04) && !ctx->wireless[i];
 
         if (curSlot[0] & 0x30) { /* 0x10 - Wired, 0x20 - Wireless */
             if (ctx->joysticks[i] == -1) {

@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -868,10 +868,6 @@ static void SDL_BlitTriangle_Slow(SDL_BlitInfo *info,
             dstB = ((srcB * dstB) + (dstB * (255 - srcA))) / 255;
             if (dstB > 255) {
                 dstB = 255;
-            }
-            dstA = ((srcA * dstA) + (dstA * (255 - srcA))) / 255;
-            if (dstA > 255) {
-                dstA = 255;
             }
             break;
         }

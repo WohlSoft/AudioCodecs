@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -108,6 +108,8 @@ typedef struct
     int drawable_width, drawable_height;
     int fs_output_width, fs_output_height;
     int window_width, window_height;
+    int system_min_required_width;
+    int system_min_required_height;
     SDL_bool needs_resize_event;
     SDL_bool floating_resize_pending;
     SDL_bool was_floating;

@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -24,6 +24,38 @@
 #define SDL_windowsopengl_h_
 
 #if SDL_VIDEO_OPENGL_WGL
+
+#if __XBOXONE__ || __XBOXSERIES__
+typedef struct tagPIXELFORMATDESCRIPTOR
+{
+    WORD nSize;
+    WORD nVersion;
+    DWORD dwFlags;
+    BYTE iPixelType;
+    BYTE cColorBits;
+    BYTE cRedBits;
+    BYTE cRedShift;
+    BYTE cGreenBits;
+    BYTE cGreenShift;
+    BYTE cBlueBits;
+    BYTE cBlueShift;
+    BYTE cAlphaBits;
+    BYTE cAlphaShift;
+    BYTE cAccumBits;
+    BYTE cAccumRedBits;
+    BYTE cAccumGreenBits;
+    BYTE cAccumBlueBits;
+    BYTE cAccumAlphaBits;
+    BYTE cDepthBits;
+    BYTE cStencilBits;
+    BYTE cAuxBuffers;
+    BYTE iLayerType;
+    BYTE bReserved;
+    DWORD dwLayerMask;
+    DWORD dwVisibleMask;
+    DWORD dwDamageMask;
+} PIXELFORMATDESCRIPTOR, *PPIXELFORMATDESCRIPTOR, *LPPIXELFORMATDESCRIPTOR;
+#endif
 
 struct SDL_GLDriverData
 {
@@ -53,6 +85,19 @@ struct SDL_GLDriverData
     BOOL (WINAPI *wglGetPixelFormatAttribivARB)(HDC hdc, int iPixelFormat, int iLayerPlane, UINT nAttributes, const int *piAttributes, int *piValues);
     BOOL (WINAPI *wglSwapIntervalEXT)(int interval);
     int (WINAPI *wglGetSwapIntervalEXT)(void);
+#if __XBOXONE__ || __XBOXSERIES__
+    BOOL (WINAPI *wglSwapBuffers)(HDC hdc);
+    int (WINAPI *wglDescribePixelFormat)(HDC hdc,
+                                         int iPixelFormat,
+                                         UINT nBytes,
+                                         LPPIXELFORMATDESCRIPTOR ppfd);
+    int (WINAPI *wglChoosePixelFormat)(HDC hdc,
+                                       const PIXELFORMATDESCRIPTOR *ppfd);
+    BOOL (WINAPI *wglSetPixelFormat)(HDC hdc,
+                                     int format,
+                                     const PIXELFORMATDESCRIPTOR *ppfd);
+    int (WINAPI *wglGetPixelFormat)(HDC hdc);
+#endif
     /* *INDENT-ON* */ /* clang-format on */
 };
 

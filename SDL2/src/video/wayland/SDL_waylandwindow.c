@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -266,12 +266,17 @@ static void ConfigureWindowGeometry(SDL_Window *window)
             } else {
                 UnsetDrawSurfaceViewport(window);
 
-                /* Round to the next integer in case of a fractional value. */
-                wl_surface_set_buffer_scale(data->surface, (int32_t)SDL_ceilf(data->scale_factor));
+                if (!FullscreenModeEmulation(window)) {
+                    /* Round to the next integer in case of a fractional value. */
+                    wl_surface_set_buffer_scale(data->surface, (int32_t)SDL_ceilf(data->scale_factor));
+                } else {
+                    wl_surface_set_buffer_scale(data->surface, 1);
+                }
             }
 
-            data->window_width = window->w;
-            data->window_height = window->h;
+            /* Clamp the physical window size to the system minimum required size. */
+            data->window_width = SDL_max(window->w, data->system_min_required_width);
+            data->window_height = SDL_max(window->h, data->system_min_required_height);
 
             data->pointer_scale_x = 1.0f;
             data->pointer_scale_y = 1.0f;
@@ -597,7 +602,7 @@ static void handle_configure_xdg_toplevel(void *data,
         /* xdg_toplevel spec states that this is a suggestion.
            Ignore if less than or greater than max/min size. */
 
-        if ((window->flags & SDL_WINDOW_RESIZABLE)) {
+        if (window->flags & SDL_WINDOW_RESIZABLE) {
             if (window->max_w > 0) {
                 width = SDL_min(width, window->max_w);
             }
@@ -767,6 +772,47 @@ static const struct zxdg_toplevel_decoration_v1_listener decoration_listener = {
 };
 
 #ifdef HAVE_LIBDECOR_H
+/*
+ * XXX: Hack for older versions of libdecor that lack the function to query the
+ *      minimum content size limit. The internal limits must always be overridden
+ *      to ensure that very small windows don't cause errors or crashes.
+ *
+ *      On versions of libdecor that expose the function to get the minimum content
+ *      size limit, this function is a no-op.
+ *
+ *      Can be removed if the minimum required version of libdecor is raised
+ *      to a version that guarantees the availability of this function.
+ */
+static void OverrideLibdecorLimits(SDL_Window *window)
+{
+#if defined(SDL_VIDEO_DRIVER_WAYLAND_DYNAMIC_LIBDECOR)
+    if (libdecor_frame_get_min_content_size == NULL) {
+        SetMinMaxDimensions(window, SDL_FALSE);
+    }
+#elif !defined(SDL_HAVE_LIBDECOR_GET_MIN_MAX)
+    SetMinMaxDimensions(window, SDL_FALSE);
+#endif
+}
+
+/*
+ * NOTE: Retrieves the minimum content size limits, if the function for doing so is available.
+ *       On versions of libdecor that lack the minimum content size retrieval function, this
+ *       function is a no-op.
+ *
+ *       Can be replaced with a direct call if the minimum required version of libdecor is raised
+ *       to a version that guarantees the availability of this function.
+ */
+static void LibdecorGetMinContentSize(struct libdecor_frame *frame, int *min_w, int *min_h)
+{
+#if defined(SDL_VIDEO_DRIVER_WAYLAND_DYNAMIC_LIBDECOR)
+    if (libdecor_frame_get_min_content_size != NULL) {
+        libdecor_frame_get_min_content_size(frame, min_w, min_h);
+    }
+#elif defined(SDL_HAVE_LIBDECOR_GET_MIN_MAX)
+    libdecor_frame_get_min_content_size(frame, min_w, min_h);
+#endif
+}
+
 static void decoration_frame_configure(struct libdecor_frame *frame,
                                        struct libdecor_configuration *configuration,
                                        void *user_data)
@@ -850,6 +896,8 @@ static void decoration_frame_configure(struct libdecor_frame *frame,
         width = window->windowed.w;
         height = window->windowed.h;
         wind->floating_resize_pending = SDL_FALSE;
+
+        OverrideLibdecorLimits(window);
     } else {
         /*
          * XXX: libdecor can send bogus content sizes that are +/- the height
@@ -889,12 +937,16 @@ static void decoration_frame_configure(struct libdecor_frame *frame,
 
     /* Do the resize on the SDL side (this will set window->w/h)... */
     Wayland_HandleResize(window, width, height, scale_factor);
-    wind->shell_surface.libdecor.initial_configure_seen = SDL_TRUE;
 
     /* ... then commit the changes on the libdecor side. */
     state = libdecor_state_new(wind->window_width, wind->window_height);
     libdecor_frame_commit(frame, state, configuration);
     libdecor_state_free(state);
+
+    if (!wind->shell_surface.libdecor.initial_configure_seen) {
+        LibdecorGetMinContentSize(frame, &wind->system_min_required_width, &wind->system_min_required_height);
+        wind->shell_surface.libdecor.initial_configure_seen = SDL_TRUE;
+    }
 
     /* Update the resize capability. Since this will change the capabilities and
      * commit a new frame state with the last known content dimension, this has
@@ -1404,6 +1456,20 @@ void Wayland_ShowWindow(_THIS, SDL_Window *window)
         if (data->shell_surface.libdecor.frame && window->flags & SDL_WINDOW_BORDERLESS) {
             Wayland_SetWindowBordered(_this, window, SDL_FALSE);
         }
+
+        /* Libdecor plugins can enforce minimum window sizes, so adjust if the initial window size is too small. */
+        if (window->windowed.w < data->system_min_required_width ||
+            window->windowed.h < data->system_min_required_height) {
+
+            /* Warn if the window frame will be larger than the content surface. */
+            SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO,
+                        "Window dimensions (%i, %i) are smaller than the system enforced minimum (%i, %i); window borders will be larger than the content surface.",
+                        window->windowed.w, window->windowed.h, data->system_min_required_width, data->system_min_required_height);
+
+            data->window_width = SDL_max(window->windowed.w, data->system_min_required_width);
+            data->window_height = SDL_max(window->windowed.h, data->system_min_required_height);
+            CommitLibdecorFrame(window);
+        }
     } else
 #endif
     {
@@ -1781,7 +1847,7 @@ void Wayland_RestoreWindow(_THIS, SDL_Window *window)
             xdg_toplevel_unset_maximized(wind->shell_surface.xdg.roleobj.toplevel);
         }
 
-    WAYLAND_wl_display_flush(viddata->display);
+    WAYLAND_wl_display_roundtrip(viddata->display);
 }
 
 void Wayland_SetWindowBordered(_THIS, SDL_Window *window, SDL_bool bordered)
@@ -1860,7 +1926,7 @@ void Wayland_MaximizeWindow(_THIS, SDL_Window *window)
         xdg_toplevel_set_maximized(wind->shell_surface.xdg.roleobj.toplevel);
     }
 
-    WAYLAND_wl_display_flush(viddata->display);
+    WAYLAND_wl_display_roundtrip(viddata->display);
 }
 
 void Wayland_MinimizeWindow(_THIS, SDL_Window *window)
@@ -1936,7 +2002,7 @@ int Wayland_CreateWindow(_THIS, SDL_Window *window)
     SDL_WindowData *data;
     SDL_VideoData *c;
 
-    data = SDL_calloc(1, sizeof *data);
+    data = SDL_calloc(1, sizeof(*data));
     if (data == NULL) {
         return SDL_OutOfMemory();
     }
@@ -2112,12 +2178,15 @@ void Wayland_SetWindowSize(_THIS, SDL_Window *window)
 
 #ifdef HAVE_LIBDECOR_H
     /* we must not resize the window while we have a static (non-floating) size */
-    if (wind->shell_surface_type == WAYLAND_SURFACE_LIBDECOR &&
-        wind->shell_surface.libdecor.frame &&
-        !libdecor_frame_is_floating(wind->shell_surface.libdecor.frame)) {
-        /* Commit the resize when we re-enter floating state */
-        wind->floating_resize_pending = SDL_TRUE;
-        return;
+    if (wind->shell_surface_type == WAYLAND_SURFACE_LIBDECOR) {
+        if (wind->shell_surface.libdecor.frame &&
+            !libdecor_frame_is_floating(wind->shell_surface.libdecor.frame)) {
+            /* Commit the resize when we re-enter floating state */
+            wind->floating_resize_pending = SDL_TRUE;
+            return;
+        }
+
+        OverrideLibdecorLimits(window);
     }
 #endif
 

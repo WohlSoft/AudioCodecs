@@ -1,6 +1,6 @@
  /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -231,7 +231,7 @@ extern int SDL_AppleTVRemoteOpenedAsJoystick;
                     int i;
 
                     for (i = 1; i <= MAX_MOUSE_BUTTONS; ++i) {
-                        if ((event.buttonMask & SDL_BUTTON(i)) != 0) {
+                        if (event.buttonMask & SDL_BUTTON(i)) {
                             Uint8 button;
 
                             switch (i) {
@@ -286,7 +286,7 @@ extern int SDL_AppleTVRemoteOpenedAsJoystick;
                     int i;
 
                     for (i = 1; i <= MAX_MOUSE_BUTTONS; ++i) {
-                        if ((event.buttonMask & SDL_BUTTON(i)) != 0) {
+                        if (event.buttonMask & SDL_BUTTON(i)) {
                             Uint8 button;
 
                             switch (i) {

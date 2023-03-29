@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -647,7 +647,7 @@ static void BSD_JoystickUpdate(SDL_Joystick *joy)
     static int x, y, xmin = 0xffff, ymin = 0xffff, xmax = 0, ymax = 0;
 
     if (joy->hwdata->type == BSDJOY_JOY) {
-        while (read(joy->hwdata->fd, &gameport, sizeof gameport) == sizeof gameport) {
+        while (read(joy->hwdata->fd, &gameport, sizeof(gameport)) == sizeof(gameport)) {
             if (SDL_abs(x - gameport.x) > 8) {
                 x = gameport.x;
                 if (x < xmin) {

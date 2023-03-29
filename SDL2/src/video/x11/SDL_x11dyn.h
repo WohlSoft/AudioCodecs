@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -52,7 +52,7 @@
 #if SDL_VIDEO_DRIVER_X11_XDBE
 #include <X11/extensions/Xdbe.h>
 #endif
-#if SDL_VIDEO_DRIVER_X11_XINPUT2
+#if SDL_VIDEO_DRIVER_X11_XINPUT2 || SDL_VIDEO_DRIVER_X11_XFIXES
 #include <X11/extensions/XInput2.h>
 #endif
 #if SDL_VIDEO_DRIVER_X11_XFIXES

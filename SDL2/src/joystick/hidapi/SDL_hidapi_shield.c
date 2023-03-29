@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2022 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -378,7 +378,7 @@ static void HIDAPI_DriverShield_HandleTouchPacketV103(SDL_Joystick *joystick, SD
     SDL_PrivateJoystickButton(joystick, SDL_CONTROLLER_BUTTON_SHIELD_V103_TOUCHPAD, (data[1] & 0x01) ? SDL_PRESSED : SDL_RELEASED);
 
     /* It's a triangular pad, but just use the center as the usable touch area */
-    touchpad_state = ((data[1] & 0x80) == 0) ? SDL_PRESSED : SDL_RELEASED;
+    touchpad_state = !(data[1] & 0x80) ? SDL_PRESSED : SDL_RELEASED;
     touchpad_x = clamp((float)(data[2] - 0x70) / 0x50, 0.0f, 1.0f);
     touchpad_y = clamp((float)(data[4] - 0x40) / 0x15, 0.0f, 1.0f);
     SDL_PrivateJoystickTouchpad(joystick, 0, 0, touchpad_state, touchpad_x, touchpad_y, touchpad_state ? 1.0f : 0.0f);
