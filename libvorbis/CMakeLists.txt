@@ -3,6 +3,8 @@ project(libVorbis VERSION 1.3.7 LANGUAGES C)
 
 include(CheckIncludeFile)
 
+set(CMAKE_C_STANDARD 99)
+
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
 add_definitions(

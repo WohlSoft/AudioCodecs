@@ -3,6 +3,8 @@ project(libOGG VERSION 1.3.5 LANGUAGES C)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
+set(CMAKE_C_STANDARD 90)
+
 add_library(ogg STATIC
     src/bitwise.c
     src/framing.c

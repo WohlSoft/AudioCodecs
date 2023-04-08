@@ -3,10 +3,8 @@ project(libTimiditySDL VERSION 0.2 LANGUAGES C)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
-if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-    # Turn on warnings and legacy C/C++ standards to support more compilers
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c90")
-endif()
+# Turn on warnings and legacy C/C++ standards to support more compilers
+set(CMAKE_C_STANDARD 90)
 
 if(NOT MSVC)
     ac_add_c_warning_flag("all" ALL)
