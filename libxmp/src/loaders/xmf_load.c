@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-/* Imperium Galactica XMF loader.
+/* Loader for Astroidea XMF, used by Imperium Galactica and some other modules.
  * This format is completely unrelated to the MIDI XMF format.
  */
 
@@ -30,7 +30,7 @@ static int xmf_test(HIO_HANDLE *, char *, const int);
 static int xmf_load(struct module_data *, HIO_HANDLE *, const int);
 
 const struct format_loader libxmp_loader_xmf = {
-	"Imperium Galactica XMF",
+	"Astroidea XMF",
 	xmf_test,
 	xmf_load
 };
@@ -47,9 +47,13 @@ static int xmf_test(HIO_HANDLE *f, char *t, const int start)
 	int num_patterns;
 	int num_channels;
 	int num_ins;
+	int xmf_type;
 	int i;
 
-	if (hio_read8(f) != 0x03)
+	/* This value is 0x03 for all Imperium Galactica modules.
+	 * The demo "Prostate 666" and all other XMFs use 0x04 instead. */
+	xmf_type = hio_read8(f);
+	if (xmf_type != 0x03 && xmf_type != 0x04)
 		return -1;
 
 	if (hio_read(buf, 1, XMF_SAMPLE_ARRAY_SIZE, f) < XMF_SAMPLE_ARRAY_SIZE)
@@ -63,8 +67,36 @@ static int xmf_test(HIO_HANDLE *f, char *t, const int start)
 		uint32 loopend   = readmem24l(pos + 3);
 		uint32 datastart = readmem24l(pos + 6);
 		uint32 dataend   = readmem24l(pos + 9);
-		uint32 len;
+		uint8  flags     = pos[13];
+		uint16 srate     = readmem16l(pos + 14);
+
+		uint32 len = dataend - datastart;
 		pos += 16;
+
+		if (flags & ~(0x04 | 0x08 | 0x10)) {
+			D_(D_WARN "not XMF: smp %d: unknown flags", i);
+			return -1;
+		}
+		/* if ping-pong loop flag is enabled, normal loop flag should be enabled too */
+		if ((flags & (0x08 | 0x10)) == 0x10) {
+			D_(D_WARN "not XMF: smp %d: inconsistent loop flags", i);
+			return -1;
+		}
+		/* if loop flag is enabled, the loop should have a valid end point */
+		if ((flags & 0x08) && !loopend) {
+			D_(D_WARN "not XMF: smp %d: inconsistent loop data", i);
+			return -1;
+		}
+		/* a 16-bit sample should have an even number of bytes */
+		if ((flags & 0x04) && (len & 1)) {
+			D_(D_WARN "not XMF: smp %d: inconsistent 16-bit sample length", i);
+			return -1;
+		}
+		/* if this slot contains a valid sample, it should have a somewhat realistic middle-c frequency */
+		if (len && srate < 100) {
+			D_(D_WARN "not XMF: smp %d: low sample rate", i);
+			return -1;
+		}
 
 		/* Despite the data start and end values, samples are stored
 		 * sequentially after the pattern data. These fields are still
@@ -75,7 +107,6 @@ static int xmf_test(HIO_HANDLE *f, char *t, const int start)
 			return -1;
 		}
 
-		len = dataend - datastart;
 		samples_length += len;
 
 		/* All known XMFs have well-formed loops. */
@@ -215,6 +246,11 @@ static void xmf_translate_effect(struct xmp_event *event, uint8 effect, uint8 pa
 		param |= (param << 4);
 		xmf_insert_effect(event, FX_SETPAN, param, chn);
 		break;
+
+	case 0x11:			/* Ultra Tracker retrigger */
+		/* TODO: should support the full param range, needs testing. */
+		xmf_insert_effect(event, FX_EXTENDED, (EX_RETRIG << 4) | (param & 0x0f), chn);
+		break;
 	}
 }
 
@@ -224,14 +260,17 @@ static int xmf_load(struct module_data *m, HIO_HANDLE *f, const int start)
 	struct xmp_event *event;
 	uint8 *buf, *pos;
 	size_t pat_sz;
+	int xmf_type;
 	int i, j, k;
 
 	LOAD_INIT();
 
-	/* Skip 0x03 */
-	hio_read8(f);
-
-	snprintf(mod->type, XMP_NAME_SIZE, "Imperium Galactica XMF");
+	/* Imperium Galactica uses 0x03, other Astroidea tracks use 0x04 */
+	xmf_type = hio_read8(f);
+	if(xmf_type == 0x03)
+		snprintf(mod->type, XMP_NAME_SIZE, "Imperium Galactica XMF");
+	else
+		snprintf(mod->type, XMP_NAME_SIZE, "Astroidea XMF");
 
 	MODULE_INFO();
 
@@ -379,10 +418,13 @@ static int xmf_load(struct module_data *m, HIO_HANDLE *f, const int start)
 	/* With the Sound Blaster driver, full volume samples have a -0dB mix.
 	 * Doing this in libxmp (x4 mvolbase) clips a little bit, so use a
 	 * slightly lower level (x3 mvolbase, ~192 in IT terms).
+	 *
+	 * This only applies to the Imperium Galactica tracks; the tracks with
+	 * 0x04 use the full GUS volume range.
 	 */
 	m->volbase = 0xff;
 	m->mvolbase = 48;
-	m->mvol = m->mvolbase * 3;
+	m->mvol = (xmf_type == 0x03) ? m->mvolbase * 3 : m->mvolbase;
 	return 0;
 
   err:
