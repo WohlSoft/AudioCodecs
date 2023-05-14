@@ -254,11 +254,11 @@ static void N3DSAUDIO_CloseDevice(_THIS)
 
 static void N3DSAUDIO_ThreadInit(_THIS)
 {
-    s32 current_priority;
+    s32 current_priority = 0x30;
     svcGetThreadPriority(&current_priority, CUR_THREAD_HANDLE);
-    current_priority--;
+    current_priority++;
     /* 0x18 is reserved for video, 0x30 is the default for main thread */
-    current_priority = SDL_clamp(current_priority, 0x19, 0x2F);
+    current_priority = SDL_clamp(current_priority, 0x19, 0x3F);
     svcSetThreadPriority(CUR_THREAD_HANDLE, current_priority);
 }
 
