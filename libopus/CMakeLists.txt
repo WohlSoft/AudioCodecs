@@ -23,6 +23,7 @@ if(NOT MSVC)
     ac_disable_c_warning_flag("unused-but-set-variable" UNUSED_BUT_SET_VARIABLE)
     ac_disable_c_warning_flag("incompatible-pointer-types" INCOMPATIBLE_POINTER_TYPES)
     ac_disable_c_warning_flag("implicit-fallthrough" IMPLICIT_FALLTHROUGH)
+    ac_disable_c_warning_flag("stringop-overread" STRINGGOP_OVERREAD)
 endif()
 
 if(MSVC)

@@ -82,7 +82,7 @@
 #cmakedefine HAVE___MALLOC_HOOK @HAVE___MALLOC_HOOK@
 
 /* Define to the sub-directory where libtool stores uninstalled libraries. */
-/* #undef LT_OBJDIR */
+#cmakedefine LT_OBJDIR @LT_OBJDIR@
 
 /* Make use of ARM asm optimization */
 #cmakedefine OPUS_ARM_ASM @OPUS_ARM_ASM@
