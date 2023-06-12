@@ -83,7 +83,7 @@ if(USE_USE_NDK_MAKE)
         SOURCE_DIR ${CMAKE_SOURCE_DIR}/SDL2/
         CONFIGURE_COMMAND ""
         INSTALL_COMMAND ""
-        BUILD_COMMAND ${ANDROID_NDK}/ndk-build -C ${CMAKE_SOURCE_DIR}/SDL2 SDL2 SDL2_static SDL2_main hidapi
+        BUILD_COMMAND ${ANDROID_NDK}/ndk-build -C ${CMAKE_SOURCE_DIR}/SDL2 SDL2 SDL2_static SDL2_main
         NDK_PROJECT_PATH=null
         APP_BUILD_SCRIPT=${CMAKE_SOURCE_DIR}/SDL2/Android.mk
         # NDK_OUT=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/../..
@@ -97,7 +97,6 @@ if(USE_USE_NDK_MAKE)
             "${CMAKE_BINARY_DIR}/lib-ndk-out/local/${ANDROID_ABI}/libSDL2.a"
             "${CMAKE_BINARY_DIR}/lib-ndk-out/local/${ANDROID_ABI}/libSDL2main.a"
             "${CMAKE_BINARY_DIR}/lib-ndk-out/local/${ANDROID_ABI}/libSDL2.so"
-            "${CMAKE_BINARY_DIR}/lib-ndk-out/local/${ANDROID_ABI}/libhidapi.so"
             "${CMAKE_BINARY_DIR}/lib-ndk-out/local/${ANDROID_ABI}/libcpufeatures.a"
     )
     add_custom_target(SDL2HG ALL
@@ -105,14 +104,12 @@ if(USE_USE_NDK_MAKE)
         COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/include/SDL2"
         COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/SDL2/include/*.h" "${CMAKE_BINARY_DIR}/include/SDL2"
         COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_BINARY_DIR}/lib-ndk-out/local/${ANDROID_ABI}/libSDL2.so" "${CMAKE_BINARY_DIR}/lib/libSDL2.so"
-        COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_BINARY_DIR}/lib-ndk-out/local/${ANDROID_ABI}/libhidapi.so" "${CMAKE_BINARY_DIR}/lib/libhidapi.so"
         COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_BINARY_DIR}/lib-ndk-out/local/${ANDROID_ABI}/libSDL2.a" "${CMAKE_BINARY_DIR}/lib/libSDL2${SDL2_DEBUG_SUFFIX}.a"
         COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_BINARY_DIR}/lib-ndk-out/local/${ANDROID_ABI}/libSDL2main.a" "${CMAKE_BINARY_DIR}/lib/libSDL2main${SDL2_DEBUG_SUFFIX}.a"
         COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_BINARY_DIR}/lib-ndk-out/local/${ANDROID_ABI}/libcpufeatures.a" "${CMAKE_BINARY_DIR}/lib/libcpufeatures${SDL2_DEBUG_SUFFIX}.a"
         DEPENDS SDL2_Local_Build
         BYPRODUCTS
             "${CMAKE_BINARY_DIR}/lib/libSDL2.so"
-            "${CMAKE_BINARY_DIR}/lib/libhidapi.so"
             "${CMAKE_BINARY_DIR}/lib/libSDL2${SDL2_DEBUG_SUFFIX}.a"
             "${CMAKE_BINARY_DIR}/lib/libSDL2main${SDL2_DEBUG_SUFFIX}.a"
             "${CMAKE_BINARY_DIR}/lib/libcpufeatures${SDL2_DEBUG_SUFFIX}.a"
@@ -178,10 +175,6 @@ install(
     CODE "file( INSTALL \${builtSdl2Heads} DESTINATION \"${CMAKE_INSTALL_PREFIX}/include/SDL2\" )"
     CODE "file( GLOB builtSdlLibs \"${CMAKE_BINARY_DIR}/lib/*SDL2*\" )"
     CODE "file( INSTALL \${builtSdlLibs} DESTINATION \"${CMAKE_INSTALL_PREFIX}/lib\" )"
-    CODE "file( GLOB builtHidapiLibs \"${CMAKE_BINARY_DIR}/lib/*hidapi*\" )"
-    CODE "if(builtHidapiLibs)"
-    CODE "      file( INSTALL \${builtHidapiLibs} DESTINATION \"${CMAKE_INSTALL_PREFIX}/lib\" )"
-    CODE "endif()"
     CODE "file( GLOB builtSdlCMakeConfs \"${CMAKE_BINARY_DIR}/lib/cmake/SDL2/*\" )"
     CODE "file( INSTALL \${builtSdlCMakeConfs} DESTINATION \"${CMAKE_INSTALL_PREFIX}/lib/cmake/SDL2\" )"
     CODE "file( GLOB builtSdlPkgConfs \"${CMAKE_BINARY_DIR}/lib/pkgconfig/sdl2.pc\" )"
