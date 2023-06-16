@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2023 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -282,6 +282,8 @@ static int masi16_load(struct module_data *m, HIO_HANDLE *f, const int start)
 
 	if (libxmp_init_instrument(m) < 0)
 		return -1;
+
+	memset(p_smp, 0, sizeof(p_smp));
 
 	hio_seek(f, start + p_ins, SEEK_SET);
 	for (i = 0; i < stored_ins; i++) {
