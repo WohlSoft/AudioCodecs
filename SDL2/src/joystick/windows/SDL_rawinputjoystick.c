@@ -43,7 +43,11 @@
 #include "../../core/windows/SDL_hid.h"
 #include "../hidapi/SDL_hidapijoystick_c.h"
 
-#ifdef HAVE_XINPUT_H
+/* SDL_JOYSTICK_RAWINPUT_XINPUT is disabled because using XInput at the same time as
+   raw input will turn off the Xbox Series X controller when it is connected via the
+   Xbox One Wireless Adapter.
+ */
+#if 0 /*def HAVE_XINPUT_H*/
 #define SDL_JOYSTICK_RAWINPUT_XINPUT
 #endif
 #ifdef HAVE_WINDOWS_GAMING_INPUT_H
@@ -92,7 +96,11 @@ typedef struct WindowsGamingInputGamepadState WindowsGamingInputGamepadState;
 #define GIDC_REMOVAL 2
 #endif
 
+extern void WINDOWS_RAWINPUTEnabledChanged(void);
+extern void WINDOWS_JoystickDetect(void);
+
 static SDL_bool SDL_RAWINPUT_inited = SDL_FALSE;
+static SDL_bool SDL_RAWINPUT_remote_desktop = SDL_FALSE;
 static int SDL_RAWINPUT_numjoysticks = 0;
 
 static void RAWINPUT_JoystickClose(SDL_Joystick *joystick);
@@ -839,10 +847,36 @@ static void RAWINPUT_DelDevice(SDL_RAWINPUT_Device *device, SDL_bool send_event)
     }
 }
 
-static int RAWINPUT_JoystickInit(void)
+static void RAWINPUT_DetectDevices(void)
 {
     UINT device_count = 0;
 
+    if ((GetRawInputDeviceList(NULL, &device_count, sizeof(RAWINPUTDEVICELIST)) != -1) && device_count > 0) {
+        PRAWINPUTDEVICELIST devices = NULL;
+        UINT i;
+
+        devices = (PRAWINPUTDEVICELIST)SDL_malloc(sizeof(RAWINPUTDEVICELIST) * device_count);
+        if (devices) {
+            if (GetRawInputDeviceList(devices, &device_count, sizeof(RAWINPUTDEVICELIST)) != -1) {
+                for (i = 0; i < device_count; ++i) {
+                    RAWINPUT_AddDevice(devices[i].hDevice);
+                }
+            }
+            SDL_free(devices);
+        }
+    }
+}
+
+static void RAWINPUT_RemoveDevices(void)
+{
+    while (SDL_RAWINPUT_devices) {
+        RAWINPUT_DelDevice(SDL_RAWINPUT_devices, SDL_FALSE);
+    }
+    SDL_assert(SDL_RAWINPUT_numjoysticks == 0);
+}
+
+static int RAWINPUT_JoystickInit(void)
+{
     SDL_assert(!SDL_RAWINPUT_inited);
 
     if (!WIN_IsWindowsVistaOrGreater()) {
@@ -860,20 +894,7 @@ static int RAWINPUT_JoystickInit(void)
 
     SDL_RAWINPUT_inited = SDL_TRUE;
 
-    if ((GetRawInputDeviceList(NULL, &device_count, sizeof(RAWINPUTDEVICELIST)) != -1) && device_count > 0) {
-        PRAWINPUTDEVICELIST devices = NULL;
-        UINT i;
-
-        devices = (PRAWINPUTDEVICELIST)SDL_malloc(sizeof(RAWINPUTDEVICELIST) * device_count);
-        if (devices) {
-            if (GetRawInputDeviceList(devices, &device_count, sizeof(RAWINPUTDEVICELIST)) != -1) {
-                for (i = 0; i < device_count; ++i) {
-                    RAWINPUT_AddDevice(devices[i].hDevice);
-                }
-            }
-            SDL_free(devices);
-        }
-    }
+    RAWINPUT_DetectDevices();
 
     return 0;
 }
@@ -883,14 +904,12 @@ static int RAWINPUT_JoystickGetCount(void)
     return SDL_RAWINPUT_numjoysticks;
 }
 
-SDL_bool
-RAWINPUT_IsEnabled()
+SDL_bool RAWINPUT_IsEnabled()
 {
-    return SDL_RAWINPUT_inited;
+    return SDL_RAWINPUT_inited && !SDL_RAWINPUT_remote_desktop;
 }
 
-SDL_bool
-RAWINPUT_IsDevicePresent(Uint16 vendor_id, Uint16 product_id, Uint16 version, const char *name)
+SDL_bool RAWINPUT_IsDevicePresent(Uint16 vendor_id, Uint16 product_id, Uint16 version, const char *name)
 {
     SDL_RAWINPUT_Device *device;
 
@@ -989,6 +1008,21 @@ static void RAWINPUT_PostUpdate(void)
 
 static void RAWINPUT_JoystickDetect(void)
 {
+    SDL_bool remote_desktop = GetSystemMetrics(SM_REMOTESESSION) ? SDL_TRUE : SDL_FALSE;
+
+    if (remote_desktop != SDL_RAWINPUT_remote_desktop) {
+        SDL_RAWINPUT_remote_desktop = remote_desktop;
+
+        WINDOWS_RAWINPUTEnabledChanged();
+
+        if (remote_desktop) {
+            RAWINPUT_RemoveDevices();
+            WINDOWS_JoystickDetect();
+        } else {
+            WINDOWS_JoystickDetect();
+            RAWINPUT_DetectDevices();
+        }
+    }
     RAWINPUT_PostUpdate();
 }
 
@@ -1078,6 +1112,9 @@ static int RAWINPUT_JoystickOpen(SDL_Joystick *joystick, int device_index)
 
     ctx->is_xinput = device->is_xinput;
     ctx->is_xboxone = device->is_xboxone;
+#ifdef SDL_JOYSTICK_RAWINPUT_MATCHING
+    ctx->match_state = 0x0000008800000000ULL; /* Trigger axes at rest */
+#endif
     ctx->preparsed_data = device->preparsed_data;
     ctx->max_data_length = SDL_HidP_MaxDataListLength(HidP_Input, ctx->preparsed_data);
     ctx->data = (HIDP_DATA *)SDL_malloc(ctx->max_data_length * sizeof(*ctx->data));
@@ -1606,7 +1643,7 @@ static void RAWINPUT_UpdateOtherAPIs(SDL_Joystick *joystick)
     if (!ctx->wgi_correlated) {
         SDL_bool new_correlation_count = 0;
         if (RAWINPUT_MissingWindowsGamingInputSlot()) {
-            Uint8 correlation_id;
+            Uint8 correlation_id = 0;
             WindowsGamingInputGamepadState *slot_idx = NULL;
             if (RAWINPUT_GuessWindowsGamingInputSlot(&match_state_xinput, &correlation_id, &slot_idx, xinput_correlated)) {
                 /* we match exactly one WindowsGamingInput device */
@@ -1874,8 +1911,7 @@ static void RAWINPUT_JoystickClose(SDL_Joystick *joystick)
     }
 }
 
-SDL_bool
-RAWINPUT_RegisterNotifications(HWND hWnd)
+SDL_bool RAWINPUT_RegisterNotifications(HWND hWnd)
 {
     RAWINPUTDEVICE rid[SDL_arraysize(subscribed_devices)];
     int i;
@@ -1979,13 +2015,9 @@ static void RAWINPUT_JoystickQuit(void)
         return;
     }
 
-    while (SDL_RAWINPUT_devices) {
-        RAWINPUT_DelDevice(SDL_RAWINPUT_devices, SDL_FALSE);
-    }
+    RAWINPUT_RemoveDevices();
 
     WIN_UnloadHIDDLL();
-
-    SDL_RAWINPUT_numjoysticks = 0;
 
     SDL_RAWINPUT_inited = SDL_FALSE;
 }
