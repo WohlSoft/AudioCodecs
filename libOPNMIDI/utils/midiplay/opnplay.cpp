@@ -66,20 +66,94 @@ public:
     }
 };
 
-typedef std::deque<int16_t> AudioBuff;
+typedef std::deque<uint8_t> AudioBuff;
 static AudioBuff g_audioBuffer;
 static MutexType g_audioBuffer_lock;
+static OPNMIDI_AudioFormat g_audioFormat;
+static float g_gaining = 2.0f;
+
+static void applyGain(uint8_t *buffer, size_t bufferSize)
+{
+    size_t i;
+
+    switch(g_audioFormat.type)
+    {
+    case OPNMIDI_SampleType_S8:
+    {
+        int8_t *buf = reinterpret_cast<int8_t *>(buffer);
+        size_t samples = bufferSize;
+        for(i = 0; i < samples; ++i)
+            *(buf++) *= g_gaining;
+        break;
+    }
+    case OPNMIDI_SampleType_U8:
+    {
+        uint8_t *buf = buffer;
+        size_t samples = bufferSize;
+        for(i = 0; i < samples; ++i)
+        {
+            int8_t s = static_cast<int8_t>(static_cast<int32_t>(*buf) + (-0x7f - 1)) * g_gaining;
+            *(buf++) = static_cast<uint8_t>(static_cast<int32_t>(s) - (-0x7f - 1));
+        }
+        break;
+    }
+    case OPNMIDI_SampleType_S16:
+    {
+        int16_t *buf = reinterpret_cast<int16_t *>(buffer);
+        size_t samples = bufferSize / g_audioFormat.containerSize;
+        for(i = 0; i < samples; ++i)
+            *(buf++) *= g_gaining;
+        break;
+    }
+    case OPNMIDI_SampleType_U16:
+    {
+        uint16_t *buf = reinterpret_cast<uint16_t *>(buffer);
+        size_t samples = bufferSize / g_audioFormat.containerSize;
+        for(i = 0; i < samples; ++i)
+        {
+            int16_t s = static_cast<int16_t>(static_cast<int32_t>(*buf) + (-0x7fff - 1)) * g_gaining;
+            *(buf++) = static_cast<uint16_t>(static_cast<int32_t>(s) - (-0x7fff - 1));
+        }
+        break;
+    }
+    case OPNMIDI_SampleType_S32:
+    {
+        int32_t *buf = reinterpret_cast<int32_t *>(buffer);
+        size_t samples = bufferSize / g_audioFormat.containerSize;
+        for(i = 0; i < samples; ++i)
+            *(buf++) *= g_gaining;
+        break;
+    }
+    case OPNMIDI_SampleType_F32:
+    {
+        float *buf = reinterpret_cast<float *>(buffer);
+        size_t samples = bufferSize / g_audioFormat.containerSize;
+        for(i = 0; i < samples; ++i)
+            *(buf++) *= g_gaining;
+        break;
+    }
+    default:
+        break;
+    }
+}
 
 static void SDL_AudioCallbackX(void *, uint8_t *stream, int len)
 {
+    unsigned ate = static_cast<unsigned>(len); // number of bytes
+
     audio_lock();
-    short *target = reinterpret_cast<int16_t *>(stream);
+    //short *target = (short *) stream;
     g_audioBuffer_lock.Lock();
-    size_t ate = size_t(len) / 2; // number of shorts
-    if(ate > g_audioBuffer.size()) ate = g_audioBuffer.size();
-    for(size_t a = 0; a < ate; ++a)
-        target[a] = g_audioBuffer[a];
-    g_audioBuffer.erase(g_audioBuffer.begin(), g_audioBuffer.begin() + AudioBuff::difference_type(ate));
+
+    if(ate > g_audioBuffer.size())
+        ate = (unsigned)g_audioBuffer.size();
+
+    for(unsigned a = 0; a < ate; ++a)
+        stream[a] = g_audioBuffer[a];
+
+    applyGain(stream, len);
+
+    g_audioBuffer.erase(g_audioBuffer.begin(), g_audioBuffer.begin() + ate);
     g_audioBuffer_lock.Unlock();
     audio_unlock();
 }
@@ -283,13 +357,18 @@ int main(int argc, char **argv)
             " -w                Write WAV file rather than playing\n"
             " -fp               Enables full-panning stereo support\n"
             " -ea               Enable the auto-arpeggio\n"
+            " --gain <value>    Set the gaining factor (default 2.0)\n"
             " --emu-mame        Use MAME YM2612 Emulator\n"
             " --emu-gens        Use GENS 2.10 Emulator\n"
-            " --emu-nuked       Use Nuked OPN2 Emulator\n"
-            " --emu-gx          Use Genesis Plus GX Emulator\n"
+            " --emu-nuked-3438  Use Nuked OPN2 YM3438 Emulator\n"
+            " --emu-nuked-2612  Use Nuked OPN2 YM2612 Emulator\n"
+            " --emu-nuked       Same as --emu-nuked-3438\n"
+            " --emu-ymfm-opn2   Use the YMFM OPN2\n"
+            // " --emu-gx          Use Genesis Plus GX Emulator\n"
             " --emu-np2         Use Neko Project II Emulator\n"
             " --emu-mame-opna   Use MAME YM2608 Emulator\n"
-            " --emu-pmdwin      Use PMDWin Emulator\n"
+            " --emu-ymfm-opna   Use the YMFM OPNA\n"
+            // " --emu-pmdwin      Use PMDWin Emulator\n"
             " --chips <count>   Choose a count of emulated concurrent chips\n"
             "\n"
         );
@@ -317,6 +396,7 @@ int main(int argc, char **argv)
     spec.format   = OPNMIDI_SampleType_S16;
     spec.channels = 2;
     spec.samples  = uint16_t(static_cast<double>(spec.freq) * AudioBufferLength);
+    spec.is_msb = audio_is_big_endian();
 
     OPN2_MIDIPlayer *myDevice;
 
@@ -345,6 +425,18 @@ int main(int argc, char **argv)
     {
         if(!std::strcmp("-w", argv[arg]))
             recordWave = true;//Record library output into WAV file
+        else if(!std::strcmp("-s8", argv[arg]) && !recordWave)
+            spec.format = OPNMIDI_SampleType_S8;
+        else if(!std::strcmp("-u8", argv[arg]) && !recordWave)
+            spec.format = OPNMIDI_SampleType_U8;
+        else if(!std::strcmp("-s16", argv[arg]) && !recordWave)
+            spec.format = OPNMIDI_SampleType_S16;
+        else if(!std::strcmp("-u16", argv[arg]) && !recordWave)
+            spec.format = OPNMIDI_SampleType_U16;
+        else if(!std::strcmp("-s32", argv[arg]) && !recordWave)
+            spec.format = OPNMIDI_SampleType_S32;
+        else if(!std::strcmp("-f32", argv[arg]) && !recordWave)
+            spec.format = OPNMIDI_SampleType_F32;
         else if(!std::strcmp("-frb", argv[arg]))
             fullRangedBrightness = true;
         else if(!std::strcmp("-nl", argv[arg]))
@@ -354,23 +446,48 @@ int main(int argc, char **argv)
         else if(!std::strcmp("-ea", argv[arg]))
             autoArpeggioEnabled = 1; //Enable automatical arpeggio
         else if(!std::strcmp("--emu-nuked", argv[arg]))
-            emulator = OPNMIDI_EMU_NUKED;
+            emulator = OPNMIDI_EMU_NUKED_YM3438;
+        else if(!std::strcmp("--emu-nuked-3438", argv[arg]))
+            emulator = OPNMIDI_EMU_NUKED_YM3438;
+        else if(!std::strcmp("--emu-nuked-2612", argv[arg]))
+            emulator = OPNMIDI_EMU_NUKED_YM2612;
         else if(!std::strcmp("--emu-gens", argv[arg]))
             emulator = OPNMIDI_EMU_GENS;
         else if(!std::strcmp("--emu-mame", argv[arg]))
             emulator = OPNMIDI_EMU_MAME;
         else if(!std::strcmp("--emu-gx", argv[arg]))
-            emulator = OPNMIDI_EMU_GX;
+        {
+            std::fprintf(stdout, " - WARNING: GX is deprecated. Using YMFM OPN2 instead.\n");
+            std::fflush(stdout);
+            emulator = OPNMIDI_EMU_YMFM_OPN2;
+        }
+        else if(!std::strcmp("--emu-ymfm-opn2", argv[arg]))
+            emulator = OPNMIDI_EMU_YMFM_OPN2;
         else if(!std::strcmp("--emu-np2", argv[arg]))
             emulator = OPNMIDI_EMU_NP2;
         else if(!std::strcmp("--emu-mame-opna", argv[arg]))
             emulator = OPNMIDI_EMU_MAME_2608;
-        else if(!std::strcmp("--emu-pmdwin", argv[arg]))
-            emulator = OPNMIDI_EMU_PMDWIN;
+        else if(!std::strcmp("--emu-pmdwin", argv[arg])) // DEPRECATED FLAG
+        {
+            std::fprintf(stdout, " - WARNING: PMDWin is deprecated. Using YMFM OPNA instead.\n");
+            std::fflush(stdout);
+            emulator = OPNMIDI_EMU_YMFM_OPNA;
+        }
+        else if(!std::strcmp("--emu-ymfm-opna", argv[arg]))
+            emulator = OPNMIDI_EMU_YMFM_OPNA;
         else if(!std::strcmp("-fp", argv[arg]))
             fullPanEnabled = true;
         else if(!std::strcmp("-s", argv[arg]))
             scaleModulators = true;
+        else if(!std::strcmp("--gain", argv[arg]))
+        {
+            if(arg + 1 >= argc)
+            {
+                printError("The option --gain requires an argument!\n");
+                return 1;
+            }
+            g_gaining = std::atof(argv[++arg]);
+        }
         else if(!std::strcmp("-vm", argv[arg]))
         {
             if(arg + 1 >= argc)
@@ -445,14 +562,53 @@ int main(int argc, char **argv)
             std::fprintf(stderr, "\nERROR: Couldn't open audio: %s\n\n", audio_get_error());
             return 1;
         }
-        if(spec.samples != obtained.samples || spec.freq != obtained.freq)
+
+        if(spec.samples != obtained.samples || spec.freq != obtained.freq || spec.format != obtained.format)
         {
             sampleRate = obtained.freq;
-            std::fprintf(stderr, " - Audio wanted (samples=%u,rate=%u,channels=%u);\n"
-                         " - Audio obtained (samples=%u,rate=%u,channels=%u)\n",
-                         spec.samples,    spec.freq,    spec.channels,
-                         obtained.samples, obtained.freq, obtained.channels);
+            std::fprintf(stderr, " - Audio wanted (format=%s,samples=%u,rate=%u,channels=%u);\n"
+                                 " - Audio obtained (format=%s,samples=%u,rate=%u,channels=%u)\n",
+                         audio_format_to_str(spec.format, spec.is_msb),         spec.samples,     spec.freq,     spec.channels,
+                         audio_format_to_str(obtained.format, obtained.is_msb), obtained.samples, obtained.freq, obtained.channels);
         }
+    }
+    else
+    {
+        std::memcpy(&obtained, &spec, sizeof(AudioOutputSpec));
+    }
+
+    switch(obtained.format)
+    {
+    case OPNMIDI_SampleType_S8:
+        g_audioFormat.type = OPNMIDI_SampleType_S8;
+        g_audioFormat.containerSize = sizeof(int8_t);
+        g_audioFormat.sampleOffset = sizeof(int8_t) * 2;
+        break;
+    case OPNMIDI_SampleType_U8:
+        g_audioFormat.type = OPNMIDI_SampleType_U8;
+        g_audioFormat.containerSize = sizeof(uint8_t);
+        g_audioFormat.sampleOffset = sizeof(uint8_t) * 2;
+        break;
+    case OPNMIDI_SampleType_S16:
+        g_audioFormat.type = OPNMIDI_SampleType_S16;
+        g_audioFormat.containerSize = sizeof(int16_t);
+        g_audioFormat.sampleOffset = sizeof(int16_t) * 2;
+        break;
+    case OPNMIDI_SampleType_U16:
+        g_audioFormat.type = OPNMIDI_SampleType_U16;
+        g_audioFormat.containerSize = sizeof(uint16_t);
+        g_audioFormat.sampleOffset = sizeof(uint16_t) * 2;
+        break;
+    case OPNMIDI_SampleType_S32:
+        g_audioFormat.type = OPNMIDI_SampleType_S32;
+        g_audioFormat.containerSize = sizeof(int32_t);
+        g_audioFormat.sampleOffset = sizeof(int32_t) * 2;
+        break;
+    case OPNMIDI_SampleType_F32:
+        g_audioFormat.type = OPNMIDI_SampleType_F32;
+        g_audioFormat.containerSize = sizeof(float);
+        g_audioFormat.sampleOffset = sizeof(float) * 2;
+        break;
     }
 
     if(arg == argc - 2)
@@ -550,6 +706,8 @@ int main(int argc, char **argv)
     std::fprintf(stdout, " - Volume model: %s\n", volume_model_to_str(opn2_getVolumeRangeModel(myDevice)));
     std::fprintf(stdout, " - Channel allocation mode: %s\n", chanalloc_to_str(opn2_getChannelAllocMode(myDevice)));
 
+    std::fprintf(stdout, " - Gain level: %g\n", g_gaining);
+
     int songsCount = opn2_getSongsCount(myDevice);
     if(songNumLoad >= 0)
         std::fprintf(stdout, " - Attempt to load song number: %d / %d\n", songNumLoad, songsCount);
@@ -616,7 +774,7 @@ int main(int argc, char **argv)
         std::fflush(stdout);
 #endif
 
-        short buff[4096];
+        uint8_t buff[16384];
         char posHMS[25];
         uint64_t milliseconds_prev = ~0u;
         int printsCounter = 0;
@@ -626,7 +784,11 @@ int main(int argc, char **argv)
 
         while(!stop)
         {
-            size_t got = static_cast<size_t>(opn2_play(myDevice, 4096, buff));
+            size_t got = (size_t)opn2_playFormat(myDevice, 4096,
+                                                 buff,
+                                                 buff + g_audioFormat.containerSize,
+                                                 &g_audioFormat) * g_audioFormat.containerSize;
+
             if(got <= 0)
                 break;
 
@@ -664,9 +826,11 @@ int main(int argc, char **argv)
                 g_audioBuffer[pos + p] = buff[p];
             g_audioBuffer_lock.Unlock();
 
-            const AudioOutputSpec &cur_spec = obtained;
-            while(!stop && (g_audioBuffer.size() > static_cast<size_t>(cur_spec.samples + (cur_spec.freq * 2) * OurHeadRoomLength)))
+            const AudioOutputSpec &spec = obtained;
+            while(!stop && (g_audioBuffer.size() > static_cast<size_t>(spec.samples + (spec.freq * g_audioFormat.sampleOffset) * OurHeadRoomLength)))
+            {
                 audio_delay(1);
+            }
 
 #ifdef DEBUG_SEEKING_TEST
             if(delayBeforeSeek-- <= 0)
@@ -687,19 +851,35 @@ int main(int argc, char **argv)
         std::fprintf(stdout, " - Recording WAV file %s...\n", wave_out.c_str());
         std::fprintf(stdout, "\n==========================================\n");
         std::fflush(stdout);
+        int wav_format = obtained.format == OPNMIDI_SampleType_F32 ? WAVE_FORMAT_IEEE_FLOAT : WAVE_FORMAT_PCM;
+        int wav_has_sign = obtained.format != OPNMIDI_SampleType_U8 && obtained.format != OPNMIDI_SampleType_U16;
 
-        if(wave_open(static_cast<int>(sampleRate), wave_out.c_str()) == 0)
+        void *wav_ctx = ctx_wave_open(obtained.channels,
+                                      static_cast<long>(sampleRate),
+                                      g_audioFormat.containerSize,
+                                      wav_format,
+                                      wav_has_sign,
+                                      (int)obtained.is_msb,
+                                      wave_out.c_str()
+                                      );
+
+        if(wav_ctx)
         {
-            wave_enable_stereo();
-            short buff[4096];
+            uint8_t buff[16384];
             int complete_prev = -1;
+
             while(!stop)
             {
-                size_t got = static_cast<size_t>(opn2_play(myDevice, 4096, buff));
+                size_t got = (size_t)opn2_playFormat(myDevice, 4096,
+                                                     buff,
+                                                     buff + g_audioFormat.containerSize,
+                                                     &g_audioFormat) * g_audioFormat.containerSize;
                 if(got <= 0)
                     break;
 
-                wave_write(buff, static_cast<long>(got));
+                applyGain(buff, got);
+
+                ctx_wave_write(wav_ctx, buff, static_cast<long>(got));
 
                 int complete = static_cast<int>(std::floor(100.0 * opn2_positionTell(myDevice) / total));
                 if(complete_prev != complete)
@@ -710,7 +890,8 @@ int main(int argc, char **argv)
                     complete_prev = complete;
                 }
             }
-            wave_close();
+
+            ctx_wave_close(wav_ctx);
             std::fprintf(stdout, "                                               \n\n");
 
             if(stop)
@@ -721,6 +902,8 @@ int main(int argc, char **argv)
         }
         else
         {
+            std::fprintf(stdout, "Failed to open the output file: %s!\n", wave_out.c_str());
+            std::fflush(stdout);
             opn2_close(myDevice);
             return 1;
         }
