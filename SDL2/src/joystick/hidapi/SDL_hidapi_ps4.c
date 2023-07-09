@@ -400,7 +400,8 @@ static SDL_bool HIDAPI_DriverPS4_InitDevice(SDL_HIDAPI_Device *device)
     ctx->effects_supported = (ctx->lightbar_supported || ctx->vibration_supported);
 
     if (device->vendor_id == USB_VENDOR_PDP &&
-        device->product_id == USB_PRODUCT_VICTRIX_FS_PRO_V2) {
+        (device->product_id == USB_PRODUCT_VICTRIX_FS_PRO ||
+         device->product_id == USB_PRODUCT_VICTRIX_FS_PRO_V2)) {
         /* The Victrix FS Pro V2 reports that it has lightbar support,
          * but it doesn't respond to the effects packet, and will hang
          * on reboot if we send it.
@@ -660,16 +661,25 @@ static int HIDAPI_DriverPS4_UpdateEffects(SDL_HIDAPI_Device *device)
 
 static void HIDAPI_DriverPS4_TickleBluetooth(SDL_HIDAPI_Device *device)
 {
-    /* This is just a dummy packet that should have no effect, since we don't set the CRC */
-    Uint8 data[78];
+    SDL_DriverPS4_Context *ctx = (SDL_DriverPS4_Context *)device->context;
 
-    SDL_zeroa(data);
+    if (ctx->enhanced_mode) {
+        /* This is just a dummy packet that should have no effect, since we don't set the CRC */
+        Uint8 data[78];
 
-    data[0] = k_EPS4ReportIdBluetoothEffects;
-    data[1] = 0xC0; /* Magic value HID + CRC */
+        SDL_zeroa(data);
 
-    if (SDL_HIDAPI_LockRumble() == 0) {
-        SDL_HIDAPI_SendRumbleAndUnlock(device, data, sizeof(data));
+        data[0] = k_EPS4ReportIdBluetoothEffects;
+        data[1] = 0xC0; /* Magic value HID + CRC */
+
+        if (SDL_HIDAPI_LockRumble() == 0) {
+            SDL_HIDAPI_SendRumbleAndUnlock(device, data, sizeof(data));
+        }
+    } else {
+        /* We can't even send an invalid effects packet, or it will put the controller in enhanced mode */
+        if (device->num_joysticks > 0) {
+            HIDAPI_JoystickDisconnected(device, device->joysticks[0]);
+        }
     }
 }
 

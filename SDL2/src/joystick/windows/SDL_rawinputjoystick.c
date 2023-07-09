@@ -33,6 +33,7 @@
 
 #if SDL_JOYSTICK_RAWINPUT
 
+#include "SDL_atomic.h"
 #include "SDL_endian.h"
 #include "SDL_events.h"
 #include "SDL_hints.h"
@@ -47,7 +48,7 @@
    raw input will turn off the Xbox Series X controller when it is connected via the
    Xbox One Wireless Adapter.
  */
-#if 0 /*def HAVE_XINPUT_H*/
+#ifdef HAVE_XINPUT_H
 #define SDL_JOYSTICK_RAWINPUT_XINPUT
 #endif
 #ifdef HAVE_WINDOWS_GAMING_INPUT_H
@@ -445,7 +446,85 @@ static struct
     SDL_bool need_device_list_update;
     int ref_count;
     __x_ABI_CWindows_CGaming_CInput_CIGamepadStatics *gamepad_statics;
+    EventRegistrationToken gamepad_added_token;
+    EventRegistrationToken gamepad_removed_token;
 } wgi_state;
+
+typedef struct GamepadDelegate
+{
+    __FIEventHandler_1_Windows__CGaming__CInput__CGamepad iface;
+    SDL_atomic_t refcount;
+} GamepadDelegate;
+
+static const IID IID_IEventHandler_Gamepad = { 0x8a7639ee, 0x624a, 0x501a, { 0xbb, 0x53, 0x56, 0x2d, 0x1e, 0xc1, 0x1b, 0x52 } };
+
+static HRESULT STDMETHODCALLTYPE IEventHandler_CGamepadVtbl_QueryInterface(__FIEventHandler_1_Windows__CGaming__CInput__CGamepad *This, REFIID riid, void **ppvObject)
+{
+    if (ppvObject == NULL) {
+        return E_INVALIDARG;
+    }
+
+    *ppvObject = NULL;
+    if (WIN_IsEqualIID(riid, &IID_IUnknown) || WIN_IsEqualIID(riid, &IID_IAgileObject) || WIN_IsEqualIID(riid, &IID_IEventHandler_Gamepad)) {
+        *ppvObject = This;
+        __FIEventHandler_1_Windows__CGaming__CInput__CGamepad_AddRef(This);
+        return S_OK;
+    } else if (WIN_IsEqualIID(riid, &IID_IMarshal)) {
+        /* This seems complicated. Let's hope it doesn't happen. */
+        return E_OUTOFMEMORY;
+    } else {
+        return E_NOINTERFACE;
+    }
+}
+
+static ULONG STDMETHODCALLTYPE IEventHandler_CGamepadVtbl_AddRef(__FIEventHandler_1_Windows__CGaming__CInput__CGamepad *This)
+{
+    GamepadDelegate *self = (GamepadDelegate *)This;
+    return SDL_AtomicAdd(&self->refcount, 1) + 1UL;
+}
+
+static ULONG STDMETHODCALLTYPE IEventHandler_CGamepadVtbl_Release(__FIEventHandler_1_Windows__CGaming__CInput__CGamepad *This)
+{
+    GamepadDelegate *self = (GamepadDelegate *)This;
+    int rc = SDL_AtomicAdd(&self->refcount, -1) - 1;
+    /* Should never free the static delegate objects */
+    SDL_assert(rc > 0);
+    return rc;
+}
+
+static HRESULT STDMETHODCALLTYPE IEventHandler_CGamepadVtbl_InvokeAdded(__FIEventHandler_1_Windows__CGaming__CInput__CGamepad *This, IInspectable *sender, __x_ABI_CWindows_CGaming_CInput_CIGamepad *e)
+{
+    wgi_state.need_device_list_update = SDL_TRUE;
+    return S_OK;
+}
+
+static HRESULT STDMETHODCALLTYPE IEventHandler_CGamepadVtbl_InvokeRemoved(__FIEventHandler_1_Windows__CGaming__CInput__CGamepad *This, IInspectable *sender, __x_ABI_CWindows_CGaming_CInput_CIGamepad *e)
+{
+    wgi_state.need_device_list_update = SDL_TRUE;
+    return S_OK;
+}
+
+static __FIEventHandler_1_Windows__CGaming__CInput__CGamepadVtbl gamepad_added_vtbl = {
+    IEventHandler_CGamepadVtbl_QueryInterface,
+    IEventHandler_CGamepadVtbl_AddRef,
+    IEventHandler_CGamepadVtbl_Release,
+    IEventHandler_CGamepadVtbl_InvokeAdded
+};
+static GamepadDelegate gamepad_added = {
+    { &gamepad_added_vtbl },
+    { 1 }
+};
+
+static __FIEventHandler_1_Windows__CGaming__CInput__CGamepadVtbl gamepad_removed_vtbl = {
+    IEventHandler_CGamepadVtbl_QueryInterface,
+    IEventHandler_CGamepadVtbl_AddRef,
+    IEventHandler_CGamepadVtbl_Release,
+    IEventHandler_CGamepadVtbl_InvokeRemoved
+};
+static GamepadDelegate gamepad_removed = {
+    { &gamepad_removed_vtbl },
+    { 1 }
+};
 
 static void RAWINPUT_MarkWindowsGamingInputSlotUsed(WindowsGamingInputGamepadState *wgi_slot, RAWINPUT_DeviceContext *ctx)
 {
@@ -564,7 +643,10 @@ static void RAWINPUT_UpdateWindowsGamingInput()
 }
 static void RAWINPUT_InitWindowsGamingInput(RAWINPUT_DeviceContext *ctx)
 {
-    wgi_state.need_device_list_update = SDL_TRUE;
+    if (!SDL_GetHintBoolean(SDL_HINT_JOYSTICK_WGI, SDL_TRUE)) {
+        return;
+    }
+
     wgi_state.ref_count++;
     if (!wgi_state.initialized) {
         static const IID SDL_IID_IGamepadStatics = { 0x8BBCE529, 0xD49C, 0x39E9, { 0x95, 0x60, 0xE4, 0x7D, 0xDE, 0x96, 0xB7, 0xC8 } };
@@ -595,6 +677,20 @@ static void RAWINPUT_InitWindowsGamingInput(RAWINPUT_DeviceContext *ctx)
                 hr = WindowsCreateStringReferenceFunc(pNamespace, (UINT32)SDL_wcslen(pNamespace), &hNamespaceStringHeader, &hNamespaceString);
                 if (SUCCEEDED(hr)) {
                     RoGetActivationFactoryFunc(hNamespaceString, &SDL_IID_IGamepadStatics, (void **)&wgi_state.gamepad_statics);
+                }
+
+                if (wgi_state.gamepad_statics) {
+                    wgi_state.need_device_list_update = SDL_TRUE;
+
+                    hr = __x_ABI_CWindows_CGaming_CInput_CIGamepadStatics_add_GamepadAdded(wgi_state.gamepad_statics, &gamepad_added.iface, &wgi_state.gamepad_added_token);
+                    if (!SUCCEEDED(hr)) {
+                        SDL_SetError("add_GamepadAdded() failed: 0x%lx\n", hr);
+                    }
+
+                    hr = __x_ABI_CWindows_CGaming_CInput_CIGamepadStatics_add_GamepadRemoved(wgi_state.gamepad_statics, &gamepad_removed.iface, &wgi_state.gamepad_removed_token);
+                    if (!SUCCEEDED(hr)) {
+                        SDL_SetError("add_GamepadRemoved() failed: 0x%lx\n", hr);
+                    }
                 }
             }
         }
@@ -643,7 +739,6 @@ static SDL_bool RAWINPUT_GuessWindowsGamingInputSlot(const WindowsMatchState *st
 
 static void RAWINPUT_QuitWindowsGamingInput(RAWINPUT_DeviceContext *ctx)
 {
-    wgi_state.need_device_list_update = SDL_TRUE;
     --wgi_state.ref_count;
     if (!wgi_state.ref_count && wgi_state.initialized) {
         int ii;
@@ -656,6 +751,8 @@ static void RAWINPUT_QuitWindowsGamingInput(RAWINPUT_DeviceContext *ctx)
         }
         wgi_state.per_gamepad_count = 0;
         if (wgi_state.gamepad_statics) {
+            __x_ABI_CWindows_CGaming_CInput_CIGamepadStatics_remove_GamepadAdded(wgi_state.gamepad_statics, wgi_state.gamepad_added_token);
+            __x_ABI_CWindows_CGaming_CInput_CIGamepadStatics_remove_GamepadRemoved(wgi_state.gamepad_statics, wgi_state.gamepad_removed_token);
             __x_ABI_CWindows_CGaming_CInput_CIGamepadStatics_Release(wgi_state.gamepad_statics);
             wgi_state.gamepad_statics = NULL;
         }
@@ -879,12 +976,12 @@ static int RAWINPUT_JoystickInit(void)
 {
     SDL_assert(!SDL_RAWINPUT_inited);
 
-    if (!WIN_IsWindowsVistaOrGreater()) {
-        /* According to bug 6400, this doesn't work on Windows XP */
-        return -1;
+    if (!SDL_GetHintBoolean(SDL_HINT_JOYSTICK_RAWINPUT, SDL_TRUE)) {
+        return 0;
     }
 
-    if (!SDL_GetHintBoolean(SDL_HINT_JOYSTICK_RAWINPUT, SDL_TRUE)) {
+    if (!WIN_IsWindowsVistaOrGreater()) {
+        /* According to bug 6400, this doesn't work on Windows XP */
         return -1;
     }
 
@@ -916,9 +1013,6 @@ SDL_bool RAWINPUT_IsDevicePresent(Uint16 vendor_id, Uint16 product_id, Uint16 ve
     /* If we're being asked about a device, that means another API just detected one, so rescan */
 #ifdef SDL_JOYSTICK_RAWINPUT_XINPUT
     xinput_device_change = SDL_TRUE;
-#endif
-#ifdef SDL_JOYSTICK_RAWINPUT_WGI
-    wgi_state.need_device_list_update = SDL_TRUE;
 #endif
 
     device = SDL_RAWINPUT_devices;
@@ -1281,20 +1375,8 @@ static int RAWINPUT_JoystickRumble(SDL_Joystick *joystick, Uint16 low_frequency_
 #endif
     SDL_bool rumbled = SDL_FALSE;
 
-#ifdef SDL_JOYSTICK_RAWINPUT_WGI
-    if (!rumbled && ctx->wgi_correlated) {
-        WindowsGamingInputGamepadState *gamepad_state = ctx->wgi_slot;
-        HRESULT hr;
-        gamepad_state->vibration.LeftMotor = (DOUBLE)low_frequency_rumble / SDL_MAX_UINT16;
-        gamepad_state->vibration.RightMotor = (DOUBLE)high_frequency_rumble / SDL_MAX_UINT16;
-        hr = __x_ABI_CWindows_CGaming_CInput_CIGamepad_put_Vibration(gamepad_state->gamepad, gamepad_state->vibration);
-        if (SUCCEEDED(hr)) {
-            rumbled = SDL_TRUE;
-        }
-    }
-#endif
-
 #ifdef SDL_JOYSTICK_RAWINPUT_XINPUT
+    /* Prefer XInput over WGI because it allows rumble in the background */
     if (!rumbled && ctx->xinput_correlated) {
         XINPUT_VIBRATION XVibration;
 
@@ -1311,6 +1393,19 @@ static int RAWINPUT_JoystickRumble(SDL_Joystick *joystick, Uint16 low_frequency_
         }
     }
 #endif /* SDL_JOYSTICK_RAWINPUT_XINPUT */
+
+#ifdef SDL_JOYSTICK_RAWINPUT_WGI
+    if (!rumbled && ctx->wgi_correlated) {
+        WindowsGamingInputGamepadState *gamepad_state = ctx->wgi_slot;
+        HRESULT hr;
+        gamepad_state->vibration.LeftMotor = (DOUBLE)low_frequency_rumble / SDL_MAX_UINT16;
+        gamepad_state->vibration.RightMotor = (DOUBLE)high_frequency_rumble / SDL_MAX_UINT16;
+        hr = __x_ABI_CWindows_CGaming_CInput_CIGamepad_put_Vibration(gamepad_state->gamepad, gamepad_state->vibration);
+        if (SUCCEEDED(hr)) {
+            rumbled = SDL_TRUE;
+        }
+    }
+#endif
 
     if (!rumbled) {
 #if defined(SDL_JOYSTICK_RAWINPUT_WGI) || defined(SDL_JOYSTICK_RAWINPUT_XINPUT)
