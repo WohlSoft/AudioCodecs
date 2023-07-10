@@ -595,10 +595,15 @@ void MidiSynth::loadSetup()
 
 void MidiSynth::LoadSynthSetup()
 {
-    if(!m_setupInit || m_setupCurrent.emulatorId != m_setup.emulatorId)
+    int inEmulatorId = m_setup.emulatorId;
+
+    if(inEmulatorId >= OPNMIDI_VGM_DUMPER)
+        inEmulatorId++; // Skip the VGM dumper
+
+    if(!m_setupInit || m_setupCurrent.emulatorId != inEmulatorId)
     {
-        opn2_switchEmulator(synth, m_setup.emulatorId);
-        m_setupCurrent.emulatorId = m_setup.emulatorId;
+        opn2_switchEmulator(synth, inEmulatorId);
+        m_setupCurrent.emulatorId = inEmulatorId;
     }
 
     if(!m_setupInit || m_setupCurrent.numChips != m_setup.numChips)
@@ -652,7 +657,7 @@ void MidiSynth::LoadSynthSetup()
             opn2_openBankFile(synth, pathUtf8);
         }
         else
-            opn2_openBankData(synth, g_gm_opn2_bank, sizeof(g_gm_opn2_bank));
+            opn2_openBankData(synth, g_xg_wopn_bank, sizeof(g_xg_wopn_bank));
 
         m_setupCurrent.useExternalBank = m_setup.useExternalBank;
         wcscpy(m_setupCurrent.bankPath, m_setup.bankPath);
