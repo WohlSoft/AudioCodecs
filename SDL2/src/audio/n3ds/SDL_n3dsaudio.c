@@ -38,7 +38,7 @@ static SDL_AudioDevice *audio_device;
 static void FreePrivateData(_THIS);
 static int FindAudioFormat(_THIS);
 
-// fully local functions related to the wavebufs / DSP, not the same as the SDL-wide mixer lock
+/* fully local functions related to the wavebufs / DSP, not the same as the SDL-wide mixer lock */
 static SDL_INLINE void contextLock(_THIS)
 {
     LightLock_Lock(&this->hidden->lock);
