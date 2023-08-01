@@ -27,7 +27,7 @@
 #include "../SDL_systhread.h"
 
 /* N3DS has very limited RAM (128MB), so we put a limit on thread stack size. */
-#define N3DS_THREAD_STACK_SIZE_MAX     (16 * 1024)
+#define N3DS_THREAD_STACK_SIZE_MAX     (128 * 1024)
 #define N3DS_THREAD_STACK_SIZE_DEFAULT (4 * 1024)
 
 #define N3DS_THREAD_PRIORITY_LOW           0x3F /**< Minimum priority */
@@ -49,15 +49,22 @@ static void ThreadEntry(void *arg)
 
 int SDL_SYS_CreateThread(SDL_Thread *thread)
 {
-    s32 priority;
+    s32 priority = 0x30;
+    int cpu = -1;
     size_t stack_size = GetStackSize(thread->stacksize);
+
     svcGetThreadPriority(&priority, CUR_THREAD_HANDLE);
+
+    /* hack to put mixer thread on system core */
+    if (thread->name && SDL_strcmp(thread->name, "SDLAudioP") == 0 && R_SUCCEEDED(APT_SetAppCpuTimeLimit(30))) {
+        cpu = 1;
+    }
 
     thread->handle = threadCreate(ThreadEntry,
                                   thread,
                                   stack_size,
                                   priority,
-                                  -1,
+                                  cpu,
                                   false);
 
     if (thread->handle == NULL) {
