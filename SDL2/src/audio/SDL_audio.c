@@ -1261,7 +1261,9 @@ static SDL_AudioDeviceID open_audio_device(const char *devname, int iscapture,
                                            const SDL_AudioSpec *desired, SDL_AudioSpec *obtained,
                                            int allowed_changes, int min_id)
 {
+#ifndef __3DS__
     const SDL_bool is_internal_thread = (desired->callback == NULL);
+#endif
     SDL_AudioDeviceID id = 0;
     SDL_AudioSpec _obtained;
     SDL_AudioDevice *device;
@@ -1502,7 +1504,11 @@ static SDL_AudioDeviceID open_audio_device(const char *devname, int iscapture,
         /* Start the audio thread */
         /* !!! FIXME: we don't force the audio thread stack size here if it calls into user code, but maybe we should? */
         /* buffer queueing callback only needs a few bytes, so make the stack tiny. */
+#ifdef __3DS__
+        const size_t stacksize = 64 * 1024;
+#else
         const size_t stacksize = is_internal_thread ? 64 * 1024 : 0;
+#endif
         char threadname[64];
 
         (void)SDL_snprintf(threadname, sizeof(threadname), "SDLAudio%c%" SDL_PRIu32, (iscapture) ? 'C' : 'P', device->id);
