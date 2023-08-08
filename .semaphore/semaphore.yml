@@ -1,0 +1,27 @@
+version: v1.0
+name: Initial Pipeline
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu2004
+blocks:
+  - name: Build
+    task:
+      jobs:
+        - name: Debug
+          commands:
+            - mkdir build-debug
+            - cd build-debug
+            - cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=AudioCodecsRelease -DUSE_LOCAL_SDL2=ON ..
+            - cmake --build . --config Release --target install -- -j 8
+        - name: Release
+          commands:
+            - mkdir build-release
+            - cd build-release
+            - cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=AudioCodecsRelease -DUSE_LOCAL_SDL2=ON ..
+            - cmake --build . --config Release --target install -- -j 8
+      prologue:
+        commands:
+          - checkout
+          - sudo apt update
+          - sudo apt install ninja-build cmake
