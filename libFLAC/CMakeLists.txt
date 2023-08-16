@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.2...3.5)
 project(libFLAC VERSION 1.3.4 LANGUAGES C)
 
 include(CheckIncludeFiles)

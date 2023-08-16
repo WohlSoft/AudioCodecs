@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.2...3.5)
 project(libOGG VERSION 1.3.5 LANGUAGES C)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
