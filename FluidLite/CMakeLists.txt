@@ -24,6 +24,7 @@ if(NOT MSVC)
     ac_disable_c_warning_flag("implicit-fallthrough" IMPLICIT_FALLTHROUGH)
     ac_disable_c_warning_flag("unused-but-set-variable" UNUSED_BUT_SET_VARIABLE)
     ac_disable_c_warning_flag("pointer-to-int-cast" POINTER_TO_INT_CAST)
+    ac_disable_c_warning_flag("compound-token-split-by-macro" COMPOUND_TOKEN_SPLIT_BY_MACRO)
 endif()
 
 list(APPEND HEADERS
