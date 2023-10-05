@@ -79,7 +79,9 @@ typedef struct WindowsGamingInputGamepadState WindowsGamingInputGamepadState;
 #endif
 #endif
 
-/*#define DEBUG_RAWINPUT*/
+#if 0
+#define DEBUG_RAWINPUT
+#endif
 
 #ifndef RIDEV_EXINPUTSINK
 #define RIDEV_EXINPUTSINK 0x00001000
@@ -402,6 +404,21 @@ static SDL_bool RAWINPUT_GuessXInputSlot(const WindowsMatchState *state, Uint8 *
     int user_index;
     int match_count;
 
+    /* If there is only one available slot, let's use that
+     * That will be right most of the time, and uncorrelation will fix any bad guesses
+     */
+    match_count = 0;
+    for (user_index = 0; user_index < XUSER_MAX_COUNT; ++user_index) {
+        if (xinput_state[user_index].connected && !xinput_state[user_index].used) {
+            *slot_idx = user_index;
+            ++match_count;
+        }
+    }
+    if (match_count == 1) {
+        *correlation_id = ++xinput_state[*slot_idx].correlation_id;
+        return SDL_TRUE;
+    }
+
     *slot_idx = 0;
 
     match_count = 0;
@@ -717,10 +734,27 @@ static SDL_bool RAWINPUT_WindowsGamingInputSlotMatches(const WindowsMatchState *
 static SDL_bool RAWINPUT_GuessWindowsGamingInputSlot(const WindowsMatchState *state, Uint8 *correlation_id, WindowsGamingInputGamepadState **slot, SDL_bool xinput_correlated)
 {
     int match_count, user_index;
+    WindowsGamingInputGamepadState *gamepad_state = NULL;
+
+    /* If there is only one available slot, let's use that
+     * That will be right most of the time, and uncorrelation will fix any bad guesses
+     */
+    match_count = 0;
+    for (user_index = 0; user_index < wgi_state.per_gamepad_count; ++user_index) {
+        gamepad_state = wgi_state.per_gamepad[user_index];
+        if (gamepad_state->connected && !gamepad_state->used) {
+            *slot = gamepad_state;
+            ++match_count;
+        }
+    }
+    if (match_count == 1) {
+        *correlation_id = ++gamepad_state->correlation_id;
+        return SDL_TRUE;
+    }
 
     match_count = 0;
     for (user_index = 0; user_index < wgi_state.per_gamepad_count; ++user_index) {
-        WindowsGamingInputGamepadState *gamepad_state = wgi_state.per_gamepad[user_index];
+        gamepad_state = wgi_state.per_gamepad[user_index];
         if (RAWINPUT_WindowsGamingInputSlotMatches(state, gamepad_state, xinput_correlated)) {
             ++match_count;
             *slot = gamepad_state;
@@ -1102,8 +1136,13 @@ static void RAWINPUT_PostUpdate(void)
 
 static void RAWINPUT_JoystickDetect(void)
 {
-    SDL_bool remote_desktop = GetSystemMetrics(SM_REMOTESESSION) ? SDL_TRUE : SDL_FALSE;
+    SDL_bool remote_desktop;
 
+    if (!SDL_RAWINPUT_inited) {
+        return;
+    }
+
+    remote_desktop = GetSystemMetrics(SM_REMOTESESSION) ? SDL_TRUE : SDL_FALSE;
     if (remote_desktop != SDL_RAWINPUT_remote_desktop) {
         SDL_RAWINPUT_remote_desktop = remote_desktop;
 
@@ -2006,10 +2045,14 @@ static void RAWINPUT_JoystickClose(SDL_Joystick *joystick)
     }
 }
 
-SDL_bool RAWINPUT_RegisterNotifications(HWND hWnd)
+int RAWINPUT_RegisterNotifications(HWND hWnd)
 {
-    RAWINPUTDEVICE rid[SDL_arraysize(subscribed_devices)];
     int i;
+    RAWINPUTDEVICE rid[SDL_arraysize(subscribed_devices)];
+
+    if (!SDL_RAWINPUT_inited) {
+        return 0;
+    }
 
     for (i = 0; i < SDL_arraysize(subscribed_devices); i++) {
         rid[i].usUsagePage = USB_USAGEPAGE_GENERIC_DESKTOP;
@@ -2019,16 +2062,19 @@ SDL_bool RAWINPUT_RegisterNotifications(HWND hWnd)
     }
 
     if (!RegisterRawInputDevices(rid, SDL_arraysize(rid), sizeof(RAWINPUTDEVICE))) {
-        SDL_SetError("Couldn't register for raw input events");
-        return SDL_FALSE;
+        return SDL_SetError("Couldn't register for raw input events");
     }
-    return SDL_TRUE;
+    return 0;
 }
 
-void RAWINPUT_UnregisterNotifications()
+int RAWINPUT_UnregisterNotifications()
 {
     int i;
     RAWINPUTDEVICE rid[SDL_arraysize(subscribed_devices)];
+
+    if (!SDL_RAWINPUT_inited) {
+        return 0;
+    }
 
     for (i = 0; i < SDL_arraysize(subscribed_devices); i++) {
         rid[i].usUsagePage = USB_USAGEPAGE_GENERIC_DESKTOP;
@@ -2038,9 +2084,9 @@ void RAWINPUT_UnregisterNotifications()
     }
 
     if (!RegisterRawInputDevices(rid, SDL_arraysize(rid), sizeof(RAWINPUTDEVICE))) {
-        SDL_SetError("Couldn't unregister for raw input events");
-        return;
+        return SDL_SetError("Couldn't unregister for raw input events");
     }
+    return 0;
 }
 
 LRESULT CALLBACK

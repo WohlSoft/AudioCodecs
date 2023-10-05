@@ -2,6 +2,9 @@ if(${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_BINARY_DIR})
   message(FATAL_ERROR "Prevented in-tree build. Please create a build directory outside of the SDL source code and run \"cmake -S ${CMAKE_SOURCE_DIR} -B .\" from there")
 endif()
 
+# MSVC runtime library flags are selected by an abstraction.
+set(CMAKE_POLICY_DEFAULT_CMP0091 NEW)
+
 cmake_minimum_required(VERSION 3.0.0...3.5)
 project(SDL2 C CXX)
 
@@ -224,11 +227,13 @@ elseif(MSVC_VERSION GREATER 1400) # VisualStudio 8.0+
 elseif(CMAKE_C_COMPILER_ID MATCHES "^Intel$")
   set(OPT_DEF_ASM TRUE)
   set(USE_INTELCC TRUE)
+elseif(CMAKE_C_COMPILER_ID MATCHES "QCC")
+  set(USE_QCC TRUE)
 else()
   set(OPT_DEF_ASM FALSE)
 endif()
 
-if(USE_GCC OR USE_CLANG OR USE_INTELCC)
+if(USE_GCC OR USE_CLANG OR USE_INTELCC OR USE_QCC)
   set(OPT_DEF_GCC_ATOMICS ON)
 endif()
 
@@ -253,6 +258,9 @@ endif()
 if(MSVC)
   option(SDL_FORCE_STATIC_VCRT "Force /MT for static VC runtimes" OFF)
   if(SDL_FORCE_STATIC_VCRT)
+    if(NOT DEFINED CMAKE_MSVC_RUNTIME_LIBRARY)
+      set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    endif()
     foreach(flag_var
         CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
         CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
@@ -563,7 +571,7 @@ if(NOT SDL_FOREGROUNDING_SIGNAL STREQUAL "OFF")
 endif()
 
 # Compiler option evaluation
-if(USE_GCC OR USE_CLANG OR USE_INTELCC)
+if(USE_GCC OR USE_CLANG OR USE_INTELCC OR USE_QCC)
   # Check for -Wall first, so later things can override pieces of it.
   # Note: clang-cl treats -Wall as -Weverything (which is very loud),
   #       /W3 as -Wall, and /W4 as -Wall -Wextra.  So: /W3 is enough.
@@ -580,6 +588,40 @@ if(USE_GCC OR USE_CLANG OR USE_INTELCC)
   check_c_compiler_flag(-fno-strict-aliasing HAVE_GCC_NO_STRICT_ALIASING)
   if(HAVE_GCC_NO_STRICT_ALIASING)
     list(APPEND EXTRA_CFLAGS "-fno-strict-aliasing")
+  endif()
+
+  check_c_compiler_flag(-Wdocumentation HAVE_GCC_WDOCUMENTATION)
+  if(HAVE_GCC_WDOCUMENTATION)
+    if(SDL_WERROR)
+      check_c_compiler_flag(-Werror=documentation HAVE_GCC_WERROR_DOCUMENTATION)
+      if(HAVE_GCC_WERROR_DOCUMENTATION)
+        list(APPEND EXTRA_CFLAGS "-Werror=documentation")
+      endif()
+    endif()
+     list(APPEND EXTRA_CFLAGS "-Wdocumentation")
+  endif()
+
+  check_c_compiler_flag(-Wdocumentation-unknown-command HAVE_GCC_WDOCUMENTATION_UNKNOWN_COMMAND)
+  if(HAVE_GCC_WDOCUMENTATION_UNKNOWN_COMMAND)
+    if(SDL_WERROR)
+      check_c_compiler_flag(-Werror=documentation-unknown-command HAVE_GCC_WERROR_DOCUMENTATION_UNKNOWN_COMMAND)
+      if(HAVE_GCC_WERROR_DOCUMENTATION_UNKNOWN_COMMAND)
+        list(APPEND EXTRA_CFLAGS "-Werror=documentation-unknown-command")
+      endif()
+    endif()
+    list(APPEND EXTRA_CFLAGS "-Wdocumentation-unknown-command")
+  endif()
+
+  check_c_compiler_flag(-fcomment-block-commands=threadsafety HAVE_GCC_COMMENT_BLOCK_COMMANDS)
+  if(HAVE_GCC_COMMENT_BLOCK_COMMANDS)
+    list(APPEND EXTRA_CFLAGS "-fcomment-block-commands=threadsafety")
+    list(APPEND EXTRA_CFLAGS "-fcomment-block-commands=deprecated")
+  else()
+    check_c_compiler_flag(/clang:-fcomment-block-commands=threadsafety HAVE_CLANG_COMMENT_BLOCK_COMMANDS)
+    if(HAVE_CLANG_COMMENT_BLOCK_COMMANDS)
+      list(APPEND EXTRA_CFLAGS "/clang:-fcomment-block-commands=threadsafety")
+      list(APPEND EXTRA_CFLAGS "/clang:-fcomment-block-commands=deprecated")
+    endif()
   endif()
 
   check_c_compiler_flag(-Wdeclaration-after-statement HAVE_GCC_WDECLARATION_AFTER_STATEMENT)
@@ -619,11 +661,6 @@ if(USE_GCC OR USE_CLANG OR USE_INTELCC)
           return 0; }" HAVE_GCC_SYNC_LOCK_TEST_AND_SET)
     endif()
   endif()
-
-  set(CMAKE_REQUIRED_FLAGS "-mpreferred-stack-boundary=2")
-  check_c_source_compiles("int x = 0; int main(int argc, char **argv) { return 0; }"
-    HAVE_GCC_PREFERRED_STACK_BOUNDARY)
-  set(CMAKE_REQUIRED_FLAGS ${ORIG_CMAKE_REQUIRED_FLAGS})
 
   set(CMAKE_REQUIRED_FLAGS "-fvisibility=hidden -Werror")
   check_c_source_compiles("
@@ -1421,6 +1458,12 @@ elseif(UNIX AND NOT APPLE AND NOT RISCOS AND NOT HAIKU)
         file(GLOB AIX_AUDIO_SOURCES ${SDL2_SOURCE_DIR}/src/audio/paudio/*.c)
         list(APPEND SOURCE_FILES ${AIX_AUDIO_SOURCES})
         set(HAVE_SDL_AUDIO TRUE)
+    elseif(QNX)
+        set(SDL_AUDIO_DRIVER_QSA 1)
+        file(GLOB QSA_AUDIO_SOURCES ${SDL2_SOURCE_DIR}/src/audio/qsa/*.c)
+        list(APPEND SOURCE_FILES ${QSA_AUDIO_SOURCES})
+        list(APPEND EXTRA_LIBS asound)
+        set(HAVE_SDL_AUDIO TRUE)
     endif()
     CheckOSS()
     CheckALSA()
@@ -1452,6 +1495,7 @@ elseif(UNIX AND NOT APPLE AND NOT RISCOS AND NOT HAIKU)
       set(SDL_VIDEO_VULKAN 1)
       set(HAVE_VULKAN TRUE)
     endif()
+    CheckQNXScreen()
   endif()
 
   if(UNIX)
@@ -1695,6 +1739,13 @@ elseif(UNIX AND NOT APPLE AND NOT RISCOS AND NOT HAIKU)
     set(HAVE_RPATH TRUE)
   endif()
 
+  if(QNX)
+    # QNX's *printf() family generates a SIGSEGV if NULL is passed for a string
+    # specifier (on purpose), but SDL expects "(null)". Use the built-in
+    # implementation.
+    set(HAVE_VSNPRINTF 0)
+    set(USE_POSIX_SPAWN 1)
+  endif()
 elseif(WINDOWS)
   find_program(WINDRES windres)
 
@@ -2990,6 +3041,10 @@ if(EXTRA_CFLAGS)
 endif()
 listtostr(EXTRA_CFLAGS _EXTRA_CFLAGS)
 set(EXTRA_CFLAGS ${_EXTRA_CFLAGS})
+
+if(USE_GCC OR USE_CLANG)
+  string(REGEX REPLACE "(^| )-I" "\\1 -isystem" EXTRA_CFLAGS "${EXTRA_CFLAGS}")
+endif()
 
 # Compat helpers for the configuration files
 

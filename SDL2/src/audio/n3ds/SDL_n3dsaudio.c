@@ -38,7 +38,6 @@ static SDL_AudioDevice *audio_device;
 static void FreePrivateData(_THIS);
 static int FindAudioFormat(_THIS);
 
-/* fully local functions related to the wavebufs / DSP, not the same as the SDL-wide mixer lock */
 static SDL_INLINE void contextLock(_THIS)
 {
     LightLock_Lock(&this->hidden->lock);
@@ -47,6 +46,16 @@ static SDL_INLINE void contextLock(_THIS)
 static SDL_INLINE void contextUnlock(_THIS)
 {
     LightLock_Unlock(&this->hidden->lock);
+}
+
+static void N3DSAUD_LockAudio(_THIS)
+{
+    contextLock(this);
+}
+
+static void N3DSAUD_UnlockAudio(_THIS)
+{
+    contextUnlock(this);
 }
 
 static void N3DSAUD_DspHook(DSP_HookType hook)
@@ -186,7 +195,6 @@ static void N3DSAUDIO_PlayDevice(_THIS)
 {
     size_t nextbuf;
     size_t sampleLen;
-
     contextLock(this);
 
     nextbuf = this->hidden->nextbuf;
@@ -246,7 +254,7 @@ static void N3DSAUDIO_CloseDevice(_THIS)
 
 static void N3DSAUDIO_ThreadInit(_THIS)
 {
-    s32 current_priority = 0x30;
+    s32 current_priority;
     svcGetThreadPriority(&current_priority, CUR_THREAD_HANDLE);
     current_priority--;
     /* 0x18 is reserved for video, 0x30 is the default for main thread */
@@ -263,6 +271,8 @@ static SDL_bool N3DSAUDIO_Init(SDL_AudioDriverImpl *impl)
     impl->GetDeviceBuf = N3DSAUDIO_GetDeviceBuf;
     impl->CloseDevice = N3DSAUDIO_CloseDevice;
     impl->ThreadInit = N3DSAUDIO_ThreadInit;
+    impl->LockDevice = N3DSAUD_LockAudio;
+    impl->UnlockDevice = N3DSAUD_UnlockAudio;
     impl->OnlyHasDefaultOutputDevice = SDL_TRUE;
 
     /* Should be possible, but micInit would fail */

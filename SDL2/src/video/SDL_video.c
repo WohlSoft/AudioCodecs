@@ -18,6 +18,7 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
+
 #include "../SDL_internal.h"
 
 /* The high-level video driver subsystem */
@@ -127,15 +128,15 @@ static VideoBootStrap *bootstrap[] = {
 #if SDL_VIDEO_DRIVER_QNX
     &QNX_bootstrap,
 #endif
-#if SDL_VIDEO_DRIVER_OFFSCREEN
-    &OFFSCREEN_bootstrap,
+#if SDL_VIDEO_DRIVER_OS2
+    &OS2DIVE_bootstrap,
+    &OS2VMAN_bootstrap,
 #endif
 #if SDL_VIDEO_DRIVER_NGAGE
     &NGAGE_bootstrap,
 #endif
-#if SDL_VIDEO_DRIVER_OS2
-    &OS2DIVE_bootstrap,
-    &OS2VMAN_bootstrap,
+#if SDL_VIDEO_DRIVER_OFFSCREEN
+    &OFFSCREEN_bootstrap,
 #endif
 #if SDL_VIDEO_DRIVER_DUMMY
     &DUMMY_bootstrap,
@@ -453,7 +454,7 @@ int SDL_VideoInit(const char *driver_name)
         goto pre_driver_error;
     }
     init_keyboard = SDL_TRUE;
-    if (SDL_MouseInit() < 0) {
+    if (SDL_MousePreInit() < 0) {
         goto pre_driver_error;
     }
     init_mouse = SDL_TRUE;
@@ -549,6 +550,8 @@ int SDL_VideoInit(const char *driver_name)
         SDL_StartTextInput();
     }
 
+    SDL_MousePostInit();
+
     /* We're ready to go! */
     return 0;
 
@@ -643,6 +646,7 @@ void SDL_DelVideoDisplay(int index)
 
     if (index < (_this->num_displays - 1)) {
         SDL_free(_this->displays[index].driverdata);
+        SDL_free(_this->displays[index].name);
         SDL_memmove(&_this->displays[index], &_this->displays[index + 1], (_this->num_displays - index - 1) * sizeof(_this->displays[index]));
     }
     --_this->num_displays;
@@ -1333,6 +1337,7 @@ static int SDL_UpdateFullscreenMode(SDL_Window *window, SDL_bool fullscreen)
 {
     SDL_VideoDisplay *display;
     SDL_Window *other;
+    SDL_bool resized = SDL_FALSE;
 
     CHECK_WINDOW_MAGIC(window, -1);
 
@@ -1398,6 +1403,9 @@ static int SDL_UpdateFullscreenMode(SDL_Window *window, SDL_bool fullscreen)
 #endif
 
     display = SDL_GetDisplayForWindow(window);
+    if (display == NULL) { /* No display connected, nothing to do. */
+        return 0;
+    }
 
     if (fullscreen) {
         /* Hide any other fullscreen windows */
@@ -1438,7 +1446,7 @@ static int SDL_UpdateFullscreenMode(SDL_Window *window, SDL_bool fullscreen)
             SDL_zero(fullscreen_mode);
 
             if (SDL_GetWindowDisplayMode(other, &fullscreen_mode) == 0) {
-                SDL_bool resized = SDL_TRUE;
+                resized = SDL_TRUE;
 
                 if (other->w == fullscreen_mode.w && other->h == fullscreen_mode.h) {
                     resized = SDL_FALSE;
@@ -1493,11 +1501,18 @@ static int SDL_UpdateFullscreenMode(SDL_Window *window, SDL_bool fullscreen)
 
     if (_this->SetWindowFullscreen) {
         _this->SetWindowFullscreen(_this, window, display, SDL_FALSE);
+    } else {
+        resized = SDL_TRUE;
     }
     display->fullscreen_window = NULL;
 
-    /* Generate a mode change event here */
-    SDL_OnWindowResized(window);
+    if (!resized) {
+        /* Generate a mode change event here */
+        SDL_OnWindowResized(window);
+    } else {
+        SDL_SendWindowEvent(window, SDL_WINDOWEVENT_RESIZED,
+                            window->windowed.w, window->windowed.h);
+    }
 
     /* Restore the cursor position */
     SDL_RestoreMousePosition(window);
@@ -1619,9 +1634,11 @@ SDL_Window *SDL_CreateWindow(const char *title, int x, int y, int w, int h, Uint
     }
 
     /* Some platforms blow up if the windows are too large. Raise it later? */
-    if ((w > 16384) || (h > 16384)) {
-        SDL_SetError("Window is too large.");
-        return NULL;
+    if (w > 16384) {
+        w = 16384;
+    }
+    if (h > 16384) {
+        h = 16384;
     }
 
     /* ensure no more than one of these flags is set */
@@ -2466,6 +2483,9 @@ void SDL_ShowWindow(SDL_Window *window)
 
     if (_this->ShowWindow) {
         _this->ShowWindow(_this, window);
+    } else {
+        SDL_SetMouseFocus(window);
+        SDL_SetKeyboardFocus(window);
     }
     SDL_SendWindowEvent(window, SDL_WINDOWEVENT_SHOWN, 0, 0);
 }
@@ -2483,6 +2503,9 @@ void SDL_HideWindow(SDL_Window *window)
 
     if (_this->HideWindow) {
         _this->HideWindow(_this, window);
+    } else {
+        SDL_SetMouseFocus(NULL);
+        SDL_SetKeyboardFocus(NULL);
     }
     window->is_hiding = SDL_FALSE;
     SDL_SendWindowEvent(window, SDL_WINDOWEVENT_HIDDEN, 0, 0);
@@ -3349,18 +3372,14 @@ void SDL_VideoQuit(void)
         SDL_VideoDisplay *display = &_this->displays[i];
         SDL_ResetDisplayModes(i);
         SDL_free(display->desktop_mode.driverdata);
-        display->desktop_mode.driverdata = NULL;
         SDL_free(display->driverdata);
-        display->driverdata = NULL;
+        SDL_free(display->name);
     }
-    if (_this->displays) {
-        for (i = 0; i < _this->num_displays; ++i) {
-            SDL_free(_this->displays[i].name);
-        }
-        SDL_free(_this->displays);
-        _this->displays = NULL;
-        _this->num_displays = 0;
-    }
+
+    SDL_free(_this->displays);
+    _this->displays = NULL;
+    _this->num_displays = 0;
+
     SDL_free(_this->clipboard_text);
     _this->clipboard_text = NULL;
     _this->free(_this);

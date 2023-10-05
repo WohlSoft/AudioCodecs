@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VER=2.28.1
+VER=2.28.4
 pre=
 
 #wget --content-disposition https://github.com/libsdl-org/SDL/archive/${pre}release-${VER}.tar.gz -O SDL-repo.tar.gz
