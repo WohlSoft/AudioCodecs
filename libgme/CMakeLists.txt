@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.2...3.5)
 project(libGME VERSION 0.6.2 LANGUAGES CXX)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
+include(TestBigEndian)
 
 macro(use_cxx11)
   if (CMAKE_VERSION VERSION_LESS "3.1")
@@ -20,6 +21,17 @@ if(NOT MSVC)
     ac_add_cxx_warning_flag("all" ALL)
     ac_disable_c_warning_flag("inconsistent-missing-override" INCONSISTENT_MISSING_OVERRIDE)
     ac_disable_cxx_warning_flag("inconsistent-missing-override" INCONSISTENT_MISSING_OVERRIDE)
+
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        add_definitions(-DLIBGME_VISIBILITY)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden -fvisibility-inlines-hidden")
+
+        # Try to protect against undefined behavior from signed integer overflow
+        # This has caused miscompilation of code already and there are other
+        # potential uses; see https://bitbucket.org/mpyne/game-music-emu/issues/18/
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fwrapv")
+    endif()
 endif()
 
 if(MSVC)
@@ -28,6 +40,13 @@ endif()
 
 if(POLICY CMP0077) # Cache variables override since 3.12
     cmake_policy(SET CMP0077 NEW)
+endif()
+
+test_big_endian(WORDS_BIGENDIAN)
+if(WORDS_BIGENDIAN)
+    add_definitions(-DBLARGG_BIG_ENDIAN=1)
+else()
+    add_definitions(-DBLARGG_LITTLE_ENDIAN=1)
 endif()
 
 # Settings

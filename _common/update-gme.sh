@@ -29,7 +29,7 @@ function updateGME()
     rm -Rf "../$2-tmp"
 }
 
-updateGME https://Wohlstand@bitbucket.org/mpyne/game-music-emu.git libgme
+updateGME https://github.com/libgme/game-music-emu.git libgme
 #updateGME https://Wohlstand@bitbucket.org/Wohlstand/game-music-emu.git libgme
 
 printf "\n\nAll libraries has been updated!\n\n"
