@@ -63,6 +63,8 @@ else()
     set(ENABLE_FPIC OFF)
 endif()
 
+option(DISABLE_SIMD "Disable all SIMD optimizations as possible" OFF)
+
 # --- TODO: implement building or usage of pre-built libSDL here ---
 # set(SNDIO OFF) # Disable sndio that is not needed to us
 # add_subdirectory(libSDL2)

@@ -71,6 +71,21 @@ if(ANDROID)
     )
 endif()
 
+set(SDL2_CMAKE_NOSIMD_FLAGS)
+if(DISABLE_SIMD)
+    set(SDL2_CMAKE_NOSIMD_FLAGS
+        "-DSDL_SSEMATH=OFF"
+        "-DSDL_SSE=OFF"
+        "-DSDL_SSE2=OFF"
+        "-DSDL_SSE3=OFF"
+        "-DSDL_MMX=OFF"
+        "-DSDL_3DNOW=OFF"
+        "-DSDL_ALTIVEC=OFF"
+        "-DSDL_ARMSIMD=OFF"
+        "-DSDL_ARMNEON=OFF"
+    )
+endif()
+
 if(USE_USE_NDK_MAKE)
     if(CMAKE_BUILD_TYPE_LOWER STREQUAL "debug")
         set(SDL2_DEBUG_SUFFIX "d")
@@ -135,6 +150,7 @@ elseif(USE_LOCAL_SDL2)
             -DCMAKE_DEBUG_POSTFIX=${CMAKE_DEBUG_POSTFIX}
             ${SDL2_CMAKE_FPIC_FLAG}
             ${SDL2_WASAPI_FLAG}
+            ${SDL2_CMAKE_NOSIMD_FLAGS}
             ${APPLE_FLAGS}
             ${ANDROID_FLAGS}
             ${EMSCRIPTEN_FLAGS}

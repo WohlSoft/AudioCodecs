@@ -4,6 +4,7 @@ project(libFLAC VERSION 1.3.4 LANGUAGES C)
 include(CheckIncludeFiles)
 include(CheckFunctionExists)
 include(TestBigEndian)
+set(AUDIO_CODECS_KEEP_SSE ON)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
 TEST_BIG_ENDIAN(WORDS_BIGENDIAN)

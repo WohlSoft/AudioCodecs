@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.2...3.5)
 project(libGME VERSION 0.6.2 LANGUAGES CXX)
 
+set(AUDIO_CODECS_KEEP_SSE ON)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 include(TestBigEndian)
 

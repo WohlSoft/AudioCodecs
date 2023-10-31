@@ -5,6 +5,7 @@ include(CheckIncludeFile)
 
 set(CMAKE_C_STANDARD 99)
 
+set(AUDIO_CODECS_KEEP_SSE ON)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
 add_definitions(

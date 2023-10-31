@@ -9,6 +9,7 @@ include(CheckIncludeFile)
 include(CheckIncludeFiles)
 include(CheckLibraryExists)
 
+set(AUDIO_CODECS_KEEP_SSE ON)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
 if(NOT MSVC)

@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.2...3.5)
 project(libTimiditySDL VERSION 0.2 LANGUAGES C)
 
+set(AUDIO_CODECS_KEEP_SSE ON)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
 # Turn on warnings and legacy C/C++ standards to support more compilers

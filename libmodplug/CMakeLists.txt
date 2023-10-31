@@ -45,6 +45,7 @@ include(CheckIncludeFile)
 include(CheckCCompilerFlag)
 include(CheckCSourceCompiles)
 include(TestBigEndian)
+set(AUDIO_CODECS_KEEP_SSE ON)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
 
 TEST_BIG_ENDIAN(WORDS_BIGENDIAN)
