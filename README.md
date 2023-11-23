@@ -20,9 +20,9 @@ Note: to build libtimidity, you need have latest libSDL2 be installed! (this lib
 
 ## Linux
 You will need:
-* CMake >= 2.8
+* CMake >= 3.2
 * GCC and G++ >= 4.8
-* libSDL2 library package installed, OR you can use -DDOWNLOAD_SDL2_DEPENDENCY=ON CMake flag to automatically download from [official mercurial repository](https://hg.libsdl.org/SDL/) and build this
+* libSDL2 library package installed, OR you can use -DUSE_LOCAL_SDL2=ON to use the vendored copy of SDL2 instead, or use the -DDOWNLOAD_SDL2_DEPENDENCY=ON CMake flag to automatically download from [official GitHub repository](https://github.com/libsdl-org/SDL) and build this.
 
 **System install** _(will be installed with /usr/local/ prefix)_
 ```bash
@@ -68,7 +68,7 @@ The build for macOS is very similar to Linux way, you just can follow Linux way 
 
 ## Windows
 You will need:
-* CMake >= 2.8
+* CMake >= 3.2
 * MinGW >= 4.8, MinGW-w64 >= 5, or MSVC >=2015 (on your taste)
 
 **Build with MinGW**
