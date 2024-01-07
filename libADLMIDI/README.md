@@ -3,7 +3,7 @@ libADLMIDI is a free Software MIDI synthesizer library with OPL3 emulation
 
 Original ADLMIDI code: Copyright (c) 2010-2014 Joel Yliluoma <bisqwit@iki.fi>
 
-ADLMIDI Library API:   Copyright (c) 2015-2023 Vitaly Novichkov <admin@wohlnet.ru>
+ADLMIDI Library API:   Copyright (c) 2015-2024 Vitaly Novichkov <admin@wohlnet.ru>
 
 Library is based on the ADLMIDI, a MIDI player for Linux and Windows with OPL3 emulation:
 
@@ -200,7 +200,6 @@ To build that example you will need to have installed SDL2 library.
 ## 1.5.0.1 2020-10-11
  * Fixed an incorrect timer processing when using a real-time interface
 
-# Changelog
 ## 1.5.0   2020-09-28
  * Drum note length expanding is now supported in real-time mode (Thanks to [Jean Pierre Cimalando](https://github.com/jpcima) for a work!)
  * Channels manager has been improved (Thanks to [Jean Pierre Cimalando](https://github.com/jpcima) for a work!)
