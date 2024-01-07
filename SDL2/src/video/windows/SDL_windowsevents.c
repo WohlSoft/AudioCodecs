@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2024 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -20,7 +20,7 @@
 */
 #include "../../SDL_internal.h"
 
-#if SDL_VIDEO_DRIVER_WINDOWS
+#ifdef SDL_VIDEO_DRIVER_WINDOWS
 
 #include "SDL_windowsvideo.h"
 #include "SDL_windowsshape.h"
@@ -43,7 +43,7 @@
 #include <windowsx.h>
 
 /* For WM_TABLET_QUERYSYSTEMGESTURESTATUS et. al. */
-#if HAVE_TPCSHRD_H
+#ifdef HAVE_TPCSHRD_H
 #include <tpcshrd.h>
 #endif /* HAVE_TPCSHRD_H */
 
@@ -99,6 +99,9 @@
 #ifndef WM_GETDPISCALEDSIZE
 #define WM_GETDPISCALEDSIZE 0x02E4
 #endif
+#ifndef TOUCHEVENTF_PEN
+#define TOUCHEVENTF_PEN 0x0040
+#endif
 
 #ifndef IS_HIGH_SURROGATE
 #define IS_HIGH_SURROGATE(x) (((x) >= 0xd800) && ((x) <= 0xdbff))
@@ -108,6 +111,10 @@
 #endif
 #ifndef IS_SURROGATE_PAIR
 #define IS_SURROGATE_PAIR(h, l) (IS_HIGH_SURROGATE(h) && IS_LOW_SURROGATE(l))
+#endif
+
+#ifndef USER_TIMER_MINIMUM
+#define USER_TIMER_MINIMUM 0x0000000A
 #endif
 
 static SDL_Scancode VKeytoScancodeFallback(WPARAM vkey)
@@ -185,7 +192,7 @@ static SDL_Scancode VKeytoScancode(WPARAM vkey)
     case VK_BROWSER_HOME:
         return SDL_SCANCODE_AC_HOME;
     case VK_VOLUME_MUTE:
-        return SDL_SCANCODE_AUDIOMUTE;
+        return SDL_SCANCODE_MUTE;
     case VK_VOLUME_DOWN:
         return SDL_SCANCODE_VOLUMEDOWN;
     case VK_VOLUME_UP:
@@ -496,7 +503,7 @@ static void WIN_UpdateFocus(SDL_Window *window, SDL_bool expect_focus)
         SDL_ToggleModState(KMOD_CAPS, (GetKeyState(VK_CAPITAL) & 0x0001) ? SDL_TRUE : SDL_FALSE);
         SDL_ToggleModState(KMOD_NUM, (GetKeyState(VK_NUMLOCK) & 0x0001) ? SDL_TRUE : SDL_FALSE);
         SDL_ToggleModState(KMOD_SCROLL, (GetKeyState(VK_SCROLL) & 0x0001) ? SDL_TRUE : SDL_FALSE);
- 
+
         WIN_UpdateWindowICCProfile(data->window, SDL_TRUE);
     } else {
         RECT rect;
@@ -675,6 +682,7 @@ WIN_KeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
 LRESULT CALLBACK
 WIN_WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+    static SDL_bool s_ModalMoveResizeLoop;
     SDL_WindowData *data;
     LRESULT returnCode = -1;
 
@@ -694,12 +702,12 @@ WIN_WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     /* Get the window data for the window */
     data = WIN_GetWindowDataFromHWND(hwnd);
 #if !defined(__XBOXONE__) && !defined(__XBOXSERIES__)
-    if (data == NULL) {
+    if (!data) {
         /* Fallback */
         data = (SDL_WindowData *)GetProp(hwnd, TEXT("SDL_WindowData"));
     }
 #endif
-    if (data == NULL) {
+    if (!data) {
         return CallWindowProc(DefWindowProc, hwnd, msg, wParam, lParam);
     }
 
@@ -1253,6 +1261,27 @@ WIN_WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         }
     } break;
 
+    case WM_ENTERSIZEMOVE:
+    case WM_ENTERMENULOOP:
+    {
+        SetTimer(hwnd, (UINT_PTR)&s_ModalMoveResizeLoop, USER_TIMER_MINIMUM, NULL);
+    } break;
+
+    case WM_TIMER:
+    {
+        if (wParam == (UINT_PTR)&s_ModalMoveResizeLoop) {
+            // Send an expose event so the application can redraw
+            SDL_SendWindowEvent(data->window, SDL_WINDOWEVENT_EXPOSED, 0, 0);
+            return 0;
+        }
+    } break;
+
+    case WM_EXITSIZEMOVE:
+    case WM_EXITMENULOOP:
+    {
+        KillTimer(hwnd, (UINT_PTR)&s_ModalMoveResizeLoop);
+    } break;
+
     case WM_SIZE:
     {
         switch (wParam) {
@@ -1370,7 +1399,7 @@ WIN_WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     /* TODO: Can we use GetRawInputDeviceInfo and HID info to
                        determine if this is a direct or indirect touch device?
                      */
-                    if (SDL_AddTouch(touchId, SDL_TOUCH_DEVICE_DIRECT, "") < 0) {
+                    if (SDL_AddTouch(touchId, SDL_TOUCH_DEVICE_DIRECT, (input->dwFlags & TOUCHEVENTF_PEN) == TOUCHEVENTF_PEN ? "pen" : "touch") < 0) {
                         continue;
                     }
 
@@ -1396,7 +1425,7 @@ WIN_WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         }
         break;
 
-#if HAVE_TPCSHRD_H
+#ifdef HAVE_TPCSHRD_H
 
     case WM_TABLET_QUERYSYSTEMGESTURESTATUS:
         /* See https://msdn.microsoft.com/en-us/library/windows/desktop/bb969148(v=vs.85).aspx .
@@ -1783,7 +1812,7 @@ int WIN_WaitEventTimeout(_THIS, int timeout)
             message_result = GetMessage(&msg, 0, 0, 0);
         }
         if (message_result) {
-            if (msg.message == WM_TIMER && msg.hwnd == NULL && msg.wParam == timer_id) {
+            if (msg.message == WM_TIMER && !msg.hwnd && msg.wParam == timer_id) {
                 return 0;
             }
             if (g_WindowsMessageHook) {
@@ -1872,7 +1901,7 @@ void WIN_PumpEvents(_THIS)
        not grabbing the keyboard. Note: If we *are* grabbing the keyboard, GetKeyState()
        will return inaccurate results for VK_LWIN and VK_RWIN but we don't need it anyway. */
     focusWindow = SDL_GetKeyboardFocus();
-    if (focusWindow == NULL || !(focusWindow->flags & SDL_WINDOW_KEYBOARD_GRABBED)) {
+    if (!focusWindow || !(focusWindow->flags & SDL_WINDOW_KEYBOARD_GRABBED)) {
         if ((keystate[SDL_SCANCODE_LGUI] == SDL_PRESSED) && !(GetKeyState(VK_LWIN) & 0x8000)) {
             SDL_SendKeyboardKey(SDL_RELEASED, SDL_SCANCODE_LGUI);
         }
@@ -1926,8 +1955,8 @@ int SDL_RegisterApp(const char *name, Uint32 style, void *hInst)
         ++app_registered;
         return 0;
     }
-    SDL_assert(SDL_Appname == NULL);
-    if (name == NULL) {
+    SDL_assert(!SDL_Appname);
+    if (!name) {
         name = "SDL_app";
 #if defined(CS_BYTEALIGNCLIENT) || defined(CS_OWNDC)
         style = (CS_BYTEALIGNCLIENT | CS_OWNDC);

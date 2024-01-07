@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2024 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -26,9 +26,8 @@
 
 #include "../SDL_systhread.h"
 
-/* N3DS has very limited RAM (128MB), so we put a limit on thread stack size. */
-#define N3DS_THREAD_STACK_SIZE_MAX     (128 * 1024)
-#define N3DS_THREAD_STACK_SIZE_DEFAULT (4 * 1024)
+/* N3DS has very limited RAM (128MB), so we set a low default thread stack size. */
+#define N3DS_THREAD_STACK_SIZE_DEFAULT (80 * 1024)
 
 #define N3DS_THREAD_PRIORITY_LOW           0x3F /**< Minimum priority */
 #define N3DS_THREAD_PRIORITY_MEDIUM        0x2F /**< Slightly higher than main thread (0x30) */
@@ -55,8 +54,8 @@ int SDL_SYS_CreateThread(SDL_Thread *thread)
 
     svcGetThreadPriority(&priority, CUR_THREAD_HANDLE);
 
-    /* hack to put mixer thread on system core */
-    if (thread->name && SDL_strcmp(thread->name, "SDLAudioP") == 0 && R_SUCCEEDED(APT_SetAppCpuTimeLimit(30))) {
+    /* prefer putting audio thread on system core */
+    if (thread->name && (SDL_strncmp(thread->name, "SDLAudioP", 9) == 0) && R_SUCCEEDED(APT_SetAppCpuTimeLimit(30))) {
         cpu = 1;
     }
 
@@ -67,7 +66,7 @@ int SDL_SYS_CreateThread(SDL_Thread *thread)
                                   cpu,
                                   false);
 
-    if (thread->handle == NULL) {
+    if (!thread->handle) {
         return SDL_SetError("Couldn't create thread");
     }
 
@@ -80,14 +79,6 @@ static size_t GetStackSize(size_t requested_size)
         return N3DS_THREAD_STACK_SIZE_DEFAULT;
     }
 
-    if (requested_size > N3DS_THREAD_STACK_SIZE_MAX) {
-        SDL_LogWarn(SDL_LOG_CATEGORY_SYSTEM,
-                    "Requested a thread size of %zu,"
-                    " falling back to the maximum supported of %zu\n",
-                    requested_size,
-                    N3DS_THREAD_STACK_SIZE_MAX);
-        requested_size = N3DS_THREAD_STACK_SIZE_MAX;
-    }
     return requested_size;
 }
 

@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2024 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -20,7 +20,7 @@
 */
 #include "../../SDL_internal.h"
 
-#if SDL_VIDEO_RENDER_SW && !SDL_RENDER_DISABLED
+#if SDL_VIDEO_RENDER_SW && !defined(SDL_RENDER_DISABLED)
 
 #include "SDL_surface.h"
 #include "SDL_triangle.h"
@@ -220,7 +220,7 @@ int SDL_SW_FillTriangle(SDL_Surface *dst, SDL_Point *d0, SDL_Point *d1, SDL_Poin
 
     SDL_Surface *tmp = NULL;
 
-    if (dst == NULL) {
+    if (!dst) {
         return -1;
     }
 
@@ -272,7 +272,7 @@ int SDL_SW_FillTriangle(SDL_Surface *dst, SDL_Point *d0, SDL_Point *d1, SDL_Poin
 
         /* Use an intermediate surface */
         tmp = SDL_CreateRGBSurfaceWithFormat(0, dstrect.w, dstrect.h, 0, format);
-        if (tmp == NULL) {
+        if (!tmp) {
             ret = -1;
             goto end;
         }
@@ -339,12 +339,7 @@ int SDL_SW_FillTriangle(SDL_Surface *dst, SDL_Point *d0, SDL_Point *d1, SDL_Poin
     if (is_uniform) {
         Uint32 color;
         if (tmp) {
-            if (dst->format->Amask) {
-                color = SDL_MapRGBA(tmp->format, c0.r, c0.g, c0.b, c0.a);
-            } else {
-                // color = SDL_MapRGB(tmp->format, c0.r, c0.g, c0.b);
-                color = SDL_MapRGBA(tmp->format, c0.r, c0.g, c0.b, c0.a);
-            }
+            color = SDL_MapRGBA(tmp->format, c0.r, c0.g, c0.b, c0.a);
         } else {
             color = SDL_MapRGBA(dst->format, c0.r, c0.g, c0.b, c0.a);
         }
@@ -465,7 +460,7 @@ int SDL_SW_BlitTriangle(
 
     int has_modulation;
 
-    if (src == NULL || dst == NULL) {
+    if (!src || !dst) {
         return -1;
     }
 

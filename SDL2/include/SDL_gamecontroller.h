@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2024 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -73,7 +73,8 @@ typedef enum
     SDL_CONTROLLER_TYPE_NVIDIA_SHIELD,
     SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_LEFT,
     SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_RIGHT,
-    SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_PAIR
+    SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_PAIR,
+    SDL_CONTROLLER_TYPE_MAX
 } SDL_GameControllerType;
 
 typedef enum
@@ -522,6 +523,20 @@ extern DECLSPEC Uint16 SDLCALL SDL_GameControllerGetFirmwareVersion(SDL_GameCont
  * \since This function is available since SDL 2.0.14.
  */
 extern DECLSPEC const char * SDLCALL SDL_GameControllerGetSerial(SDL_GameController *gamecontroller);
+
+/**
+ * Get the Steam Input handle of an opened controller, if available.
+ *
+ * Returns an InputHandle_t for the controller that can be used with Steam Input API:
+ * https://partner.steamgames.com/doc/api/ISteamInput
+ *
+ * \param gamecontroller the game controller object to query.
+ * \returns the gamepad handle, or 0 if unavailable.
+ *
+ * \since This function is available since SDL 2.30.0.
+ */
+extern DECLSPEC Uint64 SDLCALL SDL_GameControllerGetSteamHandle(SDL_GameController *gamecontroller);
+
 
 /**
  * Check if a controller has been opened and is currently connected.

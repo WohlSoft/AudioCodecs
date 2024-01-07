@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2024 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -334,7 +334,7 @@ static int scale_mat(const Uint32 *src, int src_w, int src_h, int src_pitch,
 }
 
 #if defined(__SSE2__)
-#define HAVE_SSE2_INTRINSICS 1
+#define HAVE_SSE2_INTRINSICS
 #endif
 
 #if defined(__ARM_NEON)
