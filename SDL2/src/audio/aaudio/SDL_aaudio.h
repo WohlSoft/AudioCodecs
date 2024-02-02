@@ -38,9 +38,7 @@ struct SDL_PrivateAudioData
     Uint8 *mixbuf;
     int mixlen;
     int frame_size;
-
-    /* Resume device if it was paused automatically */
-    int resume;
+    int devid;
 };
 
 void aaudio_ResumeDevices(void);

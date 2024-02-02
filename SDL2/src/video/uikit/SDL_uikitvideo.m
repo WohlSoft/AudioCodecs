@@ -39,6 +39,7 @@
 #include "SDL_uikitclipboard.h"
 #include "SDL_uikitvulkan.h"
 #include "SDL_uikitmetalview.h"
+#include "SDL_uikitmessagebox.h"
 
 #define UIKITVID_DRIVER_NAME "uikit"
 
@@ -147,7 +148,8 @@ static SDL_VideoDevice *UIKit_CreateDevice(void)
 
 VideoBootStrap UIKIT_bootstrap = {
     UIKITVID_DRIVER_NAME, "SDL UIKit video driver",
-    UIKit_CreateDevice
+    UIKit_CreateDevice,
+    UIKit_ShowMessageBox
 };
 
 
@@ -230,7 +232,7 @@ CGRect UIKit_ComputeViewFrame(SDL_Window *window, UIScreen *screen)
     return frame;
 }
 
-void UIKit_ForceUpdateHomeIndicator()
+void UIKit_ForceUpdateHomeIndicator(void)
 {
 #if !TARGET_OS_TV
     /* Force the main SDL window to re-evaluate home indicator state */

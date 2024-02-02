@@ -1283,6 +1283,22 @@ extern "C" {
 #define SDL_HINT_LINUX_JOYSTICK_DEADZONES "SDL_LINUX_JOYSTICK_DEADZONES"
 
 /**
+ *  \brief A variable controlling the default SDL log levels.
+ *
+ *  This variable is a comma separated set of category=level tokens that define the default logging levels for SDL applications.
+ *
+ *  The category can be a numeric category, one of "app", "error", "assert", "system", "audio", "video", "render", "input", "test", or `*` for any unspecified category.
+ *
+ *  The level can be a numeric level, one of "verbose", "debug", "info", "warn", "error", "critical", or "quiet" to disable that category.
+ *
+ *  You can omit the category if you want to set the logging level for all categories.
+ *
+ *  If this hint isn't set, the default log levels are equivalent to:
+ *  "app=info,assert=warn,test=verbose,*=error"
+ */
+#define SDL_HINT_LOGGING   "SDL_LOGGING"
+
+/**
 *  \brief  When set don't force the SDL app to become a foreground process
 *
 *  This hint only applies to Mac OS X.
@@ -2665,6 +2681,22 @@ extern "C" {
  *  This hint is available since SDL 2.24.0.
  */
 #define SDL_HINT_TRACKPAD_IS_TOUCH_ONLY "SDL_TRACKPAD_IS_TOUCH_ONLY"
+
+/**
+ * Cause SDL to call dbus_shutdown() on quit.
+ *
+ * This is useful as a debug tool to validate memory leaks, but shouldn't ever
+ * be set in production applications, as other libraries used by the application
+ * might use dbus under the hood and this cause cause crashes if they continue
+ * after SDL_Quit().
+ *
+ * This variable can be set to the following values:
+ *   "0"       - SDL will not call dbus_shutdown() on quit (default)
+ *   "1"       - SDL will call dbus_shutdown() on quit
+ *
+ * This hint is available since SDL 2.30.0.
+ */
+#define SDL_HINT_SHUTDOWN_DBUS_ON_QUIT "SDL_SHUTDOWN_DBUS_ON_QUIT"
 
 
 /**

@@ -61,6 +61,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <dlfcn.h>
 #endif
 
 /* Available video drivers */
@@ -406,7 +407,7 @@ static int SDLCALL cmpmodes(const void *A, const void *B)
     return 0;
 }
 
-static int SDL_UninitializedVideo()
+static int SDL_UninitializedVideo(void)
 {
     return SDL_SetError("Video subsystem has not been initialized");
 }
@@ -468,6 +469,28 @@ int SDL_VideoInit(const char *driver_name)
     if (!driver_name) {
         driver_name = SDL_GetHint(SDL_HINT_VIDEODRIVER);
     }
+#if defined(__LINUX__) && defined(SDL_VIDEO_DRIVER_X11)
+    if (!driver_name) {
+        /* See if it looks like we need X11 */
+        SDL_bool force_x11 = SDL_FALSE;
+        void *global_symbols = dlopen(NULL, RTLD_LOCAL|RTLD_NOW);
+
+        /* Use linked libraries to detect what quirks we are likely to need */
+        if (global_symbols != NULL) {
+            if (dlsym(global_symbols, "glxewInit") != NULL) {  /* GLEW (e.g. Frogatto, SLUDGE) */
+                force_x11 = SDL_TRUE;
+            } else if (dlsym(global_symbols, "cgGLEnableProgramProfiles") != NULL) {  /* NVIDIA Cg (e.g. Awesomenauts, Braid) */
+                force_x11 = SDL_TRUE;
+            } else if (dlsym(global_symbols, "_Z7ssgInitv") != NULL) {  /* ::ssgInit(void) in plib (e.g. crrcsim) */
+                force_x11 = SDL_TRUE;
+            }
+            dlclose(global_symbols);
+        }
+        if (force_x11) {
+            driver_name = "x11";
+        }
+    }
+#endif
     if (driver_name && *driver_name != 0) {
         const char *driver_attempt = driver_name;
         while (driver_attempt && *driver_attempt != 0 && !video) {
@@ -539,16 +562,21 @@ int SDL_VideoInit(const char *driver_name)
         SDL_DisableScreenSaver();
     }
 
-    /* If we don't use a screen keyboard, turn on text input by default,
-       otherwise programs that expect to get text events without enabling
-       UNICODE input won't get any events.
-
-       Actually, come to think of it, you needed to call SDL_EnableUNICODE(1)
-       in SDL 1.2 before you got text input events.  Hmm...
+#if !defined(SDL_VIDEO_DRIVER_N3DS)
+    /* In the initial state we don't want to pop up an on-screen keyboard,
+     * but we do want to allow text input from other mechanisms.
      */
-    if (!SDL_HasScreenKeyboardSupport()) {
+    {
+        const char *hint = SDL_GetHint(SDL_HINT_ENABLE_SCREEN_KEYBOARD);
+        if (!hint) {
+            SDL_SetHint(SDL_HINT_ENABLE_SCREEN_KEYBOARD, "0");
+        }
         SDL_StartTextInput();
+        if (!hint) {
+            SDL_SetHint(SDL_HINT_ENABLE_SCREEN_KEYBOARD, NULL);
+        }
     }
+#endif /* !SDL_VIDEO_DRIVER_N3DS */
 
     SDL_MousePostInit();
 
@@ -572,7 +600,7 @@ pre_driver_error:
     return -1;
 }
 
-const char *SDL_GetCurrentVideoDriver()
+const char *SDL_GetCurrentVideoDriver(void)
 {
     if (!_this) {
         SDL_UninitializedVideo();
@@ -586,7 +614,7 @@ SDL_VideoDevice *SDL_GetVideoDevice(void)
     return _this;
 }
 
-SDL_bool SDL_OnVideoThread()
+SDL_bool SDL_OnVideoThread(void)
 {
     return (_this && SDL_ThreadID() == _this->thread) ? SDL_TRUE : SDL_FALSE;
 }
@@ -1473,20 +1501,21 @@ static int SDL_UpdateFullscreenMode(SDL_Window *window, SDL_bool fullscreen)
 
                 /* Generate a mode change event here */
                 if (resized) {
-#if !defined(__ANDROID__) && !defined(__WIN32__)
-                    /* Android may not resize the window to exactly what our fullscreen mode is, especially on
-                     * windowed Android environments like the Chromebook or Samsung DeX.  Given this, we shouldn't
-                     * use fullscreen_mode.w and fullscreen_mode.h, but rather get our current native size.  As such,
-                     * Android's SetWindowFullscreen will generate the window event for us with the proper final size.
-                     */
+                    if (SDL_strcmp(_this->name, "Android") != 0 && SDL_strcmp(_this->name, "windows") != 0) {
+                        /* Android may not resize the window to exactly what our fullscreen mode is, especially on
+                         * windowed Android environments like the Chromebook or Samsung DeX.  Given this, we shouldn't
+                         * use fullscreen_mode.w and fullscreen_mode.h, but rather get our current native size.  As such,
+                         * Android's SetWindowFullscreen will generate the window event for us with the proper final size.
+                         */
 
-                    /* This is also unnecessary on Win32 (WIN_SetWindowFullscreen calls SetWindowPos,
-                     * WM_WINDOWPOSCHANGED will send SDL_WINDOWEVENT_RESIZED). Also, on Windows with DPI scaling enabled,
-                     * we're keeping modes in pixels, but window sizes in dpi-scaled points, so this would be a unit mismatch.
-                     */
-                    SDL_SendWindowEvent(other, SDL_WINDOWEVENT_RESIZED,
-                                        fullscreen_mode.w, fullscreen_mode.h);
-#endif
+                        /* This is also unnecessary on Win32 (WIN_SetWindowFullscreen calls SetWindowPos,
+                         * WM_WINDOWPOSCHANGED will send SDL_WINDOWEVENT_RESIZED). Also, on Windows with DPI scaling enabled,
+                         * we're keeping modes in pixels, but window sizes in dpi-scaled points, so this would be a unit mismatch.
+                         */
+                        SDL_SendWindowEvent(other, SDL_WINDOWEVENT_RESIZED,
+                                            fullscreen_mode.w, fullscreen_mode.h);
+                    }
+
                 } else {
                     SDL_OnWindowResized(other);
                 }
@@ -1994,6 +2023,14 @@ int SDL_RecreateWindow(SDL_Window *window, Uint32 flags)
 
     if (_this->SetWindowIcon && window->icon) {
         _this->SetWindowIcon(_this, window, window->icon);
+    }
+
+    if (_this->SetWindowMinimumSize && (window->min_w || window->min_h)) {
+        _this->SetWindowMinimumSize(_this, window);
+    }
+
+    if (_this->SetWindowMaximumSize && (window->max_w || window->max_h)) {
+        _this->SetWindowMaximumSize(_this, window);
     }
 
     if (window->hit_test) {
@@ -3313,7 +3350,7 @@ void SDL_DestroyWindow(SDL_Window *window)
     SDL_free(window);
 }
 
-SDL_bool SDL_IsScreenSaverEnabled()
+SDL_bool SDL_IsScreenSaverEnabled(void)
 {
     if (!_this) {
         return SDL_TRUE;
@@ -3321,7 +3358,7 @@ SDL_bool SDL_IsScreenSaverEnabled()
     return _this->suspend_screensaver ? SDL_FALSE : SDL_TRUE;
 }
 
-void SDL_EnableScreenSaver()
+void SDL_EnableScreenSaver(void)
 {
     if (!_this) {
         return;
@@ -3335,7 +3372,7 @@ void SDL_EnableScreenSaver()
     }
 }
 
-void SDL_DisableScreenSaver()
+void SDL_DisableScreenSaver(void)
 {
     if (!_this) {
         return;
@@ -3577,7 +3614,7 @@ void SDL_GL_DeduceMaxSupportedESProfile(int *major, int *minor)
 #endif
 }
 
-void SDL_GL_ResetAttributes()
+void SDL_GL_ResetAttributes(void)
 {
     if (!_this) {
         return;
@@ -4369,59 +4406,6 @@ int SDL_GetMessageBoxCount(void)
     return SDL_AtomicGet(&SDL_messagebox_count);
 }
 
-#ifdef SDL_VIDEO_DRIVER_ANDROID
-#include "android/SDL_androidmessagebox.h"
-#endif
-#ifdef SDL_VIDEO_DRIVER_WINDOWS
-#include "windows/SDL_windowsmessagebox.h"
-#endif
-#ifdef SDL_VIDEO_DRIVER_WINRT
-#include "winrt/SDL_winrtmessagebox.h"
-#endif
-#ifdef SDL_VIDEO_DRIVER_COCOA
-#include "cocoa/SDL_cocoamessagebox.h"
-#endif
-#ifdef SDL_VIDEO_DRIVER_UIKIT
-#include "uikit/SDL_uikitmessagebox.h"
-#endif
-#ifdef SDL_VIDEO_DRIVER_X11
-#include "x11/SDL_x11messagebox.h"
-#endif
-#ifdef SDL_VIDEO_DRIVER_WAYLAND
-#include "wayland/SDL_waylandmessagebox.h"
-#endif
-#ifdef SDL_VIDEO_DRIVER_HAIKU
-#include "haiku/SDL_bmessagebox.h"
-#endif
-#ifdef SDL_VIDEO_DRIVER_OS2
-#include "os2/SDL_os2messagebox.h"
-#endif
-#ifdef SDL_VIDEO_DRIVER_RISCOS
-#include "riscos/SDL_riscosmessagebox.h"
-#endif
-#ifdef SDL_VIDEO_DRIVER_VITA
-#include "vita/SDL_vitamessagebox.h"
-#endif
-
-#if defined(SDL_VIDEO_DRIVER_WINDOWS) || defined(SDL_VIDEO_DRIVER_WINRT) || defined(SDL_VIDEO_DRIVER_COCOA) || defined(SDL_VIDEO_DRIVER_UIKIT) || defined(SDL_VIDEO_DRIVER_X11) || defined(SDL_VIDEO_DRIVER_WAYLAND) || defined(SDL_VIDEO_DRIVER_HAIKU) || defined(SDL_VIDEO_DRIVER_OS2) || defined(SDL_VIDEO_DRIVER_RISCOS)
-static SDL_bool SDL_MessageboxValidForDriver(const SDL_MessageBoxData *messageboxdata, SDL_SYSWM_TYPE drivertype)
-{
-    SDL_SysWMinfo info;
-    SDL_Window *window = messageboxdata->window;
-
-    if (!window) {
-        return SDL_TRUE;
-    }
-
-    SDL_VERSION(&info.version);
-    if (!SDL_GetWindowWMInfo(window, &info)) {
-        return SDL_TRUE;
-    } else {
-        return (info.subsystem == drivertype);
-    }
-}
-#endif
-
 int SDL_ShowMessageBox(const SDL_MessageBoxData *messageboxdata, int *buttonid)
 {
     int dummybutton;
@@ -4463,84 +4447,38 @@ int SDL_ShowMessageBox(const SDL_MessageBoxData *messageboxdata, int *buttonid)
 
     if (_this && _this->ShowMessageBox) {
         retval = _this->ShowMessageBox(_this, messageboxdata, buttonid);
+    } else {
+        /* It's completely fine to call this function before video is initialized */
+        const char *driver_name = SDL_GetHint(SDL_HINT_VIDEODRIVER);
+        int i;
+        if (driver_name && *driver_name != 0) {
+            const char *driver_attempt = driver_name;
+            while (driver_attempt && (*driver_attempt != 0) && (retval == -1)) {
+                const char *driver_attempt_end = SDL_strchr(driver_attempt, ',');
+                size_t driver_attempt_len = (driver_attempt_end) ? (driver_attempt_end - driver_attempt)
+                                                                     : SDL_strlen(driver_attempt);
+                for (i = 0; bootstrap[i]; ++i) {
+                    if (bootstrap[i]->ShowMessageBox && (driver_attempt_len == SDL_strlen(bootstrap[i]->name)) &&
+                        (SDL_strncasecmp(bootstrap[i]->name, driver_attempt, driver_attempt_len) == 0)) {
+                        if (bootstrap[i]->ShowMessageBox(messageboxdata, buttonid) == 0) {
+                            retval = 0;
+                        }
+                        break;
+                    }
+                }
+
+                driver_attempt = (driver_attempt_end) ? (driver_attempt_end + 1) : NULL;
+            }
+        } else {
+            for (i = 0; bootstrap[i]; ++i) {
+                if (bootstrap[i]->ShowMessageBox && bootstrap[i]->ShowMessageBox(messageboxdata, buttonid) == 0) {
+                    retval = 0;
+                    break;
+                }
+            }
+        }
     }
 
-    /* It's completely fine to call this function before video is initialized */
-#ifdef SDL_VIDEO_DRIVER_ANDROID
-    if (retval == -1 &&
-        Android_ShowMessageBox(messageboxdata, buttonid) == 0) {
-        retval = 0;
-    }
-#endif
-#if defined(SDL_VIDEO_DRIVER_WINDOWS) && !defined(__XBOXONE__) && !defined(__XBOXSERIES__)
-    if (retval == -1 &&
-        SDL_MessageboxValidForDriver(messageboxdata, SDL_SYSWM_WINDOWS) &&
-        WIN_ShowMessageBox(messageboxdata, buttonid) == 0) {
-        retval = 0;
-    }
-#endif
-#ifdef SDL_VIDEO_DRIVER_WINRT
-    if (retval == -1 &&
-        SDL_MessageboxValidForDriver(messageboxdata, SDL_SYSWM_WINRT) &&
-        WINRT_ShowMessageBox(messageboxdata, buttonid) == 0) {
-        retval = 0;
-    }
-#endif
-#ifdef SDL_VIDEO_DRIVER_COCOA
-    if (retval == -1 &&
-        SDL_MessageboxValidForDriver(messageboxdata, SDL_SYSWM_COCOA) &&
-        Cocoa_ShowMessageBox(messageboxdata, buttonid) == 0) {
-        retval = 0;
-    }
-#endif
-#ifdef SDL_VIDEO_DRIVER_UIKIT
-    if (retval == -1 &&
-        SDL_MessageboxValidForDriver(messageboxdata, SDL_SYSWM_UIKIT) &&
-        UIKit_ShowMessageBox(messageboxdata, buttonid) == 0) {
-        retval = 0;
-    }
-#endif
-#ifdef SDL_VIDEO_DRIVER_X11
-    if (retval == -1 &&
-        SDL_MessageboxValidForDriver(messageboxdata, SDL_SYSWM_X11) &&
-        X11_ShowMessageBox(messageboxdata, buttonid) == 0) {
-        retval = 0;
-    }
-#endif
-#ifdef SDL_VIDEO_DRIVER_WAYLAND
-    if (retval == -1 &&
-        SDL_MessageboxValidForDriver(messageboxdata, SDL_SYSWM_WAYLAND) &&
-        Wayland_ShowMessageBox(messageboxdata, buttonid) == 0) {
-        retval = 0;
-    }
-#endif
-#ifdef SDL_VIDEO_DRIVER_HAIKU
-    if (retval == -1 &&
-        SDL_MessageboxValidForDriver(messageboxdata, SDL_SYSWM_HAIKU) &&
-        HAIKU_ShowMessageBox(messageboxdata, buttonid) == 0) {
-        retval = 0;
-    }
-#endif
-#ifdef SDL_VIDEO_DRIVER_OS2
-    if (retval == -1 &&
-        SDL_MessageboxValidForDriver(messageboxdata, SDL_SYSWM_OS2) &&
-        OS2_ShowMessageBox(messageboxdata, buttonid) == 0) {
-        retval = 0;
-    }
-#endif
-#ifdef SDL_VIDEO_DRIVER_RISCOS
-    if (retval == -1 &&
-        SDL_MessageboxValidForDriver(messageboxdata, SDL_SYSWM_RISCOS) &&
-        RISCOS_ShowMessageBox(messageboxdata, buttonid) == 0) {
-        retval = 0;
-    }
-#endif
-#ifdef SDL_VIDEO_DRIVER_VITA
-    if (retval == -1 &&
-        VITA_ShowMessageBox(messageboxdata, buttonid) == 0) {
-        retval = 0;
-    }
-#endif
     if (retval == -1) {
         const char *error = SDL_GetError();
 

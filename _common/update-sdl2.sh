@@ -1,12 +1,12 @@
 #!/bin/bash
 
-VER=2.28.5
+VER=release-2.30.0
 pre=
 
 #wget --content-disposition https://github.com/libsdl-org/SDL/archive/${pre}release-${VER}.tar.gz -O SDL-repo.tar.gz
 #tar -xf SDL-repo.tar.gz
 #mv SDL-${pre}release-${VER} SDL2
-git clone --depth 1 -b SDL2 https://github.com/libsdl-org/SDL SDL2
+git clone --depth 1 -b $VER https://github.com/libsdl-org/SDL SDL2
 
 rm -Rf SDL2/VisualC/
 rm -Rf SDL2/VisualC-GDK/
