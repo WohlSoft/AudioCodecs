@@ -28,7 +28,7 @@ if(NOT WIN32)
     set(SDL2_CMAKE_FPIC_FLAG "-DSDL_STATIC_PIC=ON")
 endif()
 
-set(SDL2_GIT_BRANCH "origin/main" CACHE STRING "GIT branch for SDL2 (Official Git mainstream repository)")
+set(SDL2_GIT_BRANCH "origin/SDL2" CACHE STRING "GIT branch for SDL2 (Official Git mainstream repository)")
 
 # Remove this workaround when the tarball is symlink-free for better Windows compatibility.
 # In the meantime, use the auto-tracking SDL2 Git repo:

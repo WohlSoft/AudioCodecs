@@ -21,7 +21,7 @@ else()
     set(CODECS_BUILD_STATIC ON)
 endif()
 
-option(DOWNLOAD_SDL2_DEPENDENCY "Download, compile, and install SDL2's master branch" OFF)
+option(DOWNLOAD_SDL2_DEPENDENCY "Download, compile, and install SDL's SDL2 branch" OFF)
 option(USE_LOCAL_SDL2 "Build SDL2 from local copy" OFF)
 if(ANDROID)
     option(USE_USE_NDK_MAKE "Build SDL2 for Android using NDK Make" OFF)
