@@ -56,7 +56,7 @@ mkdir build
 cd build
 
 # Step 3: Configure project ()
-cmake -DDOWNLOAD_SDL2_DEPENDENCY=ON -DCMAKE_INSTALL_PREFIX=~/AudioCodecs/ ..
+cmake -DUSE_LOCAL_SDL2=ON -DCMAKE_INSTALL_PREFIX=~/AudioCodecs/ ..
 
 # Step 4: Build and install
 cmake -build . -config release -target install -- -j 2
@@ -64,12 +64,16 @@ cmake -build . -config release -target install -- -j 2
 ```
 
 ## macOS
-The build for macOS is very similar to Linux way, you just can follow Linux way to build libraries
+The build for macOS is very similar to Linux way, you just can follow Linux way to build libraries.
+
+If you want to use the system-wide SDL2 instead of local, you should install it via Homebrew or by any other way.
+
 
 ## Windows
 You will need:
 * CMake >= 3.2
-* MinGW >= 4.8, MinGW-w64 >= 5, or MSVC >=2015 (on your taste)
+* MinGW >= 4.8, MinGW-w64 >= 5, or MSVC >=2015 (on your taste).
+* The local or downloaded SDL2 will require the MinGW-w64 or MSVC instead of vanilla MinGW as current version is incompatible to the vanilla MinGW.
 
 **Build with MinGW**
 ```winbatch
@@ -82,7 +86,7 @@ mkdir build
 cd build
 
 rem Step 3: Configure project
-cmake -G "MinGW Makefiles" -DDOWNLOAD_SDL2_DEPENDENCY=ON -DCMAKE_INSTALL_PREFIX=%UserProfile%\MyLibs\ ..
+cmake -G "MinGW Makefiles" -DUSE_LOCAL_SDL2=ON -DCMAKE_INSTALL_PREFIX=%UserProfile%\MyLibs\ ..
 
 rem Step 4: Build and install
 cmake -build . -config release -target install -- -j 2
@@ -103,7 +107,7 @@ rem Full path may be different in dependence of version. Please fix this to matc
 set PATH=C:\mingw-w64\x86_64-6.3.0-posix-seh-rt_v5-rev1\mingw64\bin;%PATH:C:\Program Files\Git\usr\bin;=%
 
 rem Step 3: Configure project
-cmake -G "MinGW Makefiles" -DDOWNLOAD_SDL2_DEPENDENCY=ON -DCMAKE_INSTALL_PREFIX=%UserProfile%\MyLibs\ ..
+cmake -G "MinGW Makefiles" -DUSE_LOCAL_SDL2=ON -DCMAKE_INSTALL_PREFIX=%UserProfile%\MyLibs\ ..
 
 rem Step 4: Build and install
 cmake -build . -config release -target install -- -j 2
