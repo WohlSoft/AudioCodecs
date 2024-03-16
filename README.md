@@ -4,9 +4,9 @@ A collection of various audio codecs and their dependencies.
 
 This is a set of dependencies required for SDL Mixer X audio library, except of SDL2 which is updating offten.
 
-This set of libraries is designed to be buildable through QMake and CMake building systems.
+This set of libraries is designed to be buildable through CMake building system.
 
-Note: to build libtimidity, you need have latest libSDL2 be installed! (this library was modified to support files through SDL_RWops() API)
+Note: to build libtimidity-sdl, you need to have the latest libSDL2 being installed, or enable the local SDL2 build. (This library was being modified to support files through SDL_RWops() API)
 
 # CI Badges
 
@@ -22,7 +22,7 @@ Note: to build libtimidity, you need have latest libSDL2 be installed! (this lib
 You will need:
 * CMake >= 3.2
 * GCC and G++ >= 4.8
-* libSDL2 library package installed, OR you can use -DUSE_LOCAL_SDL2=ON to use the vendored copy of SDL2 instead, or use the -DDOWNLOAD_SDL2_DEPENDENCY=ON CMake flag to automatically download from [official GitHub repository](https://github.com/libsdl-org/SDL) and build this.
+* libSDL2 library package installed, OR you can use -DUSE_LOCAL_SDL2=ON to use the vendored copy of SDL2 instead, or use the -DDOWNLOAD_SDL2_DEPENDENCY=ON CMake flag to automatically download from [official GitHub repository](https://github.com/libsdl-org/SDL) using `SDL2` branch and build this.
 
 **System install** _(will be installed with /usr/local/ prefix)_
 ```bash
@@ -135,8 +135,10 @@ rem Tip: instead of "release" you can have "debug" to build debug versions. Inst
 * **libADLMIDI:** GNU LGPLv3+ or GNU GPLv3+
 * **libFLAC:** Multiple: BSD 3-clause "New" or "Revised" License (libFLAC, libFLAC++), GNU GPL (extra plugins and tools)
 * **libFluidLite:** GNU LGPLv2.1+
+* **libEDMIDI:** ZLib license
 * **libGME:** GNU LGPLv2.1+
 * **libModPlug:** Public Domain
+* **libMPG123:** GNU LGPLv2.1
 * **libOGG:** BSD 3-clause "New" or "Revised" License
 * **libOpenMPT:** BSD
 * **libOPNMIDI:** GNU LGPLv3+ or GNU GPLv3+
@@ -147,12 +149,12 @@ rem Tip: instead of "release" you can have "debug" to build debug versions. Inst
 * **libWavPack:** BSD 3-clause "New" or "Revised" License
 * **libXMP:** GNU LGPLv2+, partially MIT
 * **libZlib:** ZLib license
-* **libEDMIDI:** ZLib license
 
 # Libraries are can be freely used in non-free projects:
 
 ## Static linking
 (BSD, ZLib, and "Artistic" licenses are allows usage in closed-source projects)
+* libEDMIDI
 * libFLAC
 * libModPlug
 * libOGG
@@ -163,14 +165,15 @@ rem Tip: instead of "release" you can have "debug" to build debug versions. Inst
 * libVorbis
 * libWavPack
 * libZlib
-* libEDMIDI
 
 ## Dynamic linking
 (LGPL allows usage in closed-source projects when LGPL-licensed components are linked dynamically)
+* libEDMIDI
 * libFLAC
 * libFluidLite
 * libGME
 * libModPlug
+* libMPG123
 * libOGG
 * libOpenMPT
 * libOpus
@@ -180,4 +183,8 @@ rem Tip: instead of "release" you can have "debug" to build debug versions. Inst
 * libWavPack
 * libXMP
 * libZlib
-* libEDMIDI
+
+## GPL-only projects
+(These libraries has the viral GPL license and you can use these libraries in libre projects only with applying the GPL license to the whole project)
+* libADLMIDI
+* libOPNMIDI
