@@ -149,6 +149,18 @@
    typedef long long int ogg_int64_t;
    typedef unsigned long long int ogg_uint64_t;
 
+#elif defined(__3DS__)
+
+   /* int and long are both 32-bit on 3DS, and int32_t === long, but a lot of code expects ogg_int32_t === int */
+
+#  include <stdint.h>
+   typedef short ogg_int16_t;
+   typedef unsigned short ogg_uint16_t;
+   typedef int ogg_int32_t;
+   typedef unsigned int ogg_uint32_t;
+   typedef int64_t ogg_int64_t;
+   typedef uint64_t ogg_uint64_t;
+
 #else
 
 #  include <ogg/config_types.h>
