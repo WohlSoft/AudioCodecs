@@ -21,7 +21,6 @@ rm -Rf WavPack/wvunpackexe/
 rm -Rf WavPack/xmms/
 rm -Rf WavPack/acinclude.m4
 rm -Rf WavPack/configure
-rm -Rf WavPack/configure.ac
 rm -Rf WavPack/autogen.sh
 rm -Rf WavPack/Makefile.am
 
