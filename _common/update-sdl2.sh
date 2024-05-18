@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VER=release-2.30.0
+VER=release-2.30.3
 pre=
 
 #wget --content-disposition https://github.com/libsdl-org/SDL/archive/${pre}release-${VER}.tar.gz -O SDL-repo.tar.gz
@@ -22,6 +22,7 @@ rm -Rf SDL2/acinclude
 rm -Rf SDL2/configure
 rm -Rf SDL2/configure.ac
 rm -Rf SDL2/autogen.sh
+rm -Rf SDL2/.github
 
 rm -Rf ../SDL2
 mv SDL2 ../SDL2
