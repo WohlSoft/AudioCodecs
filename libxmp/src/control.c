@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2022 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2024 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -23,6 +23,7 @@
 #include "format.h"
 #include "virtual.h"
 #include "mixer.h"
+#include "rng.h"
 
 const char *xmp_version LIBXMP_EXPORT_VAR = XMP_VERSION;
 const unsigned int xmp_vercode LIBXMP_EXPORT_VAR = XMP_VERCODE;
@@ -39,6 +40,7 @@ xmp_context xmp_create_context(void)
 	ctx->state = XMP_STATE_UNLOADED;
 	ctx->m.defpan = 100;
 	ctx->s.numvoc = SMIX_NUMVOC;
+	libxmp_init_random(&ctx->rng);
 
 	return (xmp_context)ctx;
 }

@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2023 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2024 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -357,6 +357,8 @@ int libxmp_exclude_match(const char *name)
 		"*.EXE", "*.exe",
 		"*.COM", "*.com",
 		"*.README", "*.readme", "*.Readme", "*.ReadMe",
+		"*.HTM", "*.htm",
+		"*.HTML", "*.html",
 		/* Found in Spark archives. */
 		"\\?From", "From\\?", "InfoText",
 		NULL

@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2023 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2024 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -19,6 +19,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
+#include "../common.h"
 
 #ifndef LIBXMP_CORE_DISABLE_IT
 
@@ -911,7 +913,7 @@ static int load_it_sample(struct module_data *m, int i, int start,
 
 #ifdef WORDS_BIGENDIAN
 				/* decompression generates native-endian
-				 * samples, but we want little-endian
+				 * samples, but we want little-endian.
 				 */
 				cvt |= SAMPLE_FLAG_BIGEND;
 #endif

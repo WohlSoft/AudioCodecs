@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2023 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2024 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -989,11 +989,11 @@ int libxmp_mixer_on(struct context_data *ctx, int rate, int format, int c4rate)
 {
 	struct mixer_data *s = &ctx->s;
 
-	s->buffer = (char *) calloc(2, XMP_MAX_FRAMESIZE);
+	s->buffer = (char *) calloc(XMP_MAX_FRAMESIZE, sizeof(int16));
 	if (s->buffer == NULL)
 		goto err;
 
-	s->buf32 = (int32 *) calloc(sizeof(int32), XMP_MAX_FRAMESIZE);
+	s->buf32 = (int32 *) calloc(XMP_MAX_FRAMESIZE, sizeof(int32));
 	if (s->buf32 == NULL)
 		goto err1;
 
