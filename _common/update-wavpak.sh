@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VER=5.6.0
+VER=5.7.0
 pre=
 
 wget --content-disposition https://github.com/dbry/WavPack/archive/refs/tags/${VER}.tar.gz -O WavPack-repo.tar.gz
