@@ -23,11 +23,6 @@ endif()
 set(SDL2_INSTALL_DIR ${CMAKE_BINARY_DIR})
 set(SDL2_REPOSITORY_PATH ${SDL2_INSTALL_DIR})
 
-set(SDL2_CMAKE_FPIC_FLAG "")
-if(NOT WIN32)
-    set(SDL2_CMAKE_FPIC_FLAG "-DSDL_STATIC_PIC=ON")
-endif()
-
 set(SDL2_GIT_BRANCH "origin/SDL2" CACHE STRING "GIT branch for SDL2 (Official Git mainstream repository)")
 
 # Remove this workaround when the tarball is symlink-free for better Windows compatibility.
@@ -148,7 +143,6 @@ elseif(USE_LOCAL_SDL2)
             -DSDL_STATIC=${BUILD_SDL2_STATIC}
             -DSDL_CMAKE_DEBUG_POSTFIX=${CMAKE_DEBUG_POSTFIX}
             -DCMAKE_DEBUG_POSTFIX=${CMAKE_DEBUG_POSTFIX}
-            ${SDL2_CMAKE_FPIC_FLAG}
             ${SDL2_WASAPI_FLAG}
             ${SDL2_CMAKE_NOSIMD_FLAGS}
             ${APPLE_FLAGS}
@@ -175,7 +169,6 @@ else()
             -DSDL_STATIC=${BUILD_SDL2_STATIC}
             -DSDL_CMAKE_DEBUG_POSTFIX=${CMAKE_DEBUG_POSTFIX}
             -DCMAKE_DEBUG_POSTFIX=${CMAKE_DEBUG_POSTFIX}
-            ${SDL2_CMAKE_FPIC_FLAG}
             ${SDL2_WASAPI_FLAG}
             ${APPLE_FLAGS}
             ${ANDROID_FLAGS}
