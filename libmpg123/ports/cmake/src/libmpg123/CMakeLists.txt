@@ -214,11 +214,6 @@ endif()
 
 set_target_properties(${TARGET} PROPERTIES OUTPUT_NAME mpg123)
 
-#AucioCodecs: Enable -fPIC if needed
-if(ENABLE_FPIC)
-    set_target_properties(${TARGET} PROPERTIES COMPILE_FLAGS "-fPIC")
-endif()
-
 target_compile_definitions(${TARGET} PRIVATE
     ${PLATFORM_DEFINITIONS}
     $<$<BOOL:${HAVE_FPU}>:REAL_IS_FLOAT>
