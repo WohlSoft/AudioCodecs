@@ -40,6 +40,11 @@ else()
 endif()
 message(STATUS "Detected machine: ${MACHINE}")
 
+if(NINTENDO_DS OR NINTENDO_3DS) # AudioCodecs: Fixing build
+    message("However, using geneeric optimisations because of the incompatiblity")
+    set(MACHINE generic)
+endif()
+
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../../../../src/libmpg123/mpg123.h.in" mpg123.h)
 
 set(TARGET lib${PROJECT_NAME})
