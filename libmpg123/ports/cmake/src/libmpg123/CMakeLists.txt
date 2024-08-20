@@ -40,7 +40,7 @@ else()
 endif()
 message(STATUS "Detected machine: ${MACHINE}")
 
-if(NINTENDO_DS OR NINTENDO_3DS) # AudioCodecs: Fixing build
+if(NINTENDO_DS OR NINTENDO_3DS OR NINTENDO_SWITCH) # AudioCodecs: Fixing build
     message("However, using geneeric optimisations because of the incompatiblity")
     set(MACHINE generic)
 endif()
