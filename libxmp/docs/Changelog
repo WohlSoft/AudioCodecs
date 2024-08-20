@@ -14,11 +14,17 @@ Stable versions
 	- Fix out-of-bounds reads in His Master's Noise Mupp instruments.
 	- Fix slow ProWizard testing.
 	- Replace rand() with a built-in reentrant alternative.
+	- xmp_set_tempo_factor now returns -XMP_ERROR_STATE when called prior
+	  to xmp_start_player (instead of causing crashes).
+	- Fix mixer crashes caused by previously valid tempo factors after
+	  sample rate or BPM changes.
 	Changes by Thomas Neumann:
 	- Fix XM envelope handling
 	- Bug fixes to DSMI loader
 	- Fix 16-bit sample check in MultiTracker loader
 	- Fix finetune in MultiTracker loader
+	Changes by Saga Musix:
+	- S3M: Detect PlayerPRO, Velvet Studio and old MPT versions
 	Changes by ds-sloth:
 	- Optimize scan code for common case of no effects
 	Changes by Misty De Méo:

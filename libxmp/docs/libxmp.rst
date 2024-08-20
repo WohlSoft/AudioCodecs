@@ -801,7 +801,8 @@ int xmp_set_tempo_factor(xmp_context c, double val)
     :val: the new multiplier.
 
   **Returns:**
-    0 on success, or -1 if value is invalid.
+    0 on success, -1 if value is invalid, or ``-XMP_ERROR_STATE`` if
+    the player is not in the playing state.
 
 .. _xmp_stop_module():
 
@@ -851,7 +852,7 @@ int xmp_channel_mute(xmp_context c, int chn, int status)
 
     :chn: the channel to mute or unmute.
 
-    :status: 0 to mute channel, 1 to unmute or -1 to query the
+    :status: 0 to mute channel, 1 to unmute, 2 the inverse of the current channel status, or -1 to query the
       current channel status.
 
   **Returns:**

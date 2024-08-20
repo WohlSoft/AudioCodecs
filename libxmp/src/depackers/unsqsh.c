@@ -35,7 +35,7 @@ struct io {
 	int srclen;
 };
 
-static uint8 ctable[] = {
+static const uint8 ctable[] = {
 	2, 3, 4, 5, 6, 7, 8, 0,
 	3, 2, 4, 5, 6, 7, 8, 0,
 	4, 3, 5, 2, 6, 7, 8, 0,
@@ -430,5 +430,6 @@ static int decrunch_sqsh(HIO_HANDLE * f, void ** outbuf, long * outlen)
 
 const struct depacker libxmp_depacker_sqsh = {
 	test_sqsh,
+	NULL,
 	decrunch_sqsh
 };
