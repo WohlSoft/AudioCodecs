@@ -33,6 +33,17 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
     message("AudioCodecs using Emscripten!")
 endif()
 
+if(NOT WIN32 AND NOT VITA AND NOT EMSCRIPTEN AND NOT ANDROID)
+    option(ENABLE_FPIC "Build static libraries as position independent code" ON)
+elseif(ANDROID)
+    set(ENABLE_FPIC ON)
+else()
+    set(ENABLE_FPIC OFF)
+endif()
+
+option(DISABLE_SIMD "Disable all SIMD optimizations as possible" OFF)
+
+
 if(NOT SDL2_REPO_PATH)
     # Try to resolve sqlite dependency
     if(DOWNLOAD_SDL2_DEPENDENCY OR USE_LOCAL_SDL2)
@@ -56,14 +67,6 @@ if(SDL2_REPO_PATH)
     include_directories(${SDL2_INSTALL_DIR}/include)
     message("SDL2 Repo folder is ${SDL2_REPO_PATH}")
 endif()
-
-if(NOT WIN32 AND NOT VITA AND NOT EMSCRIPTEN)
-    option(ENABLE_FPIC "Build static libraries as position independent code" ON)
-else()
-    set(ENABLE_FPIC OFF)
-endif()
-
-option(DISABLE_SIMD "Disable all SIMD optimizations as possible" OFF)
 
 # --- TODO: implement building or usage of pre-built libSDL here ---
 # set(SNDIO OFF) # Disable sndio that is not needed to us
