@@ -27,10 +27,11 @@
 	#define STATIC_CAST(T,expr) ((T) (expr))
 #endif
 
-#if !defined(_MSC_VER) || _MSC_VER >= 1910
-	#define blaarg_static_assert(cond, msg) static_assert(cond, msg)
+#if defined(_MSC_VER) && _MSC_VER < 1910
+	#define blaarg_static_assert(cond, msg) \
+	        void blargg_failed_(int (*arg) [2 / static_cast<int>(static_cast<bool>(cond)) - 1])
 #else
-	#define blaarg_static_assert(cond, msg) assert(cond)
+	#define blaarg_static_assert(cond, msg) static_assert(cond, msg)
 #endif
 
 // blargg_err_t (0 on success, otherwise error string)
@@ -72,7 +73,8 @@ public:
 	#define BLARGG_DISABLE_NOTHROW \
 		void* operator new ( size_t s ) noexcept { return malloc( s ); }\
 		void* operator new ( size_t s, const std::nothrow_t& ) noexcept { return malloc( s ); }\
-		void operator delete ( void* p ) noexcept { free( p ); }
+		void operator delete ( void* p ) noexcept { free( p ); }\
+		void operator delete ( void* p, const std::nothrow_t&) noexcept { free( p ); }
 #endif
 
 // Use to force disable exceptions for a specific allocation no matter what class
@@ -124,6 +126,13 @@ public:
 #endif
 
 // int8_t etc.
+
+// Apply minus sign to unsigned type and prevent the warning being shown
+	template<typename T>
+	inline T uMinus(T in)
+	{
+		return ~(in - 1);
+	}
 
 // TODO: Add CMake check for this, although I'd likely just point affected
 // persons to a real compiler...
