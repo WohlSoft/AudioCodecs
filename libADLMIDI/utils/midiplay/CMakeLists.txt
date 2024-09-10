@@ -7,9 +7,14 @@ if(NOT ADLMIDI_DOS AND NOT MIDIPLAY_WAVE_ONLY)
     endif()
 endif()
 
+include(utf8main.cmake)
+
 set(ADLMIDI_PLAY_SRC
     adlmidiplay.cpp
     wave_writer.c
+    wave_writer.h
+    audio.h
+    ${UTF8MAIN_SRCS}
 )
 
 if(USE_SDL2_AUDIO)
@@ -30,6 +35,7 @@ add_executable(adlmidiplay ${ADLMIDI_PLAY_SRC})
 
 if(USE_SDL2_AUDIO)
     target_link_libraries(adlmidiplay PRIVATE ADLMIDI_SDL2)
+    target_compile_definitions(adlmidiplay PRIVATE ADLMIDI_USE_SDL2)
 elseif(WIN32)
     target_link_libraries(adlmidiplay PRIVATE winmm)
 endif()
@@ -56,6 +62,7 @@ if(WIN32)
     if(NOT MSVC)
         target_link_libraries(adlmidiplay PRIVATE pthread)
     endif()
+    set_property(TARGET adlmidiplay PROPERTY WIN32_EXECUTABLE TRUE)
 elseif(NOT ADLMIDI_DOS)
     if(NOT OPENBSD_LOCALBASE AND NOT HAIKU)
         target_link_libraries(adlmidiplay PRIVATE dl)
