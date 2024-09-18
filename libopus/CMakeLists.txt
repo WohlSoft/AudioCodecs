@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.2...3.5)
-project(libOPUS VERSION 1.3.1.158 LANGUAGES C)
+project(libOPUS VERSION 1.3.1.158 LANGUAGES C ASM)
 
 set(CMAKE_C_STANDARD 99)
 
@@ -8,6 +8,14 @@ include(CheckFunctionExists)
 include(CheckIncludeFile)
 include(CheckIncludeFiles)
 include(CheckLibraryExists)
+include(CheckLanguage)
+
+if(NOT MSVC)
+  check_language(ASM-ATT)
+  if(CMAKE_ASM-ATT_COMPILER)
+    enable_language(ASM-ATT)
+  endif()
+endif()
 
 set(AUDIO_CODECS_KEEP_SSE ON)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
