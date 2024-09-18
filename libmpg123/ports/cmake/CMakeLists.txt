@@ -1,23 +1,16 @@
-cmake_minimum_required(VERSION 3.2...3.5)
+cmake_minimum_required(VERSION 3.12)
 
 include(cmake/read_api_version.cmake)
-read_api_version(MPG123_VERSION API_VERSION OUTAPI_VERSION SYNAPI_VERSION)
+read_api_version(MPG123_VERSION)
 
 project(mpg123 VERSION ${MPG123_VERSION} LANGUAGES C ASM)
-
-#AucioCodecs: Use C99 as some modules do require it
 set(CMAKE_C_STANDARD 99)
 
-option(BUILD_LIBOUT123 "build libout123" OFF)
+option(BUILD_LIBOUT123 "build libout123 (prerequisite for included programs)" ON)
 if(CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
     message(WARNING "Output module is not implemented for '${CMAKE_SYSTEM_NAME}' platform.")
     message(WARNING "To prevent build errors 'BUILD_LIBOUT123' option is set to OFF.")
     set(BUILD_LIBOUT123 OFF)
-endif()
-
-#AucioCodecs: Allow passing variables as options
-if(POLICY CMP0077) # Cache variables override since 3.12
-    cmake_policy(SET CMP0077 NEW)
 endif()
 
 include(cmake/search_libs.cmake)
@@ -60,20 +53,18 @@ install(
         "${CMAKE_CURRENT_BINARY_DIR}/libsyn123.pc"
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 if(BUILD_LIBOUT123)
-#AucioCodecs: Not included with this copy
-#install(
-#    FILES
-#        "${CMAKE_CURRENT_SOURCE_DIR}/../../man1/mpg123.1"
-#        "${CMAKE_CURRENT_SOURCE_DIR}/../../man1/out123.1"
-#    DESTINATION "${CMAKE_INSTALL_MANDIR}")
+install(
+    FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../man1/mpg123.1"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../man1/out123.1"
+    DESTINATION "${CMAKE_INSTALL_MANDIR}")
 
     install(
         FILES
             "${CMAKE_CURRENT_BINARY_DIR}/libout123.pc"
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
-#AucioCodecs: Not included with this copy
-#    install(
-#        FILES
-#            "${CMAKE_CURRENT_SOURCE_DIR}/../../man1/out123.1"
-#        DESTINATION "${CMAKE_INSTALL_MANDIR}")
+    install(
+        FILES
+            "${CMAKE_CURRENT_SOURCE_DIR}/../../man1/out123.1"
+        DESTINATION "${CMAKE_INSTALL_MANDIR}")
 endif()
