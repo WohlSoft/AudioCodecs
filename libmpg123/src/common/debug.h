@@ -34,7 +34,7 @@
 #include <stdio.h>
 #define debug_print(t, s, ...) fprintf(stderr, DBGPRFX "[" __FILE__ ":%s():%i] " t ": " s "\n", __func__, __LINE__, __VA_ARGS__)
 
-#ifdef DEBUG
+#if defined(DEBUG) && !defined(__3DS__)
 #define mdebug(s, ...) debug_print("debug", s, __VA_ARGS__)
 #else
 #define mdebug(s, ...) noop

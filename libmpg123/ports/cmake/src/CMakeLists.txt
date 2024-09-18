@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.2...3.12)
 
 include(CheckCSourceCompiles)
 include(CheckFunctionExists)
@@ -189,7 +189,13 @@ check_cpu_arch_arm64(ARCH_IS_ARM64)
 if(WIN32 OR (ARCH_IS_ARM64 AND APPLE))
     set(HAVE_FPU 1)
 else()
-    cmake_host_system_information(RESULT HAVE_FPU QUERY HAS_FPU)
+    #AucioCodecs: Compatibility with older CMake versions
+    if(${CMAKE_VERSION} VERSION_LESS "3.10.0")
+        message(WARNING "CMake older than 3.10: Can't use cmake_host_system_information to detect FPU presence")
+        set(HAVE_FPU 1) # Too old CMake version to use HAS_FPU key
+    else()
+        cmake_host_system_information(RESULT HAVE_FPU QUERY HAS_FPU)
+    endif()
 endif()
 
 if(NOT HAVE_FPU)
@@ -349,10 +355,24 @@ include_directories(
     "${CMAKE_CURRENT_BINARY_DIR}"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../src/include")
 
-add_compile_definitions(
-    $<$<BOOL:${WIN32}>:_CRT_SECURE_NO_WARNINGS>
-    $<$<BOOL:${NO_BUFFER}>:NOXFERMEM>
-    $<$<BOOL:${NEWOLD_WRITE_SAMPLE}>:NEWOLD_WRITE_SAMPLE>)
+#AucioCodecs: Old CMake compatibility
+if(${CMAKE_VERSION} VERSION_LESS "3.12.0")
+    message(WARNING "CMake older than 3.12: the add_definitions instead of add_compile_definitions")
+    if(WIN32)
+        add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    endif()
+    if(NO_BUFFER)
+        add_definitions(-DNOXFERMEM)
+    endif()
+    if(NEWOLD_WRITE_SAMPLE)
+        add_definitions(-DNEWOLD_WRITE_SAMPLE)
+    endif()
+else()
+    add_compile_definitions(
+        $<$<BOOL:${WIN32}>:_CRT_SECURE_NO_WARNINGS>
+        $<$<BOOL:${NO_BUFFER}>:NOXFERMEM>
+        $<$<BOOL:${NEWOLD_WRITE_SAMPLE}>:NEWOLD_WRITE_SAMPLE>)
+endif()
 
 add_compile_options(
     $<$<BOOL:${MSVC}>:/wd4996>)

@@ -18,6 +18,7 @@ rm -Rf mpg123/man1/
 rm -Rf mpg123/scripts/
 rm -Rf mpg123/aclocal.m4
 rm -Rf mpg123/configure
+rm -Rf mpg123/configure.ac
 rm -Rf mpg123/makedll.sh
 rm -Rf mpg123/Makefile.am
 rm -Rf mpg123/Makefile.in

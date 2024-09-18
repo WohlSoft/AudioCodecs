@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.2...3.12)
 
 include(cmake/read_api_version.cmake)
 read_api_version(MPG123_VERSION)
@@ -11,6 +11,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
     message(WARNING "Output module is not implemented for '${CMAKE_SYSTEM_NAME}' platform.")
     message(WARNING "To prevent build errors 'BUILD_LIBOUT123' option is set to OFF.")
     set(BUILD_LIBOUT123 OFF)
+endif()
+
+#AucioCodecs: Allow passing variables as options
+if(POLICY CMP0077) # Cache variables override since 3.12
+    cmake_policy(SET CMP0077 NEW)
 endif()
 
 include(cmake/search_libs.cmake)

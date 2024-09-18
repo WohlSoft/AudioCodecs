@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.2...3.12)
 
 option(NO_FEATURE_REPORT "Disable feature report function" OFF)
 if(CMAKE_SYSTEM_NAME STREQUAL "Android")
@@ -18,6 +18,10 @@ else()
     set(INCLUDE_SYS_TYPE_H "/* #include <sys/types.h> is not available on this system */")
 endif()
 
+if(NINTENDO_DS OR NINTENDO_3DS OR NINTENDO_SWITCH) # AudioCodecs: Fixing build
+    message("However, using geneeric optimisations because of the incompatiblity")
+    set(MACHINE generic)
+endif()
 
 
 # PPC with AltiVec is missing. But probably obsolete enough for CMake users.
