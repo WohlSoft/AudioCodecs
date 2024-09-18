@@ -518,6 +518,8 @@ void *decimate_dsd_init (int num_channels)
     double filter_sum = 0, filter_scale;
     int skipped_terms, i, j;
 
+    (void)skipped_terms;
+
     if (!context)
         return context;
 

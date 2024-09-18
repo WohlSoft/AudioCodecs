@@ -70,6 +70,8 @@ static int read_config_file(const char *name, int rcf_count)
   ToneBank *bank;
   int i, j, k, line, r, words;
 
+  (void)0;
+
   if (rcf_count >= MAX_RCFCOUNT) {
     SNDDBG(("Probable source loop in configuration files\n"));
     return -1;
