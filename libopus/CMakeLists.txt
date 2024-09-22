@@ -51,6 +51,9 @@ if(TARGET_PROCESSOR MATCHES "x86_64|AMD64" OR TARGET_PROCESSOR MATCHES "^i.86$")
 elseif(${TARGET_PROCESSOR} MATCHES "arm.*")
     message("ARM detected")
     set(OPUS_ARM_ARCHITECTURE 1)
+    if(${TARGET_PROCESSOR} MATCHES "arm64")
+        set(OPUS_ARM64_ARCHITECTURE 1)
+    endif()
 elseif(${TARGET_PROCESSOR} MATCHES "ppc")
     message("-- Assembly will be disabled on architecture [${TARGET_PROCESSOR}]")
 else()
@@ -121,7 +124,7 @@ if(ENABLE_CHECK_ASM)
     set(OPUS_CHECK_ASM 1)
 endif()
 
-if(VITA OR NINTENDO_SWITCH OR NINTENDO_3DS OR NINTENDO_WII OR (APPLE AND OPUS_ARM_ARCHITECTURE))
+if(VITA OR NINTENDO_SWITCH OR NINTENDO_3DS OR NINTENDO_WII)
     set(DEFAULT_DISABLE_RTCD ON)
 else()
     set(DEFAULT_DISABLE_RTCD OFF)
@@ -569,7 +572,7 @@ elseif(OPUS_ARM_ARCHITECTURE)
         celt/arm/arm_celt_map.c
     )
 
-    if(OPUS_ARM_ASM)
+    if(OPUS_ARM_ASM AND NOT OPUS_ARM64_ARCHITECTURE)
         list(APPEND OPUS_SRC
             celt/arm/celt_pitch_xcorr_arm.s
         )
