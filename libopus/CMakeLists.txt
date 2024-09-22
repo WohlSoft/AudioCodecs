@@ -388,6 +388,9 @@ if(OPUS_ARM_ARCHITECTURE)
         else()
             set(OPUS_ARM_MAY_HAVE_NEON 0)
             message("-- Has inline NEON: NO")
+            # Remove unused flags:
+            string(REPLACE " -mfpu=neon" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+            string(REPLACE " -mfloat-abi=softfp" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
         endif()
 
 
@@ -572,7 +575,7 @@ elseif(OPUS_ARM_ARCHITECTURE)
         celt/arm/arm_celt_map.c
     )
 
-    if(OPUS_ARM_ASM AND NOT OPUS_ARM64_ARCHITECTURE)
+    if(OPUS_ARM_ASM AND CMAKE_COMPILER_IS_GNUCC)
         list(APPEND OPUS_SRC
             celt/arm/celt_pitch_xcorr_arm.s
         )
