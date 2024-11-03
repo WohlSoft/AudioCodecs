@@ -575,7 +575,7 @@ elseif(OPUS_ARM_ARCHITECTURE)
         celt/arm/arm_celt_map.c
     )
 
-    if(OPUS_ARM_ASM AND CMAKE_COMPILER_IS_GNUCC)
+    if(OPUS_ARM_ASM AND NOT OPUS_ARM64_ARCHITECTURE AND CMAKE_COMPILER_IS_GNUCC)
         list(APPEND OPUS_SRC
             celt/arm/celt_pitch_xcorr_arm.s
         )
