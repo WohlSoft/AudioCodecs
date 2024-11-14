@@ -15,4 +15,4 @@ CMakeLists.txt		linguist-vendored
 *.pri				linguist-vendored
 *.html				linguist-vendored
 *.txt				text eol=crlf
-
+CMakeLists.txt			text eol=lf
