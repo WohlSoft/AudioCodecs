@@ -51,6 +51,17 @@ if(EMSCRIPTEN)
     )
 endif()
 
+set(VITA_FLAGS)
+if(VITA)
+    option(VITA_SDL2_PVR "Build SDL2 against PVR OpenGL ES layer for Vita" OFF)
+
+    if(VITA_SDL2_PVR)
+        set(VITA_FLAGS
+            "-DVIDEO_VITA_PVR=ON"
+        )
+    endif()
+endif()
+
 set(ANDROID_FLAGS)
 if(ANDROID)
     set(ANDROID_FLAGS
@@ -148,6 +159,7 @@ elseif(USE_LOCAL_SDL2)
             ${APPLE_FLAGS}
             ${ANDROID_FLAGS}
             ${EMSCRIPTEN_FLAGS}
+            ${VITA_FLAGS}
     )
 
 else()
@@ -173,6 +185,7 @@ else()
             ${APPLE_FLAGS}
             ${ANDROID_FLAGS}
             ${EMSCRIPTEN_FLAGS}
+            ${VITA_FLAGS}
     )
 
 endif()
