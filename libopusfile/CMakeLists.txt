@@ -53,6 +53,10 @@ if(ENABLE_HTTP)
     endif()
 endif()
 
+if(NINTENDO_3DS)
+    set(ENABLE_FIXED_POINT ON)
+endif()
+
 option(ENABLE_FIXED_POINT "Enable fixed-point calculation)" OFF)
 if(ENABLE_FIXED_POINT)
     set(OP_FIXED_POINT 1)

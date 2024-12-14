@@ -87,6 +87,10 @@ if(ENABLE_CUSTOM_MODES)
     set(CUSTOM_MODES 1)
 endif()
 
+if(NINTENDO_3DS)
+    set(ENABLE_FIXED_POINT ON)
+endif()
+
 option(ENABLE_FIXED_POINT "Compile as fixed-point (for machines without a fast enough FPU)" OFF)
 if(ENABLE_FIXED_POINT)
     set(FIXED_POINT 1)
