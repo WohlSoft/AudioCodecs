@@ -478,6 +478,45 @@ long oggpack_read1(oggpack_buffer *b){
   return -1L;
 }
 
+long oggpack_read5(oggpack_buffer *b){
+  long ret;
+  int old_endbit;
+
+  if(b->endbyte >= b->storage-1){
+    int bits_total = 5+b->endbit;
+    /* not the main path */
+    if(b->endbyte > b->storage-((bits_total+7)>>3)) goto overflow;
+    /* special case to avoid reading b->ptr[0], which might be past the end of
+        the buffer; also skips some useless accounting */
+    else if(!bits_total)return(0L);
+  }
+
+  old_endbit = b->endbit;
+
+  ret=b->ptr[0];
+
+  if(b->endbit>2){
+    ret|=b->ptr[1]<<8;
+    b->endbit-=3;
+    b->ptr++;
+    b->endbyte++;
+  }
+  else{
+    b->endbit+=5;
+  }
+
+  ret>>=old_endbit;
+  ret&=0x1f;
+
+  return ret;
+
+ overflow:
+  b->ptr=NULL;
+  b->endbyte=b->storage;
+  b->endbit=1;
+  return -1L;
+}
+
 long oggpackB_read1(oggpack_buffer *b){
   long ret;
 
