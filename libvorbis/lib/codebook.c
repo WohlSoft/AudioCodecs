@@ -177,7 +177,7 @@ static_codebook *vorbis_staticbook_unpack(oggpack_buffer *opb){
 
       for(i=0;i<s->entries;i++){
         if(oggpack_read1(opb)){
-          long num=oggpack_read(opb,5);
+          long num=oggpack_read5(opb);
           if(num==-1)goto _eofout;
           s->lengthlist[i]=num+1;
         }else
@@ -186,7 +186,7 @@ static_codebook *vorbis_staticbook_unpack(oggpack_buffer *opb){
     }else{
       /* all entries used; no tagging */
       for(i=0;i<s->entries;i++){
-        long num=oggpack_read(opb,5);
+        long num=oggpack_read5(opb);
         if(num==-1)goto _eofout;
         s->lengthlist[i]=num+1;
       }
@@ -197,7 +197,7 @@ static_codebook *vorbis_staticbook_unpack(oggpack_buffer *opb){
   case 1:
     /* ordered */
     {
-      long length=oggpack_read(opb,5)+1;
+      long length=oggpack_read5(opb)+1;
       if(length==0)goto _eofout;
       s->lengthlist=_ogg_malloc(sizeof(*s->lengthlist)*s->entries);
 
