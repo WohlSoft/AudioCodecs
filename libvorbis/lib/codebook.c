@@ -161,11 +161,11 @@ static_codebook *vorbis_staticbook_unpack(oggpack_buffer *opb){
   if(ov_ilog(s->dim)+ov_ilog(s->entries)>24)goto _eofout;
 
   /* codeword ordering.... length ordered or unordered? */
-  switch((int)oggpack_read(opb,1)){
+  switch((int)oggpack_read1(opb)){
   case 0:{
     long unused;
     /* allocated but unused entries? */
-    unused=oggpack_read(opb,1);
+    unused=oggpack_read1(opb);
     if((s->entries*(unused?1:5)+7)>>3>opb->storage-oggpack_bytes(opb))
       goto _eofout;
     /* unordered */
@@ -176,7 +176,7 @@ static_codebook *vorbis_staticbook_unpack(oggpack_buffer *opb){
       /* yes, unused entries */
 
       for(i=0;i<s->entries;i++){
-        if(oggpack_read(opb,1)){
+        if(oggpack_read1(opb)){
           long num=oggpack_read(opb,5);
           if(num==-1)goto _eofout;
           s->lengthlist[i]=num+1;
