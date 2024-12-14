@@ -665,6 +665,7 @@ long ogg_sync_pageseek(ogg_sync_state *oy,ogg_page *og){
   if(oy->bodybytes+oy->headerbytes>bytes)return(0);
 
   /* The whole test page is buffered.  Verify the checksum */
+#ifndef OGG_UNSAFE_DISABLE_CRC
   {
     /* Grab the checksum bytes, set the header field to zero */
     char chksum[4];
@@ -690,9 +691,10 @@ long ogg_sync_pageseek(ogg_sync_state *oy,ogg_page *og){
 #ifndef DISABLE_CRC
       /* Bad checksum. Lose sync */
       goto sync_fail;
-#endif
+#endif /* #ifndef DISABLE_CRC */
     }
   }
+#endif /* #ifndef OGG_UNSAFE_DISABLE_CRC */
 
   /* yes, have a whole page all ready to go */
   {

@@ -10,6 +10,10 @@ add_library(ogg STATIC
     src/framing.c
 )
 
+if(OGG_UNSAFE_DISABLE_CRC)
+        target_compile_definitions(ogg PRIVATE -DOGG_UNSAFE_DISABLE_CRC)
+endif()
+
 target_include_directories(ogg PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 

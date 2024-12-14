@@ -73,6 +73,8 @@ endif()
 # add_subdirectory(libSDL2)
 
 option(BUILD_OGG_VORBIS "Enable building of OGG and Vorbis" ON)
+option(OGG_UNSAFE_DISABLE_CRC "[Unsafe] disable checksum when playing OGG files" OFF)
+mark_as_advanced(OGG_UNSAFE_DISABLE_CRC)
 if(BUILD_OGG_VORBIS)
     add_subdirectory(libogg)
     add_subdirectory(libvorbis)
