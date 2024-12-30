@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2022 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2024 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -416,27 +416,7 @@ void libxmp_process_fx(struct context_data *ctx, struct channel_data *xc, int ch
 			}
 			break;
 		case EX_PATTERN_LOOP:	/* Loop pattern */
-			if (fxp == 0) {
-				/* mark start of loop */
-				f->loop[chn].start = p->row;
-				if (HAS_QUIRK(QUIRK_FT2BUGS))
-				  p->flow.jumpline = p->row;
-			} else {
-				/* end of loop */
-				if (f->loop[chn].count) {
-					if (--f->loop[chn].count) {
-						/* **** H:FIXME **** */
-						f->loop_chn = ++chn;
-					} else {
-						if (HAS_QUIRK(QUIRK_S3MLOOP))
-							f->loop[chn].start =
-							    p->row + 1;
-					}
-				} else {
-					f->loop[chn].count = fxp;
-					f->loop_chn = ++chn;
-				}
-			}
+			libxmp_process_pattern_loop(ctx, f, chn, p->row, fxp);
 			break;
 		case EX_TREMOLO_WF:	/* Set tremolo waveform */
 			libxmp_lfo_set_waveform(&xc->tremolo.lfo, fxp & 3);
@@ -445,11 +425,12 @@ void libxmp_process_fx(struct context_data *ctx, struct channel_data *xc, int ch
 			fxp <<= 4;
 			goto fx_setpan;
 		case EX_RETRIG:		/* Retrig note */
+		    fx_retrig:
 			SET(RETRIG);
 			xc->retrig.val = fxp;
-			xc->retrig.count = LSN(xc->retrig.val) + 1;
+			xc->retrig.count = fxp + 1;
 			xc->retrig.type = 0;
-			xc->retrig.limit = 0;
+			xc->retrig.limit = HAS_QUIRK(QUIRK_RTONCE) ? 1 : 0;
 			break;
 		case EX_F_VSLIDE_UP:	/* Fine volume slide up */
 			EFFECT_MEMORY(fxp, xc->fine_vol.up_memory);
@@ -594,8 +575,9 @@ void libxmp_process_fx(struct context_data *ctx, struct channel_data *xc, int ch
 		xc->vol.fslide2 = -fxp;
 		break;
 	case FX_IT_BREAK:	/* Pattern break with hex parameter */
-		if (!f->loop_chn)
-		{
+		/* IT break is not applied if a lower channel looped (2.00+).
+		 * (Labyrinth of Zeux ZX_11.it "Raceway"). */
+		if (f->loop_dest < 0) {
 			p->flow.pbreak = 1;
 			p->flow.jumpline = fxp;
 		}
@@ -694,11 +676,11 @@ void libxmp_process_fx(struct context_data *ctx, struct channel_data *xc, int ch
 	case FX_MULTI_RETRIG:	/* Multi retrig */
 		EFFECT_MEMORY_S3M(fxp);
 		if (fxp) {
-			xc->retrig.val = fxp;
-			xc->retrig.type = MSN(xc->retrig.val);
+			xc->retrig.val = LSN(fxp);
+			xc->retrig.type = MSN(fxp);
 		}
 		if (note) {
-			xc->retrig.count = LSN(xc->retrig.val) + 1;
+			xc->retrig.count = xc->retrig.val + 1;
 		}
 		xc->retrig.limit = 0;
 		SET(RETRIG);
@@ -1090,6 +1072,22 @@ void libxmp_process_fx(struct context_data *ctx, struct channel_data *xc, int ch
 
 	/* ULT effects */
 
+	case FX_ULT_TEMPO:	/* ULT tempo */
+		/* Has unusual semantics and is hard to split into multiple
+		 * effects, due to ULT's two effects lanes per channel:
+		 *
+		 * 00:    reset both speed and BPM to the default 6/125.
+		 * 01-2f: set speed
+		 * 30-ff: set BPM (CIA compatible)
+		 */
+		if (fxp == 0) {
+			p->speed = 6;
+			p->st26_speed = 0;
+			fxp = 125;
+		} else if (fxp < 0x30) {
+			goto fx_s3m_speed;
+		}
+		goto fx_s3m_bpm;
 	case FX_ULT_TPORTA:	/* ULT tone portamento */
 		/* Like normal persistent tone portamento, except:
 		 *
@@ -1122,6 +1120,8 @@ void libxmp_process_fx(struct context_data *ctx, struct channel_data *xc, int ch
 		p->flow.jumpline = fxp;
 		p->flow.jump_in_pat = p->ord;
 		break;
+	case FX_RETRIG:		/* Retrigger with extended range */
+		goto fx_retrig;
 #endif
 
 	default:

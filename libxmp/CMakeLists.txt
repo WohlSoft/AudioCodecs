@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.4...3.5)
+cmake_minimum_required(VERSION 3.4...3.10)
 project(libxmp VERSION 4.6.0 LANGUAGES C)
 
 set(LIBXMP_DEFINES)
@@ -170,7 +170,7 @@ if(BUILD_SHARED)
     if(HAVE_VISIBILITY AND HAVE_GNU_LD AND UNIX)
         target_compile_definitions(xmp_shared PRIVATE USE_VERSIONED_SYMBOLS=1)
         set_property(TARGET xmp_shared APPEND_STRING PROPERTY
-                     LINK_FLAGS " -Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/libxmp.map")
+                     LINK_FLAGS " -Wl,--version-script,\"${CMAKE_CURRENT_SOURCE_DIR}/libxmp.map\"")
         message(STATUS "Versioned symbols: ENABLED.")
     else()
         message(STATUS "Versioned symbols: DISABLED")
@@ -259,11 +259,19 @@ endif()
 
 
 add_library(XMP_IF INTERFACE)
-
 if(NOT BUILD_SHARED)
     target_link_libraries(XMP_IF INTERFACE xmp_static)
 else()
     target_link_libraries(XMP_IF INTERFACE xmp_shared)
+endif()
+
+if(BUILD_LITE)
+    add_library(XMPLITE_IF INTERFACE)
+    if(NOT BUILD_SHARED)
+        target_link_libraries(XMPLITE_IF INTERFACE xmp_lite_static)
+    else()
+        target_link_libraries(XMPLITE_IF INTERFACE xmp_lite_shared)
+    endif()
 endif()
 
 # === Unit tests ====

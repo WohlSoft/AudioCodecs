@@ -88,7 +88,8 @@
 #define FX_FAR_RETRIG	0x6d	/* FAR retrigger */
 #define FX_FAR_DELAY	0x6e	/* FAR note offset */
 
-/* Other frequency based effects (ULT, etc) */
+/* ULT effects */
+#define FX_ULT_TEMPO	0x5f
 #define FX_ULT_TPORTA   0x6f
 #endif
 
@@ -138,6 +139,7 @@
 #define FX_PITCH_ADD	0xb8	/* SFX add steps to current note */
 #define FX_PITCH_SUB	0xb9	/* SFX add steps to current note */
 #define FX_LINE_JUMP	0xba	/* Archimedes jump to line in current order */
+#define FX_RETRIG	0xbb	/* Retrigger with extended range (LIQ, DSym) */
 #endif
 
 #define FX_SURROUND	0x8d	/* S3M/IT */
