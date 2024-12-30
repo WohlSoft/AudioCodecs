@@ -3247,7 +3247,7 @@ if (SDL_ASAN)
 endif()
 
 if(SDL_CCACHE AND NOT CMAKE_VERSION VERSION_LESS 3.4)
-  cmake_minimum_required(VERSION 3.4...3.5)
+  cmake_minimum_required(VERSION 3.4...3.10)
   find_program(CCACHE_BINARY ccache)
   if(CCACHE_BINARY)
     set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_BINARY})

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2...3.5)
+cmake_minimum_required(VERSION 3.2...3.10)
 project(libVorbis VERSION 1.3.7 LANGUAGES C)
 
 include(CheckIncludeFile)

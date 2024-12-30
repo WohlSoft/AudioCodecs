@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1...3.5)
+cmake_minimum_required(VERSION 3.1...3.10)
 
 # #### AudioCodecs CHANGES ####
 # - All CMAKE_SOURCE_DIR replaced with CMAKE_CURRENT_SOURCE_DIR---

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2...3.5)
+cmake_minimum_required(VERSION 3.2...3.10)
 project(libOPUS VERSION 1.3.1.158 LANGUAGES C ASM)
 
 set(CMAKE_C_STANDARD 99)

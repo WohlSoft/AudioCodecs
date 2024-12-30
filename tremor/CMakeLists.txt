@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2...3.5)
+cmake_minimum_required(VERSION 3.2...3.10)
 project(Tremor VERSION 1.2.1 LANGUAGES C)
 
 include(CheckIncludeFiles)

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2...3.5)
+cmake_minimum_required(VERSION 3.2...3.10)
 project(libGME VERSION 0.6.2 LANGUAGES C CXX)
 
 set(AUDIO_CODECS_KEEP_SSE ON)
