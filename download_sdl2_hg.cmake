@@ -76,7 +76,7 @@ if(ANDROID)
         "-DANDROID_ARM_NEON=${ANDROID_ARM_NEON}"
     )
 
-    if(FDROID)
+    if(FDROID_BUILD)
         # Forward current CMake C/CXX flags to SDL2
         list(APPEND ANDROID_FLAGS
             "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--build-id=none"
