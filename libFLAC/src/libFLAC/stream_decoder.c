@@ -2833,7 +2833,7 @@ FLAC__bool read_subframe_verbatim_(FLAC__StreamDecoder *decoder, uint32_t channe
 FLAC__bool read_residual_partitioned_rice_(FLAC__StreamDecoder *decoder, uint32_t predictor_order, uint32_t partition_order, FLAC__EntropyCodingMethod_PartitionedRiceContents *partitioned_rice_contents, FLAC__int32 *residual, FLAC__bool is_extended)
 {
 	FLAC__uint32 rice_parameter;
-	int i;
+	FLAC__int32 i;
 	uint32_t partition, sample, u;
 	const uint32_t partitions = 1u << partition_order;
 	const uint32_t partition_samples = decoder->private_->frame.header.blocksize >> partition_order;

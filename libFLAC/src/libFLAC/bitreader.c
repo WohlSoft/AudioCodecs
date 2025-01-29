@@ -834,7 +834,7 @@ FLAC__bool FLAC__bitreader_read_rice_signed(FLAC__BitReader *br, int *val, uint3
 #endif
 
 /* this is by far the most heavily used reader call.  it ain't pretty but it's fast */
-FLAC__bool FLAC__bitreader_read_rice_signed_block(FLAC__BitReader *br, int vals[], uint32_t nvals, uint32_t parameter)
+FLAC__bool FLAC__bitreader_read_rice_signed_block(FLAC__BitReader *br, FLAC__int32 vals[], uint32_t nvals, uint32_t parameter)
 {
 	/* try and get br->consumed_words and br->consumed_bits into register;
 	 * must remember to flush them back to *br before calling other
@@ -842,7 +842,7 @@ FLAC__bool FLAC__bitreader_read_rice_signed_block(FLAC__BitReader *br, int vals[
 	uint32_t cwords, words, lsbs, msbs, x, y, limit;
 	uint32_t ucbits; /* keep track of the number of unconsumed bits in word */
 	brword b;
-	int *val, *end;
+	FLAC__int32 *val, *end;
 
 	FLAC__ASSERT(0 != br);
 	FLAC__ASSERT(0 != br->buffer);
