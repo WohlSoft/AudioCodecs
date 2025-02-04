@@ -396,11 +396,12 @@ if(OPUS_ARM_ARCHITECTURE)
         ac_add_c_compiler_flag(-mfpu=neon MFPU_NEON)
         ac_add_c_compiler_flag(-mfloat-abi=softfp FLOATABI_SOFTFP)
 
-        if(CMAKE_COMPILER_IS_GNUCC AND "${CMAKE_ASM-ATT_COMPILER_ID}" STREQUAL "GNU")
+        if("${CMAKE_ASM-ATT_COMPILER_ID}" STREQUAL "GNU")
             set(OPUS_ARM_GNU_ASM TRUE)
             set(OPUS_ARM_SRC_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated-gnu-arm")
             find_program(PERL_PROGRAM perl REQUIRED)
             file(MAKE_DIRECTORY "${OPUS_ARM_SRC_DIR}")
+            message("-- Found PERL: ${PERL_PROGRAM}")
         endif()
 
         try_compile(HAVE_ARM_INLINE_NEON
