@@ -260,6 +260,22 @@ if(NOT DISABLE_RTCD)
     endif()
 endif()
 
+macro(arm2gnu_cvt TARGET_NAME FILE_SRC FILE_DST)
+    add_custom_target(
+        ${TARGET_NAME}
+        BYPRODUCTS
+            "${FILE_DST}"
+        DEPENDS
+            "${FILE_SRC}"
+        COMMAND
+            "${PERL_PROGRAM}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/celt/arm/arm2gnu.pl"
+            "${FILE_SRC}"
+            ">"
+            "${FILE_DST}"
+    )
+endmacro()
+
 set(SUMMARY_INLINE_ASM "No inline ASM for your platform")
 set(SUMMARY_EXTERNAL_ASM_OPTIMIZATIONS "")
 
@@ -380,6 +396,13 @@ if(OPUS_ARM_ARCHITECTURE)
         ac_add_c_compiler_flag(-mfpu=neon MFPU_NEON)
         ac_add_c_compiler_flag(-mfloat-abi=softfp FLOATABI_SOFTFP)
 
+        if(CMAKE_COMPILER_IS_GNUCC AND "${CMAKE_ASM-ATT_COMPILER_ID}" STREQUAL "GNU")
+            set(OPUS_ARM_GNU_ASM TRUE)
+            set(OPUS_ARM_SRC_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated-gnu-arm")
+            find_program(PERL_PROGRAM perl REQUIRED)
+            file(MAKE_DIRECTORY "${OPUS_ARM_SRC_DIR}")
+        endif()
+
         try_compile(HAVE_ARM_INLINE_NEON
             ${CMAKE_BINARY_DIR}/compile_tests
             ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/arm/neon_inline.c
@@ -478,7 +501,13 @@ if(OPUS_ARM_ARCHITECTURE)
             set(OPUS_ARM_ASM 1)
         endif()
 
-        configure_file(celt/arm/armopts.s.in ${CMAKE_CURRENT_BINARY_DIR}/config/celt/arm/armopts.s)
+        configure_file(celt/arm/armopts.s.in "${CMAKE_CURRENT_BINARY_DIR}/config/celt/arm/armopts.s")
+        if(OPUS_ARM_GNU_ASM)
+            arm2gnu_cvt(opus_armopts_asm
+                "${CMAKE_CURRENT_BINARY_DIR}/config/celt/arm/armopts.s"
+                "${CMAKE_CURRENT_BINARY_DIR}/config/celt/arm/armopts-gnu.S"
+            )
+        endif()
 
     endif()
 endif()#Is ARM architecture
@@ -579,10 +608,17 @@ elseif(OPUS_ARM_ARCHITECTURE)
         celt/arm/arm_celt_map.c
     )
 
-    if(OPUS_ARM_ASM AND NOT OPUS_ARM64_ARCHITECTURE AND CMAKE_COMPILER_IS_GNUCC)
-        list(APPEND OPUS_SRC
-            celt/arm/celt_pitch_xcorr_arm.s
-        )
+    if(OPUS_ARM_ASM AND NOT OPUS_ARM64_ARCHITECTURE)
+        if(OPUS_ARM_GNU_ASM)
+            arm2gnu_cvt(celt_pitch_xcorr_arm_asm
+                "${CMAKE_CURRENT_SOURCE_DIR}/celt/arm/celt_pitch_xcorr_arm.s"
+                "${OPUS_ARM_SRC_DIR}/celt_pitch_xcorr_arm-gnu.s"
+            )
+            list(APPEND OPUS_SRC "${OPUS_ARM_SRC_DIR}/celt_pitch_xcorr_arm-gnu.s")
+            add_dependencies(celt_pitch_xcorr_arm_asm opus_armopts_asm)
+        else()
+            list(APPEND OPUS_SRC celt/arm/celt_pitch_xcorr_arm.s)
+        endif()
     endif()
 
     if(HAVE_ARM_NEON_INTR)
