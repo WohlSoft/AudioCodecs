@@ -200,6 +200,5 @@ install(TARGETS
 
 install(FILES
     src/gme.h
-    src/blargg_source.h
     DESTINATION include/gme
 )
