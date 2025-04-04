@@ -55,6 +55,8 @@ option(BUILD_GME_STATIC "Build static library of Game-Music-EMU" ON)
 option(BUILD_GME_SHARED "Build shared library of Game-Music-EMU" OFF)
 
 set(GME_YM2612_EMU "MAME" CACHE STRING "Which YM2612 emulator to use: \"Nuked\" (LGPLv2.1+), \"MAME\" (GPLv2+), or \"GENS\" (LGPLv2.1+)")
+set(GME_YM2612_EMU_CHOICES "Nuked;MAME;GENS")
+set_property(CACHE GME_YM2612_EMU PROPERTY STRINGS "${GME_YM2612_EMU_CHOICES}")
 option(GME_ENABLE_ZLIB "Enable ZLib support (such as VGZ files and other GZ-packed files)" ON)
 option(GME_USE_SYSTEM_ZLIB "Use Zlib from the system" OFF)
 
