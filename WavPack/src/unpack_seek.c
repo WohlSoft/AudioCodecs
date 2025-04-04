@@ -302,8 +302,9 @@ static int64_t find_header (WavpackStreamReader64 *reader, void *id, int64_t fil
                     WavpackLittleEndianToNative (wphdr, WavpackHeaderFormat);
 
                     if (wphdr->block_samples && (wphdr->flags & INITIAL_BLOCK)) {
+                        int len = ep - sp;
                         free (buffer);
-                        return reader->get_pos (id) - (ep - sp + 4);
+                        return reader->get_pos (id) - (len + 4);
                     }
 
                     if (wphdr->ckSize > 1024)
