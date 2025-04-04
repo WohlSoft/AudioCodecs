@@ -156,14 +156,86 @@ static const char * const channel_alloc_descriptions[] =
 #define EMULATOR_TYPE_LINGTEXT N_( \
     "OPL3 Emulator that will be used to generate final sound.")
 
-static const int emulator_type_values[] = { 0, 1, 2 };
+static const int emulator_type_values[] =
+{
+#ifndef ADLMIDI_DISABLE_NUKED_EMULATOR
+    (int)ADLMIDI_EMU_NUKED,
+    (int)ADLMIDI_EMU_NUKED_174,
+#endif
+
+#ifndef ADLMIDI_DISABLE_DOSBOX_EMULATOR
+    (int)ADLMIDI_EMU_DOSBOX,
+#endif
+
+#ifndef ADLMIDI_DISABLE_OPAL_EMULATOR
+    (int)ADLMIDI_EMU_OPAL,
+#endif
+
+#ifndef ADLMIDI_DISABLE_JAVA_EMULATOR
+    (int)ADLMIDI_EMU_JAVA,
+#endif
+
+#ifndef ADLMIDI_DISABLE_ESFMU_EMULATOR
+    (int)ADLMIDI_EMU_ESFMu,
+#endif
+
+#ifndef ADLMIDI_DISABLE_MAME_OPL2_EMULATOR
+    (int)ADLMIDI_EMU_MAME_OPL2,
+#endif
+
+#ifndef ADLMIDI_DISABLE_YMFM_EMULATOR
+    (int)ADLMIDI_EMU_YMFM_OPL2,
+    (int)ADLMIDI_EMU_YMFM_OPL3,
+#endif
+
+#ifdef ADLMIDI_ENABLE_OPL2_LLE_EMULATOR
+    (int)ADLMIDI_EMU_NUKED_OPL2_LLE,
+#endif
+
+#ifdef ADLMIDI_ENABLE_OPL3_LLE_EMULATOR
+    (int)ADLMIDI_EMU_NUKED_OPL3_LLE,
+#endif
+};
 static const char * const emulator_type_descriptions[] =
 {
+#ifndef ADLMIDI_DISABLE_NUKED_EMULATOR
     N_("Nuked OPL3 1.8"),
     N_("Nuked OPL3 1.7.4 (Optimized)"),
+#endif
+
+#ifndef ADLMIDI_DISABLE_DOSBOX_EMULATOR
     N_("DOSBox"),
+#endif
+
+#ifndef ADLMIDI_DISABLE_OPAL_EMULATOR
     N_("Opal"),
+#endif
+
+#ifndef ADLMIDI_DISABLE_JAVA_EMULATOR
     N_("Java OPL3"),
+#endif
+
+#ifndef ADLMIDI_DISABLE_ESFMU_EMULATOR
+    N_("ESFMu"),
+#endif
+
+#ifndef ADLMIDI_DISABLE_MAME_OPL2_EMULATOR
+    N_("MAME OPL2"),
+#endif
+
+#ifndef ADLMIDI_DISABLE_YMFM_EMULATOR
+    N_("YMFM OPL2"),
+    N_("YMFM OPL3"),
+#endif
+
+#ifdef ADLMIDI_ENABLE_OPL2_LLE_EMULATOR
+    N_("Nuked OPL2-LLE [!EXTRA HEAVY!]"),
+#endif
+
+#ifdef ADLMIDI_ENABLE_OPL3_LLE_EMULATOR
+    N_("Nuked OPL3-LLE [!EXTRA HEAVY!]"),
+#endif
+
     NULL
 };
 
@@ -299,7 +371,7 @@ static int Open (vlc_object_t *p_this)
     }
 
     adl_setVolumeRangeModel(p_sys->synth, var_InheritInteger(p_this, CONFIG_PREFIX "volume-model"));
-    adl_setChannelAllocMode(p_sys->synth, var_InheritInteger(p_this, CONFIG_PREFIX "channel-allocation"));    
+    adl_setChannelAllocMode(p_sys->synth, var_InheritInteger(p_this, CONFIG_PREFIX "channel-allocation"));
 
     adl_setFullRangeBrightness(p_sys->synth, var_InheritBool(p_this, CONFIG_PREFIX "full-range-brightness"));
 
