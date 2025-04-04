@@ -1046,9 +1046,10 @@ fluid_defpreset_import_sfont(fluid_defpreset_t* preset,
   int count;
   char zone_name[256];
   if (FLUID_STRLEN(sfpreset->name) > 0) {
-    FLUID_STRCPY(preset->name, sfpreset->name);
+    FLUID_STRNCPY(preset->name, sfpreset->name, 21);
   } else {
-    FLUID_SPRINTF(preset->name, "Bank%d,Preset%d", sfpreset->bank, sfpreset->prenum);
+    FLUID_SPRINTF(zone_name, "Bank%d,Preset%d", sfpreset->bank, sfpreset->prenum);
+    FLUID_STRNCPY(preset->name, zone_name, 21);
   }
   preset->bank = sfpreset->bank;
   preset->num = sfpreset->prenum;
