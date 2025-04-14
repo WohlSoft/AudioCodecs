@@ -13,6 +13,8 @@ if(POLICY CMP0077) # Cache variables override since 3.12
     cmake_policy(SET CMP0077 NEW)
 endif()
 
+string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_LOWER)
+
 if(NOT EMSCRIPTEN AND NOT VITA)
     option(CODECS_BUILD_SHARED "Build shared libraries if possible" OFF)
     option(CODECS_BUILD_STATIC "Build static libraries if possible" ON)

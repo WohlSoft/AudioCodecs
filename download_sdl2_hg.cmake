@@ -55,8 +55,10 @@ set(VITA_FLAGS)
 if(VITA)
     option(VITA_SDL2_PVR "Build SDL2 against PVR OpenGL ES layer for Vita" OFF)
 
+    list(APPEND VITA_FLAGS "-DSDL_TEST=OFF")
+
     if(VITA_SDL2_PVR)
-        set(VITA_FLAGS
+        list(APPEND VITA_FLAGS
             "-DVIDEO_VITA_PVR=ON"
         )
     endif()
@@ -150,13 +152,20 @@ if(USE_USE_NDK_MAKE)
     )
 
 elseif(USE_LOCAL_SDL2)
+    # Workaround: Force Vita build to be "Release" when "MinSizeRel" profile is selected
+    if(VITA AND CMAKE_BUILD_TYPE_LOWER STREQUAL "minsizerel")
+        set(SDL_CMAKE_BUILD_TYPE "Release")
+    else()
+        set(SDL_CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}")
+    endif()
+
     ExternalProject_Add(
         SDL2HG
         PREFIX ${CMAKE_BINARY_DIR}/external/SDL2
         DOWNLOAD_COMMAND ""
         SOURCE_DIR ${CMAKE_SOURCE_DIR}/SDL2/
         CMAKE_ARGS
-            "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+            "-DCMAKE_BUILD_TYPE=${SDL_CMAKE_BUILD_TYPE}"
             "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}"
             "-DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}"
             "-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}"
