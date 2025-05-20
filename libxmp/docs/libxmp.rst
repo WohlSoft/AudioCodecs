@@ -530,7 +530,8 @@ void xmp_scan_module(xmp_context c)
   Scan the loaded module for sequences and timing. Scanning is automatically
   performed by `xmp_load_module()`_ and this function should be called only
   if `xmp_set_player()`_ is used to change player timing (with parameter
-  ``XMP_PLAYER_VBLANK``) in libxmp 4.0.2 or older.
+  ``XMP_PLAYER_VBLANK``) in libxmp 4.0.2 or older, or if
+  `xmp_set_tempo_factor()`_ is used to change the base tempo factor.
 
   **Parameters:**
     :c: the player context handle.
@@ -710,6 +711,9 @@ void xmp_get_frame_info(xmp_context c, struct xmp_frame_info \*info)
       `xmp_play_frame()`_ is called. Fields ``buffer`` and ``buffer_size``
       contain the pointer to the sound buffer PCM data and its size. The
       buffer size will be no larger than ``XMP_MAX_FRAMESIZE``.
+      Fields ``time``, ``total_time``, and ``frame_time`` are based on the
+      base tempo factor set when the module was last scanned (see
+      `xmp_set_tempo_factor()`_ and `xmp_scan_module()`_).
 
 .. _xmp_end_player():
 
@@ -734,13 +738,16 @@ int xmp_next_position(xmp_context c)
 ````````````````````````````````````
 
   Skip replay to the start of the next position.
+  If the module was stopped with ``xmp_stop_module``, this operation
+  restarts the module at position 0. If the module is restarting
+  at position 0, this operation does nothing.
 
   **Parameters:**
     :c: the player context handle.
 
   **Returns:**
-    The new position index, or ``-XMP_ERROR_STATE`` if the player is not
-    in playing state.
+    The new position index, -1 if the module is restarting at position
+    0, or ``-XMP_ERROR_STATE`` if the player is not in playing state.
 
 .. _xmp_prev_position():
 
@@ -748,6 +755,9 @@ int xmp_prev_position(xmp_context c)
 ````````````````````````````````````
 
   Skip replay to the start of the previous position.
+  If the module was stopped with ``xmp_stop_module``, is restarting at
+  position 0, or if the previous position is part of a different sequence,
+  this operation does nothing.
 
   **Parameters:**
     :c: the player context handle.
@@ -762,6 +772,8 @@ int xmp_set_position(xmp_context c, int pos)
 ````````````````````````````````````````````
 
   Skip replay to the start of the given position.
+  If the module was stopped with ``xmp_stop_module``, this operation
+  will restart the module at the destination position.
 
   **Parameters:**
     :c: the player context handle.
@@ -769,8 +781,9 @@ int xmp_set_position(xmp_context c, int pos)
     :pos: the position index to set.
 
   **Returns:**
-    The new position index, ``-XMP_ERROR_INVALID`` of the new position is
-    invalid or ``-XMP_ERROR_STATE`` if the player is not in playing state.
+    The new position index, -1 if the module is restarting at
+    position 0, ``-XMP_ERROR_INVALID`` of the new position is invalid,
+    or ``-XMP_ERROR_STATE`` if the player is not in playing state.
 
 .. _xmp_set_row():
 
@@ -793,7 +806,16 @@ int xmp_set_row(xmp_context c, int row)
 int xmp_set_tempo_factor(xmp_context c, double val)
 ```````````````````````````````````````````````````
 
-  *[Added in libxmp 4.5]* Modify the replay tempo multiplier.
+  *[Added in libxmp 4.5]* Modify the current base tempo multiplier.
+  This value is a property of the currently loaded module, not of
+  the player: the default value of the tempo factor is ``1.0``
+  for most modules, ``0.264`` for MED/OctaMED tempo mode modules,
+  ``4.0 / rows_per_beat`` for MED/OctaMED BPM mode modules, and
+  roughly ``0.401373`` for Farandole Composer modules.
+
+  This function does not recalculate the playback times returned by
+  `xmp_get_frame_info()`_. To recalculate these times, call
+  `xmp_scan_module()`_ after setting the tempo factor.
 
   **Parameters:**
     :c: the player context handle.
@@ -1332,7 +1354,7 @@ int xmp_smix_release_sample(xmp_context c, int num)
 void xmp_end_smix(xmp_context c)
 ````````````````````````````````
 
-  Deinitialize and resease memory used by the external sample mixer subsystem.
+  Deinitialize and release memory used by the external sample mixer subsystem.
 
   **Parameters:**
     :c: the player context handle.
