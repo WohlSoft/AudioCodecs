@@ -21,6 +21,10 @@ endif()
 if(NINTENDO_DS OR NINTENDO_3DS OR NINTENDO_SWITCH) # AudioCodecs: Fixing build
     message("However, using geneeric optimisations because of the incompatiblity")
     set(MACHINE generic)
+    set(ARCH_IS_ARM32 FALSE)
+    set(ARCH_IS_ARM64 FALSE)
+    set(ARCH_IS_X64 FALSE)
+    set(ARCH_IS_X86 FALSE)
 endif()
 
 
@@ -254,4 +258,3 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../../../../src/include/mpg123.h"
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../../../../src/include/fmt123.h"
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
-
