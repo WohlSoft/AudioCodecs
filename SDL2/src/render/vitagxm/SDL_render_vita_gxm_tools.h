@@ -41,7 +41,8 @@ void init_orthographic_matrix(float *m, float left, float right, float bottom, f
 void *pool_malloc(VITA_GXM_RenderData *data, unsigned int size);
 void *pool_memalign(VITA_GXM_RenderData *data, unsigned int size, unsigned int alignment);
 
-void set_clip_rectangle(VITA_GXM_RenderData *data, int x_min, int y_min, int x_max, int y_max);
+void set_clip_rectangle(VITA_GXM_RenderData *data, int targetw, int targeth, int x_min, int y_min, int x_max, int y_max);
+void set_viewport_clip_rect(VITA_GXM_RenderData *data, int targetw, int targeth, int x_max, int y_max);
 void unset_clip_rectangle(VITA_GXM_RenderData *data);
 
 int gxm_init(SDL_Renderer *renderer);

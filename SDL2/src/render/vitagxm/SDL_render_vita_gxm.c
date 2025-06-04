@@ -834,6 +834,8 @@ static int SetDrawState(VITA_GXM_RenderData *data, const SDL_RenderCommand *cmd)
     SceGxmVertexProgram *vertex_program;
     SDL_bool matrix_updated = SDL_FALSE;
     SDL_bool program_updated = SDL_FALSE;
+    int drawablew = data->drawstate.drawablew;
+    int drawableh = data->drawstate.drawableh;
 
     if (data->drawstate.viewport_dirty) {
         const SDL_Rect *viewport = &data->drawstate.viewport;
@@ -855,6 +857,8 @@ static int SetDrawState(VITA_GXM_RenderData *data, const SDL_RenderCommand *cmd)
                                      (float)viewport->h,
                                      (float)0,
                                      0.0f, 1.0f);
+            // WORKAROUND
+            set_viewport_clip_rect(data, drawablew, drawableh, viewport->w, viewport->h);
             matrix_updated = SDL_TRUE;
         }
 
@@ -870,7 +874,7 @@ static int SetDrawState(VITA_GXM_RenderData *data, const SDL_RenderCommand *cmd)
 
     if (data->drawstate.cliprect_enabled && data->drawstate.cliprect_dirty) {
         const SDL_Rect *rect = &data->drawstate.cliprect;
-        set_clip_rectangle(data, rect->x, rect->y, rect->x + rect->w, rect->y + rect->h);
+        set_clip_rectangle(data, drawablew, drawableh, rect->x, rect->y, rect->x + rect->w, rect->y + rect->h);
         data->drawstate.cliprect_dirty = SDL_FALSE;
     }
 

@@ -242,7 +242,7 @@ static void set_stencil_mask(VITA_GXM_RenderData *data, float x, float y, float 
     sceGxmDraw(data->gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, data->linearIndices, 4);
 }
 
-void set_clip_rectangle(VITA_GXM_RenderData *data, int x_min, int y_min, int x_max, int y_max)
+void set_clip_rectangle(VITA_GXM_RenderData *data, int targetw, int targeth, int x_min, int y_min, int x_max, int y_max)
 {
     if (data->drawing) {
         // clear the stencil buffer to 0
@@ -255,7 +255,7 @@ void set_clip_rectangle(VITA_GXM_RenderData *data, int x_min, int y_min, int x_m
             0xFF,
             0xFF);
 
-        set_stencil_mask(data, 0, 0, VITA_GXM_SCREEN_WIDTH, VITA_GXM_SCREEN_HEIGHT);
+        set_stencil_mask(data, 0, 0, targetw, targeth);
 
         // set the stencil to 1 in the desired region
         sceGxmSetFrontStencilFunc(
@@ -268,6 +268,45 @@ void set_clip_rectangle(VITA_GXM_RenderData *data, int x_min, int y_min, int x_m
             0xFF);
 
         set_stencil_mask(data, x_min, y_min, x_max - x_min, y_max - y_min);
+
+        // set the stencil function to only accept pixels where the stencil is 1
+        sceGxmSetFrontStencilFunc(
+            data->gxm_context,
+            SCE_GXM_STENCIL_FUNC_EQUAL,
+            SCE_GXM_STENCIL_OP_KEEP,
+            SCE_GXM_STENCIL_OP_KEEP,
+            SCE_GXM_STENCIL_OP_KEEP,
+            0xFF,
+            0xFF);
+    }
+}
+
+void set_viewport_clip_rect(VITA_GXM_RenderData *data, int targetw, int targeth, int x_max, int y_max)
+{
+    if (data->drawing) {
+        // clear the stencil buffer to 0
+        sceGxmSetFrontStencilFunc(
+            data->gxm_context,
+            SCE_GXM_STENCIL_FUNC_NEVER,
+            SCE_GXM_STENCIL_OP_ZERO,
+            SCE_GXM_STENCIL_OP_ZERO,
+            SCE_GXM_STENCIL_OP_ZERO,
+            0xFF,
+            0xFF);
+
+        set_stencil_mask(data, 0, 0, targetw, targeth);
+
+        // set the stencil to 1 in the desired region
+        sceGxmSetFrontStencilFunc(
+            data->gxm_context,
+            SCE_GXM_STENCIL_FUNC_NEVER,
+            SCE_GXM_STENCIL_OP_REPLACE,
+            SCE_GXM_STENCIL_OP_REPLACE,
+            SCE_GXM_STENCIL_OP_REPLACE,
+            0xFF,
+            0xFF);
+
+        set_stencil_mask(data, 0, 0, x_max, y_max);
 
         // set the stencil function to only accept pixels where the stencil is 1
         sceGxmSetFrontStencilFunc(
