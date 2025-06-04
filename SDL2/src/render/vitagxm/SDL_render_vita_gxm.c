@@ -945,10 +945,20 @@ static int VITA_GXM_RunCommandQueue(SDL_Renderer *renderer, SDL_RenderCommand *c
         case SDL_RENDERCMD_SETVIEWPORT:
         {
             SDL_Rect *viewport = &data->drawstate.viewport;
+            const SDL_Rect *rect = &cmd->data.viewport.rect;
+
             if (SDL_memcmp(viewport, &cmd->data.viewport.rect, sizeof(cmd->data.viewport.rect)) != 0) {
                 SDL_copyp(viewport, &cmd->data.viewport.rect);
                 data->drawstate.viewport_dirty = SDL_TRUE;
                 data->drawstate.cliprect_dirty = SDL_TRUE;
+
+                if (rect->w != 0 && rect->h != 0) {
+                    data->drawstate.cliprect_enabled = SDL_TRUE;
+                    SDL_copyp(viewport, &data->drawstate.cliprect);
+                } else {
+                    data->drawstate.cliprect_enabled = SDL_FALSE;
+                    SDL_zero(data->drawstate.cliprect);
+                }
             }
             break;
         }
