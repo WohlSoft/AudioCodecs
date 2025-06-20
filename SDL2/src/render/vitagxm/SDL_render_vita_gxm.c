@@ -826,7 +826,7 @@ static int VITA_GXM_RenderClear(SDL_Renderer *renderer, SDL_RenderCommand *cmd)
     return 0;
 }
 
-static void ClamCliprectToViewport(SDL_Rect *clip, const SDL_Rect *viewport)
+static void ClampCliprectToViewport(SDL_Rect *clip, const SDL_Rect *viewport)
 {
     int max_x_v, max_y_v, max_x_c, max_y_c;
 
@@ -901,7 +901,7 @@ static int SetDrawState(VITA_GXM_RenderData *data, const SDL_RenderCommand *cmd)
         SDL_Rect rect;
         SDL_copyp(&rect, &data->drawstate.cliprect);
         if (data->drawstate.viewport_is_set) {
-            ClamCliprectToViewport(&rect, &data->drawstate.viewport);
+            ClampCliprectToViewport(&rect, &data->drawstate.viewport);
         }
         set_clip_rectangle(data, rect.x, rect.y, rect.x + rect.w, rect.y + rect.h);
         data->drawstate.cliprect_dirty = SDL_FALSE;
