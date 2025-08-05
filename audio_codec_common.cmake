@@ -149,6 +149,11 @@ if(MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif()
 
+# Ensure the Windows XP compatibility
+if(WIN32)
+    add_definitions(-DWINVER=0x0501 -D_WIN32_WINNT=0x0501)
+endif()
+
 # -fPIC thing
 if(ENABLE_FPIC AND NOT WIN32 AND NOT VITA)
     message("== -fPIC enabled")
