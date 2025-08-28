@@ -1,7 +1,7 @@
-cmake_minimum_required(VERSION 3.2...3.10)
+cmake_minimum_required(VERSION 3.2...3.15)
 # set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS ON)
 
-project(zlib VERSION 1.2.11 LANGUAGES C)
+project(zlib VERSION 1.3.1 LANGUAGES C)
 
 # ========= AudioCodecs =========
 include(${CMAKE_CURRENT_SOURCE_DIR}/../audio_codec_common.cmake)
@@ -172,7 +172,9 @@ if(MINGW)
 endif(MINGW)
 
 #add_library(zlib SHARED ${ZLIB_SRCS} ${ZLIB_DLL_SRCS} ${ZLIB_PUBLIC_HDRS} ${ZLIB_PRIVATE_HDRS})
+#target_include_directories(zlibstatic PUBLIC ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
 add_library(zlibstatic STATIC ${ZLIB_SRCS} ${ZLIB_PUBLIC_HDRS} ${ZLIB_PRIVATE_HDRS})
+target_include_directories(zlibstatic PUBLIC ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
 #set_target_properties(zlib PROPERTIES DEFINE_SYMBOL ZLIB_DLL)
 #set_target_properties(zlib PROPERTIES SOVERSION 1)
 
@@ -191,7 +193,7 @@ set_target_properties(zlibstatic PROPERTIES OUTPUT_NAME zlib)
 #if(UNIX)
 #    # On unix-like platforms the library is almost always called libz
 #    set_target_properties(zlib zlibstatic PROPERTIES OUTPUT_NAME z)
-#    if(NOT APPLE)
+#    if(NOT APPLE AND NOT(CMAKE_SYSTEM_NAME STREQUAL AIX))
 #        set_target_properties(zlib PROPERTIES LINK_FLAGS "-Wl,--version-script,\"${CMAKE_CURRENT_SOURCE_DIR}/zlib/zlib.map\"")
 #    endif()
 #elseif(BUILD_SHARED_LIBS AND WIN32)
