@@ -1607,11 +1607,28 @@ void OPL3::silenceAll() // Silence all OPL channels.
     if(m_chips.empty())
         return; // Can't since no chips initialized
 
+    commitDeepFlags(); // If rhythm-mode is active, this will off all the rhythm keys
+
     for(size_t c = 0; c < m_numChannels; ++c)
     {
+        size_t chip = c / NUM_OF_CHANNELS, cc = c % NUM_OF_CHANNELS;
+        size_t cmf_offset = ((m_musicMode == MODE_CMF) && cc >= OPL3_CHANNELS_RHYTHM_BASE) ? 10 : 0;
+        uint16_t o1 = g_operatorsMap[cc * 2 + 0 + cmf_offset];
+        uint16_t o2 = g_operatorsMap[cc * 2 + 1 + cmf_offset];
+
         noteOff(c);
-        touchNote(c, 0, 0, 0);
-        setPatch(c, c_defaultInsCache);
+
+        if(o1 != 0xFFF)
+        {
+            writeRegI(chip, 0x40 + o1, 0x3F);
+            writeRegI(chip, 0x80 + o1, 0xFF);
+        }
+
+        if(o2 != 0xFFF)
+        {
+            writeRegI(chip, 0x40 + o2, 0x3F);
+            writeRegI(chip, 0x80 + o1, 0xFF);
+        }
     }
 }
 
@@ -1966,6 +1983,28 @@ void OPL3::reset(int emulator, unsigned long PCM_RATE, void *audioTickHandler)
 
     updateChannelCategories();
     silenceAll();
+}
+
+void OPL3::toggleOPL3(bool en)
+{
+    if(m_currentChipType == (int)OPLChipBase::CHIPTYPE_OPL2)
+        return; // Impossible to do on OPL2 chips
+
+    const uint16_t enOPL3 = en ? 1u : 0u;
+    const uint16_t data_opl3[] =
+    {
+        0x004, 96, 0x004, 128,        // Pulse timer
+        0x105, 0, 0x105, 1, 0x105, 0, // Pulse OPL3 enable
+        0x001, 32, 0x105, enOPL3,          // Enable wave, OPL3 extensions
+        0x08, 0                       // CSW/Note Sel
+    };
+    const size_t data_opl3_size = sizeof(data_opl3) / sizeof(uint16_t);
+
+    for(size_t c = 0; c < m_numChips; ++c)
+    {
+        for(size_t a = 0; a < data_opl3_size; a += 2)
+            writeRegI(c, data_opl3[a], (data_opl3[a + 1]));
+    }
 }
 
 void OPL3::initChip(size_t chip)
