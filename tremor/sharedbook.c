@@ -223,7 +223,7 @@ ogg_int32_t *_book_unquantize(const static_codebook *b,int n,int *sparsemap,
 	  int indexdiv=1;
 	  for(k=0;k<b->dim;k++){
 	    int index= (j/indexdiv)%quantvals;
-	    int point=0;
+	    ogg_int32_t point=0;
 	    int val=VFLOAT_MULTI(delta,delpoint,
 				 abs(b->quantlist[index]),&point);
 
@@ -257,7 +257,7 @@ ogg_int32_t *_book_unquantize(const static_codebook *b,int n,int *sparsemap,
 	  int         lastpoint=0;
 
 	  for(k=0;k<b->dim;k++){
-	    int point=0;
+	    ogg_int32_t point=0;
 	    int val=VFLOAT_MULTI(delta,delpoint,
 				 abs(b->quantlist[j*b->dim+k]),&point);
 
