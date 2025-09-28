@@ -1120,29 +1120,32 @@ static void SetDrawState(PSP_RenderData *data)
     }
 }
 
-#define PSP_SetViewportOffsetFunk(FunkName, Type) \
-static void FunkName(const PSP_DrawstateCache *drawstate, Type *verts, int count, SDL_bool add) \
+#define PSP_VERTICES_FUNK(FunkName, Type) \
+static const Type *FunkName(const PSP_DrawstateCache *drawstate, Uint8 *gpumem, SDL_RenderCommand *cmd, size_t count) \
 { \
     size_t i; \
     float off_x, off_y; \
+    Type *verts = (Type *)(gpumem + cmd->data.draw.first); \
 \
     if (!drawstate->viewport_is_set) { \
-        return; \
+        return verts; \
     } \
  \
-    off_x = add ? drawstate->draw_offset_x : -drawstate->draw_offset_x; \
-    off_y = add ? drawstate->draw_offset_y : -drawstate->draw_offset_y; \
+    off_x = drawstate->draw_offset_x; \
+    off_y = drawstate->draw_offset_y; \
  \
     for (i = 0; i < count; ++i) { \
         verts[i].x += off_x; \
         verts[i].y += off_y; \
     } \
+\
+    return verts;\
 }
 
-PSP_SetViewportOffsetFunk(PSP_SetViewportOffset, VertV)
-PSP_SetViewportOffsetFunk(PSP_SetViewportOffsetT, VertTV)
-PSP_SetViewportOffsetFunk(PSP_SetViewportOffsetC, VertCV)
-PSP_SetViewportOffsetFunk(PSP_SetViewportOffsetTC, VertTCV)
+PSP_VERTICES_FUNK(PSP_GetVertV, VertV)
+PSP_VERTICES_FUNK(PSP_GetVertTV, VertTV)
+PSP_VERTICES_FUNK(PSP_GetVertCV, VertCV)
+PSP_VERTICES_FUNK(PSP_GetVertTCV, VertTCV)
 
 static int PSP_RunCommandQueue(SDL_Renderer *renderer, SDL_RenderCommand *cmd, void *vertices, size_t vertsize)
 {
@@ -1245,12 +1248,12 @@ static int PSP_RunCommandQueue(SDL_Renderer *renderer, SDL_RenderCommand *cmd, v
 
         case SDL_RENDERCMD_DRAW_POINTS:
         {
+            const size_t count = cmd->data.draw.count;
+            const VertV *verts; /* = (VertV *)(gpumem + cmd->data.draw.first);*/
             const Uint8 r = cmd->data.draw.r;
             const Uint8 g = cmd->data.draw.g;
             const Uint8 b = cmd->data.draw.b;
             const Uint8 a = cmd->data.draw.a;
-            const size_t count = cmd->data.draw.count;
-            VertV *verts = (VertV *)(gpumem + cmd->data.draw.first);
             PSP_BlendState state = {
                 .color = GU_RGBA(r, g, b, a),
                 .texture = NULL,
@@ -1258,21 +1261,20 @@ static int PSP_RunCommandQueue(SDL_Renderer *renderer, SDL_RenderCommand *cmd, v
                 .shadeModel = GU_FLAT
             };
             SetDrawState(data);
-            PSP_SetViewportOffset(&data->drawstate, verts, count, SDL_TRUE);
+            verts = PSP_GetVertV(&data->drawstate, gpumem, cmd, count);
             PSP_SetBlendState(data, &state);
             sceGuDrawArray(GU_POINTS, GU_VERTEX_32BITF | GU_TRANSFORM_2D, count, 0, verts);
-            PSP_SetViewportOffset(&data->drawstate, verts, count, SDL_FALSE);
             break;
         }
 
         case SDL_RENDERCMD_DRAW_LINES:
         {
+            const size_t count = cmd->data.draw.count;
+            const VertV *verts; /* = (VertV *)(gpumem + cmd->data.draw.first);*/
             const Uint8 r = cmd->data.draw.r;
             const Uint8 g = cmd->data.draw.g;
             const Uint8 b = cmd->data.draw.b;
             const Uint8 a = cmd->data.draw.a;
-            const size_t count = cmd->data.draw.count;
-            VertV *verts = (VertV *)(gpumem + cmd->data.draw.first);
             PSP_BlendState state = {
                 .color = GU_RGBA(r, g, b, a),
                 .texture = NULL,
@@ -1280,21 +1282,20 @@ static int PSP_RunCommandQueue(SDL_Renderer *renderer, SDL_RenderCommand *cmd, v
                 .shadeModel = GU_FLAT
             };
             SetDrawState(data);
-            PSP_SetViewportOffset(&data->drawstate, verts, count, SDL_TRUE);
+            verts = PSP_GetVertV(&data->drawstate, gpumem, cmd, count);
             PSP_SetBlendState(data, &state);
             sceGuDrawArray(GU_LINE_STRIP, GU_VERTEX_32BITF | GU_TRANSFORM_2D, count, 0, verts);
-            PSP_SetViewportOffset(&data->drawstate, verts, count, SDL_FALSE);
             break;
         }
 
         case SDL_RENDERCMD_FILL_RECTS:
         {
+            const size_t count = cmd->data.draw.count;
+            const VertV *verts; /* = (VertV *)(gpumem + cmd->data.draw.first);*/
             const Uint8 r = cmd->data.draw.r;
             const Uint8 g = cmd->data.draw.g;
             const Uint8 b = cmd->data.draw.b;
             const Uint8 a = cmd->data.draw.a;
-            const size_t count = cmd->data.draw.count;
-            VertV *verts = (VertV *)(gpumem + cmd->data.draw.first);
             PSP_BlendState state = {
                 .color = GU_RGBA(r, g, b, a),
                 .texture = NULL,
@@ -1302,21 +1303,20 @@ static int PSP_RunCommandQueue(SDL_Renderer *renderer, SDL_RenderCommand *cmd, v
                 .shadeModel = GU_FLAT
             };
             SetDrawState(data);
-            PSP_SetViewportOffset(&data->drawstate, verts, 2 * count, SDL_TRUE);
+            verts = PSP_GetVertV(&data->drawstate, gpumem, cmd, 2 * count);
             PSP_SetBlendState(data, &state);
             sceGuDrawArray(GU_SPRITES, GU_VERTEX_32BITF | GU_TRANSFORM_2D, 2 * count, 0, verts);
-            PSP_SetViewportOffset(&data->drawstate, verts, 2 * count, SDL_FALSE);
             break;
         }
 
         case SDL_RENDERCMD_COPY:
         {
+            const size_t count = cmd->data.draw.count;
+            const VertTV *verts; /*= (VertTV *)(gpumem + cmd->data.draw.first);*/
             const Uint8 a = cmd->data.draw.a;
             const Uint8 r = cmd->data.draw.r;
             const Uint8 g = cmd->data.draw.g;
             const Uint8 b = cmd->data.draw.b;
-            const size_t count = cmd->data.draw.count;
-            VertTV *verts = (VertTV *)(gpumem + cmd->data.draw.first);
             PSP_BlendState state = {
                 .color = GU_RGBA(r, g, b, a),
                 .texture = cmd->data.draw.texture,
@@ -1324,20 +1324,19 @@ static int PSP_RunCommandQueue(SDL_Renderer *renderer, SDL_RenderCommand *cmd, v
                 .shadeModel = GU_SMOOTH
             };
             SetDrawState(data);
-            PSP_SetViewportOffsetT(&data->drawstate, verts, 2 * count, SDL_TRUE);
+            verts = PSP_GetVertTV(&data->drawstate, gpumem, cmd, 2 * count);
             PSP_SetBlendState(data, &state);
             sceGuDrawArray(GU_SPRITES, GU_TEXTURE_32BITF | GU_VERTEX_32BITF | GU_TRANSFORM_2D, 2 * count, 0, verts);
-            PSP_SetViewportOffsetT(&data->drawstate, verts, 2 * count, SDL_FALSE);
             break;
         }
 
         case SDL_RENDERCMD_COPY_EX:
         {
+            const VertTV *verts = (VertTV *)(gpumem + cmd->data.draw.first);
             const Uint8 a = cmd->data.draw.a;
             const Uint8 r = cmd->data.draw.r;
             const Uint8 g = cmd->data.draw.g;
             const Uint8 b = cmd->data.draw.b;
-            VertTV *verts = (VertTV *)(gpumem + cmd->data.draw.first);
             PSP_BlendState state = {
                 .color = GU_RGBA(r, g, b, a),
                 .texture = cmd->data.draw.texture,
@@ -1345,10 +1344,9 @@ static int PSP_RunCommandQueue(SDL_Renderer *renderer, SDL_RenderCommand *cmd, v
                 .shadeModel = GU_SMOOTH
             };
             SetDrawState(data);
-            PSP_SetViewportOffsetT(&data->drawstate, verts, 4, SDL_TRUE);
+            verts = PSP_GetVertTV(&data->drawstate, gpumem, cmd, 4);
             PSP_SetBlendState(data, &state);
             sceGuDrawArray(GU_TRIANGLE_FAN, GU_TEXTURE_32BITF | GU_VERTEX_32BITF | GU_TRANSFORM_2D, 4, 0, verts);
-            PSP_SetViewportOffsetT(&data->drawstate, verts, 4, SDL_FALSE);
             break;
         }
 
@@ -1357,30 +1355,27 @@ static int PSP_RunCommandQueue(SDL_Renderer *renderer, SDL_RenderCommand *cmd, v
             const size_t count = cmd->data.draw.count;
             SetDrawState(data);
             if (!cmd->data.draw.texture) {
-                VertCV *verts = (VertCV *)(gpumem + cmd->data.draw.first);
-                PSP_SetViewportOffsetC(&data->drawstate, verts, count, SDL_TRUE);
+                const VertCV *verts = PSP_GetVertCV(&data->drawstate, gpumem, cmd, count);
                 sceGuDisable(GU_TEXTURE_2D);
                 /* In GU_SMOOTH mode */
                 sceGuDrawArray(GU_TRIANGLES, GU_COLOR_8888 | GU_VERTEX_32BITF | GU_TRANSFORM_2D, count, 0, verts);
                 sceGuEnable(GU_TEXTURE_2D);
-                PSP_SetViewportOffsetC(&data->drawstate, verts, count, SDL_FALSE);
             } else {
+                const VertTCV *verts; /*= (VertTCV *)(gpumem + cmd->data.draw.first);*/
                 const Uint8 a = cmd->data.draw.a;
                 const Uint8 r = cmd->data.draw.r;
                 const Uint8 g = cmd->data.draw.g;
                 const Uint8 b = cmd->data.draw.b;
-                VertTCV *verts = (VertTCV *)(gpumem + cmd->data.draw.first);
                 PSP_BlendState state = {
                     .color = GU_RGBA(r, g, b, a),
                     .texture = NULL,
                     .mode = cmd->data.draw.blend,
                     .shadeModel = GU_FLAT
                 };
-                PSP_SetViewportOffsetTC(&data->drawstate, verts, count, SDL_TRUE);
+                verts = PSP_GetVertTCV(&data->drawstate, gpumem, cmd, count);
                 TextureActivate(cmd->data.draw.texture);
                 PSP_SetBlendState(data, &state);
                 sceGuDrawArray(GU_TRIANGLES, GU_TEXTURE_32BITF | GU_COLOR_8888 | GU_VERTEX_32BITF | GU_TRANSFORM_2D, count, 0, verts);
-                PSP_SetViewportOffsetTC(&data->drawstate, verts, count, SDL_FALSE);
             }
             break;
         }
