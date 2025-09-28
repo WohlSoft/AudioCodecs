@@ -1055,8 +1055,6 @@ static void PSP_SetBlendState(PSP_RenderData *data, PSP_BlendState *state)
     *current = *state;
 }
 
-/* FIXME: Once true viewport will be figured, uncomment and use this instead of SDL_IntersectRect() below*/
-/*
 static void ClampCliprectToViewport(SDL_Rect *clip, const SDL_Rect *viewport)
 {
     int max_x_v, max_y_v, max_x_c, max_y_c;
@@ -1085,7 +1083,6 @@ static void ClampCliprectToViewport(SDL_Rect *clip, const SDL_Rect *viewport)
         clip->h -= (max_y_v - max_y_c);
     }
 }
-*/
 
 static void SetDrawState(PSP_RenderData *data)
 {
@@ -1110,11 +1107,12 @@ static void SetDrawState(PSP_RenderData *data)
 
     if ((data->drawstate.cliprect_enabled || data->drawstate.viewport_is_set) && data->drawstate.cliprect_dirty) {
         SDL_Rect rect;
+        SDL_Rect *viewport = &data->drawstate.viewport;
+        SDL_copyp(&rect, &data->drawstate.cliprect);
         if (data->drawstate.viewport_is_set) {
-            SDL_IntersectRect(&data->drawstate.viewport, &data->drawstate.cliprect, &rect);
-            /* ClampCliprectToViewport(&rect, &data->drawstate.viewport); */
-        } else {
-            SDL_copyp(&rect, &data->drawstate.cliprect);
+            ClampCliprectToViewport(&rect, viewport);
+            rect.x += viewport->x;
+            rect.y += viewport->y;
         }
         sceGuEnable(GU_SCISSOR_TEST);
         sceGuScissor(rect.x, rect.y, rect.w, rect.h);
@@ -1201,10 +1199,8 @@ static int PSP_RunCommandQueue(SDL_Renderer *renderer, SDL_RenderCommand *cmd, v
                 if (!data->drawstate.cliprect_enabled) {
                     if (data->drawstate.viewport_is_set) {
                         SDL_copyp(&data->drawstate.cliprect, viewport);
-                        /* FIXME: Uncomment once true viewport will be figured and used
                         data->drawstate.cliprect.x = 0;
                         data->drawstate.cliprect.y = 0;
-                        */
                     } else {
                         data->drawstate.cliprect_enabled_dirty = SDL_TRUE;
                     }
@@ -1222,10 +1218,8 @@ static int PSP_RunCommandQueue(SDL_Renderer *renderer, SDL_RenderCommand *cmd, v
                 data->drawstate.cliprect_enabled_dirty = SDL_TRUE;
                 if (!data->drawstate.cliprect_enabled && data->drawstate.viewport_is_set) {
                     SDL_copyp(&data->drawstate.cliprect, viewport);
-                    /* FIXME: Uncomment once true viewport will be figured and used
                     data->drawstate.cliprect.x = 0;
                     data->drawstate.cliprect.y = 0;
-                    */
                 }
             }
 
