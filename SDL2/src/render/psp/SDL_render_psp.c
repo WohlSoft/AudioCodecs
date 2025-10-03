@@ -1390,6 +1390,117 @@ static int PSP_RunCommandQueue(SDL_Renderer *renderer, SDL_RenderCommand *cmd, v
 static int PSP_RenderReadPixels(SDL_Renderer *renderer, const SDL_Rect *rect,
                                 Uint32 pixel_format, void *pixels, int pitch)
 {
+    Uint32 temp_format = renderer->target ? renderer->target->format : SDL_PIXELFORMAT_ABGR8888;
+    PSP_TextureData *psp_texture;
+    size_t buflen;
+    void *temp_pixels;
+    void *temp_texture;
+    int temp_pitch;
+    int w, h, i, rows, length;
+    int status;
+    Uint8 *src, *dst;
+    FILE *xxx;
+
+    if (renderer->target) {
+        psp_texture = (PSP_TextureData *)renderer->target->driverdata;
+        temp_pitch = TextureNextPow2(rect->w) * SDL_BYTESPERPIXEL(temp_format);
+
+        sceKernelDcacheWritebackAll();
+
+        w = psp_texture->width;
+        h = psp_texture->height;
+
+        if (rect->x < 0 || rect->x + rect->w > w) {
+            return 0;
+        }
+
+        if (rect->y < 0 || rect->y + rect->h > h) {
+            return 0;
+        }
+
+        buflen = rect->h * temp_pitch;
+        if (buflen == 0) {
+            return 0; /* nothing to do. */
+        }
+
+        temp_pixels = SDL_malloc(buflen);
+        if (!temp_pixels) {
+            return SDL_OutOfMemory();
+        }
+
+        xxx = fopen("ms0:/PSP/GAME/TheXTech/screenshots/texdump.txt", "w");
+        if(xxx)
+        {
+            fprintf(xxx, "PTR-SRC= 0x%08X\n", (uintptr_t)psp_texture->data);
+            fprintf(xxx, "PTR-DST= 0x%08X\n", (uintptr_t)temp_pixels);
+            fprintf(xxx, "textureWidth= %u\n", psp_texture->textureWidth);
+            fprintf(xxx, "textureHeight= %u\n", psp_texture->textureHeight);
+            fprintf(xxx, "width= %u\n", psp_texture->width);
+            fprintf(xxx, "width= %u\n", psp_texture->height);
+            fprintf(xxx, "pitch= %u\n", psp_texture->pitch);
+            fprintf(xxx, "format= %u\n", psp_texture->format);
+            fclose(xxx);
+        }
+
+        temp_texture = SDL_malloc(psp_texture->size);
+        if (!temp_pixels) {
+            SDL_free(temp_pixels);
+            return SDL_OutOfMemory();
+        }
+
+        sceGuCopyImage(PixelFormatToPSPFMT(temp_format),
+                       0, 0, psp_texture->width, psp_texture->height,
+                       psp_texture->textureWidth, psp_texture->data,
+                       0, 0, psp_texture->textureWidth, temp_texture);
+
+        xxx = fopen("ms0:/PSP/GAME/TheXTech/screenshots/texdump-orig.data", "wb");
+        if(xxx)
+        {
+            fwrite(temp_texture, 1, psp_texture->size, xxx);
+            fclose(xxx);
+        }
+
+        SDL_free(temp_texture);
+
+        src = (Uint8*)temp_texture + rect->y * psp_texture->pitch + rect->x * SDL_BYTESPERPIXEL(temp_format);
+        dst = (Uint8*)temp_pixels;
+        length = rect->w * SDL_BYTESPERPIXEL(temp_format);
+        rows = rect->h;
+
+        while (rows--) {
+            if (psp_texture->format == GU_PSM_8888) {
+                for (i = 0; i < rect->w; ++i) {
+                    dst[0] = src[1];
+                    dst[1] = src[2];
+                    dst[2] = src[3];
+                    dst[3] = src[0];
+                    dst += SDL_BYTESPERPIXEL(temp_format);
+                    src += SDL_BYTESPERPIXEL(temp_format);
+                }
+                src += psp_texture->pitch - length;
+                dst += temp_pitch - length;
+            } else {
+                SDL_memcpy(dst, src, length);
+                src += psp_texture->pitch;
+                dst += temp_pitch;
+            }
+        }
+
+        xxx = fopen("ms0:/PSP/GAME/TheXTech/screenshots/texdump.data", "wb");
+        if(xxx)
+        {
+            fwrite(temp_pixels, 1, buflen, xxx);
+            fclose(xxx);
+        }
+
+        status = SDL_ConvertPixels(rect->w, rect->h,
+                                   temp_format, temp_pixels, temp_pitch,
+                                   pixel_format, pixels, pitch);
+        SDL_free(temp_pixels);
+
+        return status;
+    }
+
     return SDL_Unsupported();
 }
 
