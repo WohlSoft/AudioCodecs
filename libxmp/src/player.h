@@ -276,6 +276,7 @@ struct channel_data {
 	int info_finalpan;	/* Final pan including envelopes */
 };
 
+LIBXMP_BEGIN_DECLS
 
 void	libxmp_process_fx	(struct context_data *, struct channel_data *,
 				 int, struct xmp_event *, int);
@@ -290,5 +291,11 @@ void	libxmp_process_pattern_break	(struct context_data *,
 	struct flow_control *f, int);
 void	libxmp_process_line_jump	(struct context_data *,
 	struct flow_control *f, int, int);
+
+/* For virt_pastnote() */
+void	libxmp_player_set_release	(struct context_data *, int);
+void	libxmp_player_set_fadeout	(struct context_data *, int);
+
+LIBXMP_END_DECLS
 
 #endif /* LIBXMP_PLAYER_H */

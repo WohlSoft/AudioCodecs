@@ -7,7 +7,7 @@ if(NOT ADLMIDI_DOS AND NOT MIDIPLAY_WAVE_ONLY)
     endif()
 endif()
 
-include(utf8main.cmake)
+include(../common/utf8main.cmake)
 
 set(ADLMIDI_PLAY_SRC
     adlmidiplay.cpp
@@ -26,6 +26,13 @@ endif()
 if(WIN32 AND NOT USE_SDL2_AUDIO)
     list(APPEND ADLMIDI_PLAY_SRC
         audio_winmm.c
+    )
+endif()
+
+if(ADLMIDI_DOS)
+    list(APPEND ADLMIDI_PLAY_SRC
+        dos_tman.h
+        dos_tman.cpp
     )
 endif()
 
@@ -85,7 +92,7 @@ elseif(NOT ADLMIDI_DOS)
 endif()
 
 if(ADLMIDI_DOS)
-    set_target_properties(adlmidiplay PROPERTIES OUTPUT_NAME adlmidi)
+    set_target_properties(adlmidiplay PROPERTIES OUTPUT_NAME adlmidi SUFFIX ".exe")
 endif()
 
 if(TARGET ADLMIDI_shared)

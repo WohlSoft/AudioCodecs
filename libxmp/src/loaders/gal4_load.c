@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2022 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2025 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -40,7 +40,7 @@ const struct format_loader libxmp_loader_gal4 = {
 
 static int gal4_test(HIO_HANDLE *f, char *t, const int start)
 {
-        if (hio_read32b(f) != MAGIC4('R', 'I', 'F', 'F'))
+	if (hio_read32b(f) != MAGIC4('R', 'I', 'F', 'F'))
 		return -1;
 
 	hio_read32b(f);
@@ -57,11 +57,17 @@ static int gal4_test(HIO_HANDLE *f, char *t, const int start)
 	return 0;
 }
 
+
+#define GAL4_SAMP_16BIT		(1 << 2)
+#define GAL4_SAMP_LOOP		(1 << 3)
+#define GAL4_SAMP_LOOP_BIDIR	(1 << 4)
+#define GAL4_SAMP_SET_PANNING	(1 << 5)
+
 struct local_data {
     int snum;
 };
 
-static int get_main(struct module_data *m, int size, HIO_HANDLE *f, void *parm)
+static int get_main(struct module_data *m, uint32 size, HIO_HANDLE *f, void *parm)
 {
 	struct xmp_module *mod = &m->mod;
 	char buf[64];
@@ -91,7 +97,7 @@ static int get_main(struct module_data *m, int size, HIO_HANDLE *f, void *parm)
 	return 0;
 }
 
-static int get_ordr(struct module_data *m, int size, HIO_HANDLE *f, void *parm)
+static int get_ordr(struct module_data *m, uint32 size, HIO_HANDLE *f, void *parm)
 {
 	struct xmp_module *mod = &m->mod;
 	int i;
@@ -108,7 +114,7 @@ static int get_ordr(struct module_data *m, int size, HIO_HANDLE *f, void *parm)
 	return 0;
 }
 
-static int get_patt_cnt(struct module_data *m, int size, HIO_HANDLE *f, void *parm)
+static int get_patt_cnt(struct module_data *m, uint32 size, HIO_HANDLE *f, void *parm)
 {
 	struct xmp_module *mod = &m->mod;
 	int i;
@@ -121,7 +127,7 @@ static int get_patt_cnt(struct module_data *m, int size, HIO_HANDLE *f, void *pa
 	return 0;
 }
 
-static int get_inst_cnt(struct module_data *m, int size, HIO_HANDLE *f, void *parm)
+static int get_inst_cnt(struct module_data *m, uint32 size, HIO_HANDLE *f, void *parm)
 {
 	struct xmp_module *mod = &m->mod;
 	int i;
@@ -143,7 +149,7 @@ static int get_inst_cnt(struct module_data *m, int size, HIO_HANDLE *f, void *pa
 	return 0;
 }
 
-static int get_patt(struct module_data *m, int size, HIO_HANDLE *f, void *parm)
+static int get_patt(struct module_data *m, uint32 size, HIO_HANDLE *f, void *parm)
 {
 	struct xmp_module *mod = &m->mod;
 	struct xmp_event *event, dummy;
@@ -213,13 +219,13 @@ static int get_patt(struct module_data *m, int size, HIO_HANDLE *f, void *parm)
 	return 9;
 }
 
-static int get_inst(struct module_data *m, int size, HIO_HANDLE *f, void *parm)
+static int get_inst(struct module_data *m, uint32 size, HIO_HANDLE *f, void *parm)
 {
 	struct xmp_module *mod = &m->mod;
 	struct local_data *data = (struct local_data *)parm;
 	int i, j;
 	int srate, finetune, flags;
-	int val, vwf, vra, vde, vsw /*, fade*/;
+	int val, pan, vwf, vra, vde, vsw /*, fade*/;
 	uint8 buf[30];
 
 	hio_read8(f);		/* 00 */
@@ -318,35 +324,36 @@ static int get_inst(struct module_data *m, int size, HIO_HANDLE *f, void *parm)
 		return -1;
 
 	for (j = 0; j < mod->xxi[i].nsm; j++, data->snum++) {
+		struct xmp_subinstrument *sub = &mod->xxi[i].sub[j];
+
 		hio_read32b(f);	/* SAMP */
 		hio_read32b(f);	/* size */
 
 		hio_read(mod->xxs[data->snum].name, 1, 28, f);
 
-		mod->xxi[i].sub[j].pan = hio_read8(f) * 4;
-		if (mod->xxi[i].sub[j].pan == 0)	/* not sure about this */
-			mod->xxi[i].sub[j].pan = 0x80;
-
-		mod->xxi[i].sub[j].vol = hio_read8(f);
+		pan = hio_read8(f);
+		sub->vol = hio_read8(f);
 		flags = hio_read8(f);
 		hio_read8(f);	/* unknown - 0x80 */
 
-		mod->xxi[i].sub[j].vwf = vwf;
-		mod->xxi[i].sub[j].vde = vde;
-		mod->xxi[i].sub[j].vra = vra;
-		mod->xxi[i].sub[j].vsw = vsw;
-		mod->xxi[i].sub[j].sid = data->snum;
+		sub->pan = (flags & GAL4_SAMP_SET_PANNING) ?
+			   MIN(pan * 4, 255) : NO_SAMPLE_PANNING;
+		sub->vwf = vwf;
+		sub->vde = vde;
+		sub->vra = vra;
+		sub->vsw = vsw;
+		sub->sid = data->snum;
 
 		mod->xxs[data->snum].len = hio_read32l(f);
 		mod->xxs[data->snum].lps = hio_read32l(f);
 		mod->xxs[data->snum].lpe = hio_read32l(f);
 
 		mod->xxs[data->snum].flg = 0;
-		if (flags & 0x04)
+		if (flags & GAL4_SAMP_16BIT)
 			mod->xxs[data->snum].flg |= XMP_SAMPLE_16BIT;
-		if (flags & 0x08)
+		if (flags & GAL4_SAMP_LOOP)
 			mod->xxs[data->snum].flg |= XMP_SAMPLE_LOOP;
-		if (flags & 0x10)
+		if (flags & GAL4_SAMP_LOOP_BIDIR)
 			mod->xxs[data->snum].flg |= XMP_SAMPLE_LOOP_BIDIR;
 		/* if (flags & 0x80)
 			mod->xxs[data->snum].flg |= ? */
@@ -433,7 +440,7 @@ static int gal4_load(struct module_data *m, HIO_HANDLE *f, const int start)
 	if (libxmp_init_pattern(mod) < 0)
 		return -1;
 
-	D_(D_INFO "Stored patterns: %d\n", mod->pat);
+	D_(D_INFO "Stored patterns: %d", mod->pat);
 	D_(D_INFO "Stored samples : %d ", mod->smp);
 
 	hio_seek(f, start + offset, SEEK_SET);

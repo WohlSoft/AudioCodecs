@@ -38,261 +38,27 @@
 
 class BW_MidiSequencer
 {
-    /**
-     * @brief MIDI Event utility container
-     */
-    class MidiEvent
-    {
-    public:
-        MidiEvent();
-        /**
-         * @brief Main MIDI event types
-         */
-        enum Types
-        {
-            //! Unknown event
-            T_UNKNOWN       = 0x00,
-            //! Note-Off event
-            T_NOTEOFF       = 0x08,//size == 2
-            //! Note-On event
-            T_NOTEON        = 0x09,//size == 2
-            //! Note After-Touch event
-            T_NOTETOUCH     = 0x0A,//size == 2
-            //! Controller change event
-            T_CTRLCHANGE    = 0x0B,//size == 2
-            //! Patch change event
-            T_PATCHCHANGE   = 0x0C,//size == 1
-            //! Channel After-Touch event
-            T_CHANAFTTOUCH  = 0x0D,//size == 1
-            //! Pitch-bend change event
-            T_WHEEL         = 0x0E,//size == 2
-
-            //! System Exclusive message, type 1
-            T_SYSEX         = 0xF0,//size == len
-            //! Sys Com Song Position Pntr [LSB, MSB]
-            T_SYSCOMSPOSPTR = 0xF2,//size == 2
-            //! Sys Com Song Select(Song #) [0-127]
-            T_SYSCOMSNGSEL  = 0xF3,//size == 1
-            //! System Exclusive message, type 2
-            T_SYSEX2        = 0xF7,//size == len
-            //! Special event
-            T_SPECIAL       = 0xFF
-        };
-        /**
-         * @brief Special MIDI event sub-types
-         */
-        enum SubTypes
-        {
-            //! Sequension number
-            ST_SEQNUMBER    = 0x00,//size == 2
-            //! Text label
-            ST_TEXT         = 0x01,//size == len
-            //! Copyright notice
-            ST_COPYRIGHT    = 0x02,//size == len
-            //! Sequence track title
-            ST_SQTRKTITLE   = 0x03,//size == len
-            //! Instrument title
-            ST_INSTRTITLE   = 0x04,//size == len
-            //! Lyrics text fragment
-            ST_LYRICS       = 0x05,//size == len
-            //! MIDI Marker
-            ST_MARKER       = 0x06,//size == len
-            //! Cue Point
-            ST_CUEPOINT     = 0x07,//size == len
-            //! [Non-Standard] Device Switch
-            ST_DEVICESWITCH = 0x09,//size == len <CUSTOM>
-            //! MIDI Channel prefix
-            ST_MIDICHPREFIX = 0x20,//size == 1
-
-            //! End of Track event
-            ST_ENDTRACK     = 0x2F,//size == 0
-            //! Tempo change event
-            ST_TEMPOCHANGE  = 0x51,//size == 3
-            //! SMPTE offset
-            ST_SMPTEOFFSET  = 0x54,//size == 5
-            //! Time signature
-            ST_TIMESIGNATURE = 0x55, //size == 4
-            //! Key signature
-            ST_KEYSIGNATURE = 0x59,//size == 2
-            //! Sequencer specs
-            ST_SEQUENCERSPEC = 0x7F, //size == len
-
-            /* Non-standard, internal ADLMIDI usage only */
-            //! [Non-Standard] Loop Start point
-            ST_LOOPSTART    = 0xE1,//size == 0 <CUSTOM>
-            //! [Non-Standard] Loop End point
-            ST_LOOPEND      = 0xE2,//size == 0 <CUSTOM>
-            //! [Non-Standard] Raw OPL data
-            ST_RAWOPL       = 0xE3,//size == 0 <CUSTOM>
-
-            //! [Non-Standard] Loop Start point with support of multi-loops
-            ST_LOOPSTACK_BEGIN = 0xE4,//size == 1 <CUSTOM>
-            //! [Non-Standard] Loop End point with support of multi-loops
-            ST_LOOPSTACK_END   = 0xE5,//size == 0 <CUSTOM>
-            //! [Non-Standard] Loop End point with support of multi-loops
-            ST_LOOPSTACK_BREAK = 0xE6,//size == 0 <CUSTOM>
-            //! [Non-Standard] Callback Trigger
-            ST_CALLBACK_TRIGGER = 0xE7,//size == 1 <CUSTOM>
-
-            // Built-in hooks
-            ST_SONG_BEGIN_HOOK    = 0x101
-        };
-        //! Main type of event
-        uint_fast16_t type;
-        //! Sub-type of the event
-        uint_fast16_t subtype;
-        //! Targeted MIDI channel
-        uint_fast16_t channel;
-        //! Is valid event
-        uint_fast16_t isValid;
-        //! Reserved 5 bytes padding
-        uint_fast16_t __padding[4];
-        //! Absolute tick position (Used for the tempo calculation only)
-        uint64_t absPosition;
-        //! Raw data of this event
-        std::vector<uint8_t> data;
-    };
-
-    /**
-     * @brief A track position event contains a chain of MIDI events until next delay value
-     *
-     * Created with purpose to sort events by type in the same position
-     * (for example, to keep controllers always first than note on events or lower than note-off events)
-     */
-    class MidiTrackRow
-    {
-    public:
-        MidiTrackRow();
-        //! Clear MIDI row data
-        void clear();
-        //! Absolute time position in seconds
-        double time;
-        //! Delay to next event in ticks
-        uint64_t delay;
-        //! Absolute position in ticks
-        uint64_t absPos;
-        //! Delay to next event in seconds
-        double timeDelay;
-        //! List of MIDI events in the current row
-        std::vector<MidiEvent> events;
-        /**
-         * @brief Sort events in this position
-         * @param noteStates Buffer of currently pressed/released note keys in the track
-         */
-        void sortEvents(bool *noteStates = NULL);
-    };
-
-    /**
-     * @brief Tempo change point entry. Used in the MIDI data building function only.
-     */
-    struct TempoChangePoint
-    {
-        uint64_t absPos;
-        fraction<uint64_t> tempo;
-    };
-    //P.S. I declared it here instead of local in-function because C++98 can't process templates with locally-declared structures
-
-    typedef std::list<MidiTrackRow> MidiTrackQueue;
-
-    /**
-     * @brief Song position context
-     */
-    struct Position
-    {
-        //! Was track began playing
-        bool began;
-        //! Reserved
-        char __padding[7];
-        //! Waiting time before next event in seconds
-        double wait;
-        //! Absolute time position on the track in seconds
-        double absTimePosition;
-        //! Track information
-        struct TrackInfo
-        {
-            //! Delay to next event in a track
-            uint64_t delay;
-            //! Last handled event type
-            int32_t lastHandledEvent;
-            //! Reserved
-            char    __padding2[4];
-            //! MIDI Events queue position iterator
-            MidiTrackQueue::iterator pos;
-
-            TrackInfo() :
-                delay(0),
-                lastHandledEvent(0)
-            {}
-        };
-        std::vector<TrackInfo> track;
-        Position():
-            began(false),
-            wait(0.0),
-            absTimePosition(0.0),
-            track()
-        {
-            for(size_t i = 0; i < 7; ++i)
-                __padding[i] = 0;
-        }
-    };
-
-    //! MIDI Output interface context
-    const BW_MidiRtInterface *m_interface;
-
-    /**
-     * @brief Prepare internal events storage for track data building
-     * @param trackCount Count of tracks
-     */
-    void buildSmfSetupReset(size_t trackCount);
-
-    /**
-     * @brief Build MIDI track data from the raw track data storage
-     * @return true if everything successfully processed, or false on any error
-     */
-    bool buildSmfTrackData(const std::vector<std::vector<uint8_t> > &trackData);
-
-    /**
-     * @brief Build the time line from off loaded events
-     * @param tempos Pre-collected list of tempo events
-     * @param loopStartTicks Global loop start tick (give zero if no global loop presented)
-     * @param loopEndTicks Global loop end tick (give zero if no global loop presented)
-     */
-    void buildTimeLine(const std::vector<MidiEvent> &tempos,
-                       uint64_t loopStartTicks = 0,
-                       uint64_t loopEndTicks = 0);
-
-    /**
-     * @brief Parse one event from raw MIDI track stream
-     * @param [_inout] ptr pointer to pointer to current position on the raw data track
-     * @param [_in] end address to end of raw track data, needed to validate position and size
-     * @param [_inout] status status of the track processing
-     * @return Parsed MIDI event entry
-     */
-    MidiEvent parseEvent(const uint8_t **ptr, const uint8_t *end, int &status);
-
-    /**
-     * @brief Process MIDI events on the current tick moment
-     * @param isSeek is a seeking process
-     * @return returns false on reaching end of the song
-     */
-    bool processEvents(bool isSeek = false);
-
-    /**
-     * @brief Handle one event from the chain
-     * @param tk MIDI track
-     * @param evt MIDI event entry
-     * @param status Recent event type, -1 returned when end of track event was handled.
-     */
-    void handleEvent(size_t tk, const MidiEvent &evt, int32_t &status);
-
 public:
+    /**********************************************************************************
+     *                   Public structures and types definitions                      *
+     **********************************************************************************/
+
+    /*!
+     * \brief Reference to the data bank entry
+     */
+    struct DataBlock
+    {
+        size_t offset;
+        size_t size;
+    };
+
     /**
      * @brief MIDI marker entry
      */
     struct MIDI_MarkerEntry
     {
         //! Label
-        std::string     label;
+        DataBlock       label;
         //! Position time in seconds
         double          pos_time;
         //! Position time in MIDI ticks
@@ -338,69 +104,305 @@ public:
         Loop_HMI
     };
 
+    /*!
+     * \brief Get the data pointer from the data bank
+     * \param b Data block reference
+     * \return Pointer to the destination data
+     */
+    inline const uint8_t *getData(const DataBlock &b) const
+    {
+        return m_dataBank.data() + b.offset;
+    };
+
 private:
-    //! Music file format type. MIDI is default.
-    FileFormat m_format;
-    //! SMF format identifier.
-    unsigned m_smfFormat;
-    //! Loop points format
-    LoopFormat m_loopFormat;
+    /**********************************************************************************
+     *                   Private structures and types definitions                     *
+     **********************************************************************************/
 
-    //! Current position
-    Position m_currentPosition;
-    //! Track begin position
-    Position m_trackBeginPosition;
-    //! Loop start point
-    Position m_loopBeginPosition;
+    /*!
+     * \brief Container of the error report
+     */
+    struct ErrString
+    {
+        char err[1001];
+        size_t size;
 
-    //! Is looping enabled or not
-    bool    m_loopEnabled;
-    //! Don't process loop: trigger hooks only if they are set
-    bool    m_loopHooksOnly;
+        ErrString() :
+            size(0)
+        {
+            err[0] = 0;
+        }
 
-    //! Full song length in seconds
-    double m_fullSongTimeLength;
-    //! Delay after song playd before rejecting the output stream requests
-    double m_postSongWaitDelay;
+        void clear()
+        {
+            err[0] = 0;
+            size = 0;
+        }
 
-    //! Global loop start time
-    double m_loopStartTime;
-    //! Global loop end time
-    double m_loopEndTime;
+        void set(const char*str)
+        {
+            size = 0;
+            append(str);
+        }
 
-    //! Pre-processed track data storage
-    std::vector<MidiTrackQueue > m_trackData;
+        void append(const char*str)
+        {
+            while(size < 1000 && *str)
+                err[size++] = *(str++);
 
-    //! CMF instruments
-    std::vector<CmfInstrument> m_cmfInstruments;
+            err[size] = 0;
+        }
 
-    //! Title of music
-    std::string m_musTitle;
-    //! Copyright notice of music
-    std::string m_musCopyright;
-    //! List of track titles
-    std::vector<std::string> m_musTrackTitles;
-    //! List of MIDI markers
-    std::vector<MIDI_MarkerEntry> m_musMarkers;
+        void append(const char*str, size_t len)
+        {
+            while(size < 1000 && len-- > 0)
+                err[size++] = *(str++);
 
-    //! Time of one tick
-    fraction<uint64_t> m_invDeltaTicks;
-    //! Current tempo
-    fraction<uint64_t> m_tempo;
+            err[size] = 0;
+        }
 
-    //! Tempo multiplier factor
-    double  m_tempoMultiplier;
-    //! Is song at end
-    bool    m_atEnd;
+        inline const char *c_str() const
+        {
+            return err;
+        }
+    };
 
-    //! Set the number of loops limit. Lesser than 0 - loop infinite
-    int     m_loopCount;
+    /**
+     * @brief MIDI Event utility container
+     */
+    struct MidiEvent
+    {
+        /**
+         * @brief Main MIDI event types
+         */
+        enum Types
+        {
+            //! Unknown event
+            T_UNKNOWN       = 0x00,
+            //! Note-Off event
+            T_NOTEOFF       = 0x08,//size == 2
+            //! Note-On event
+            T_NOTEON        = 0x09,//size == 2
+            //! Note After-Touch event
+            T_NOTETOUCH     = 0x0A,//size == 2
+            //! Controller change event
+            T_CTRLCHANGE    = 0x0B,//size == 2
+            //! Patch change event
+            T_PATCHCHANGE   = 0x0C,//size == 1
+            //! Channel After-Touch event
+            T_CHANAFTTOUCH  = 0x0D,//size == 1
+            //! Pitch-bend change event
+            T_WHEEL         = 0x0E,//size == 2
 
-    //! The number of track of multi-track file (for exmaple, XMI) to load
-    int     m_loadTrackNumber;
+            //! System Exclusive message, type 1
+            T_SYSEX         = 0xF0,//size == len
+            //! Sys Com Song Position Pntr [LSB, MSB]
+            T_SYSCOMSPOSPTR = 0xF2,//size == 2
+            //! Sys Com Song Select(Song #) [0-127]
+            T_SYSCOMSNGSEL  = 0xF3,//size == 1
+            //! System Exclusive message, type 2
+            T_SYSEX2        = 0xF7,//size == len
+            //! Special event
+            T_SPECIAL       = 0xFF
+        };
+        /**
+         * @brief Special MIDI event sub-types
+         */
+        enum SubTypes
+        {
+            //! Sequension number
+            ST_SEQNUMBER    = 0x00,//size == 2
+            //! Text label
+            ST_TEXT         = 0x01,//size == len, dataBank
+            //! Copyright notice
+            ST_COPYRIGHT    = 0x02,//size == len, dataBank
+            //! Sequence track title
+            ST_SQTRKTITLE   = 0x03,//size == len, dataBank
+            //! Instrument title
+            ST_INSTRTITLE   = 0x04,//size == len, dataBank
+            //! Lyrics text fragment
+            ST_LYRICS       = 0x05,//size == len, dataBank
+            //! MIDI Marker
+            ST_MARKER       = 0x06,//size == len, dataBank
+            //! Cue Point
+            ST_CUEPOINT     = 0x07,//size == len, dataBank
+            //! [Non-Standard] Device Switch
+            ST_DEVICESWITCH = 0x09,//size == len <CUSTOM>, dataBank
+            //! MIDI Channel prefix
+            ST_MIDICHPREFIX = 0x20,//size == 1
 
-    //! The XMI-specific list of raw songs, converted into SMF format
-    std::vector<std::vector<uint8_t > > m_rawSongsData;
+            //! End of Track event
+            ST_ENDTRACK     = 0x2F,//size == 0
+            //! Tempo change event
+            ST_TEMPOCHANGE  = 0x51,//size == 3
+            //! SMPTE offset
+            ST_SMPTEOFFSET  = 0x54,//size == 5
+            //! Time signature
+            ST_TIMESIGNATURE = 0x55, //size == 4
+            //! Key signature
+            ST_KEYSIGNATURE = 0x59,//size == 2
+            //! Sequencer specs
+            ST_SEQUENCERSPEC = 0x7F, //size == len, dataBank
+
+            /* Non-standard, internal ADLMIDI usage only */
+            //! [Non-Standard] Loop Start point
+            ST_LOOPSTART    = 0xE1,//size == 0 <CUSTOM>
+            //! [Non-Standard] Loop End point
+            ST_LOOPEND      = 0xE2,//size == 0 <CUSTOM>
+            //! [Non-Standard] Raw OPL data
+            ST_RAWOPL       = 0xE3,//size == 0 <CUSTOM>
+
+            //! [Non-Standard] Loop Start point with support of multi-loops
+            ST_LOOPSTACK_BEGIN = 0xE4,//size == 1 <CUSTOM>
+            //! [Non-Standard] Loop End point with support of multi-loops
+            ST_LOOPSTACK_END   = 0xE5,//size == 0 <CUSTOM>
+            //! [Non-Standard] Loop End point with support of multi-loops
+            ST_LOOPSTACK_BREAK = 0xE6,//size == 0 <CUSTOM>
+            //! [Non-Standard] Callback Trigger
+            ST_CALLBACK_TRIGGER = 0xE7,//size == 1 <CUSTOM>
+
+            // Built-in hooks
+            ST_SONG_BEGIN_HOOK    = 0x101
+        };
+
+        //! Main type of event
+        uint_fast16_t type;
+        //! Sub-type of the event
+        uint_fast16_t subtype;
+        //! Targeted MIDI channel
+        uint_fast16_t channel;
+        //! Is valid event
+        uint_fast16_t isValid;
+        //! 4 bytes of locally placed data bytes
+        uint8_t data_loc[5];
+        uint8_t data_loc_size;
+        //! Larger data blocks such as SysEx queries
+        DataBlock data_block;
+    };
+
+    /*!
+     * \brief Individual tempo value used for the timeline calculation
+     */
+    struct TempoEvent
+    {
+        uint64_t tempo;
+        uint64_t absPosition;
+    };
+
+    /**
+     * @brief A track position event contains a chain of MIDI events until next delay value
+     *
+     * Created with purpose to sort events by type in the same position
+     * (for example, to keep controllers always first than note on events or lower than note-off events)
+     */
+    class MidiTrackRow
+    {
+    public:
+        MidiTrackRow();
+
+        /*!
+         * \brief Clear MIDI row data
+         */
+        void clear();
+
+        //! Absolute time position in seconds
+        double time;
+        //! Delay to next event in ticks
+        uint64_t delay;
+        //! Absolute position in ticks
+        uint64_t absPos;
+        //! Delay to next event in seconds
+        double timeDelay;
+        //! Begin of the events row stored in the bank
+        size_t events_begin;
+        //! End of the events row stored in the bank
+        size_t events_end;
+
+        static int typePriority(const MidiEvent &evt);
+        /**
+         * @brief Sort events in this position
+         * @param noteStates Buffer of currently pressed/released note keys in the track
+         */
+        void sortEvents(std::vector<MidiEvent> &eventsBank, bool *noteStates = NULL);
+    };
+
+    /**
+     * @brief Tempo change point entry. Used in the MIDI data building function only.
+     */
+    struct TempoChangePoint
+    {
+        uint64_t absPos;
+        fraction<uint64_t> tempo;
+    };
+    //P.S. I declared it here instead of local in-function because C++98 can't process templates with locally-declared structures
+
+    typedef std::list<MidiTrackRow> MidiTrackQueue;
+
+    /**
+     * @brief Song position context
+     */
+    struct Position
+    {
+        //! Waiting time before next event in seconds
+        double wait;
+        //! Absolute time position on the track in seconds
+        double absTimePosition;
+        //! Was track began playing
+        bool began;
+
+        //! Track information
+        struct TrackInfo
+        {
+            //! MIDI Events queue position iterator
+            MidiTrackQueue::iterator pos;
+            //! Delay to next event in a track
+            uint64_t delay;
+            //! Last handled event type
+            int32_t lastHandledEvent;
+
+            TrackInfo() :
+                delay(0),
+                lastHandledEvent(0)
+            {}
+        };
+
+        std::vector<TrackInfo> track;
+
+        Position():
+            wait(0.0),
+            absTimePosition(0.0),
+            began(false),
+            track()
+        {}
+    };
+
+    struct SequencerTime
+    {
+        //! Time buffer
+        double   timeRest;
+        //! Sample rate
+        uint32_t sampleRate;
+        //! Size of one frame in bytes
+        uint32_t frameSize;
+        //! Minimum possible delay, granuality
+        double minDelay;
+        //! Last delay
+        double delay;
+
+        void init()
+        {
+            sampleRate = 44100;
+            frameSize = 2;
+            reset();
+        }
+
+        void reset()
+        {
+            timeRest = 0.0;
+            minDelay = 1.0 / static_cast<double>(sampleRate);
+            delay = 0.0;
+        }
+    };
 
     /**
      * @brief Loop stack entry
@@ -526,14 +528,7 @@ private:
             }
             return stack[0];
         }
-    } m_loop;
-
-    //! Whether the nth track has playback disabled
-    std::vector<bool> m_trackDisable;
-    //! Index of solo track, or max for disabled
-    size_t m_trackSolo;
-    //! MIDI channel disable (exception for extra port-prefix-based channels)
-    bool m_channelDisable[16];
+    };
 
     /**
      * @brief Handler of callback trigger events
@@ -543,45 +538,173 @@ private:
      */
     typedef void (*TriggerHandler)(void *userData, unsigned trigger, size_t track);
 
+
+
+    /**********************************************************************************
+     *                      Private variable fields definitions                       *
+     **********************************************************************************/
+
+    //! MIDI Output interface context
+    const BW_MidiRtInterface *m_interface;
+
+    //! Storage of data block refered in tracks
+    std::vector<uint8_t> m_dataBank;
+
+    //! Array of all MIDI events across all tracks
+    std::vector<MidiEvent> m_eventBank;
+
+    //! The number of track of multi-track file (for exmaple, XMI) to load
+    int m_loadTrackNumber;
+
     //! Handler of callback trigger events
     TriggerHandler m_triggerHandler;
     //! User data of callback trigger events
     void *m_triggerUserData;
 
+
+
+    // TO MOVE INTO MIDISong!
+
+    //! Music file format type. MIDI is default.
+    FileFormat m_format;
+    //! SMF format identifier.
+    unsigned m_smfFormat;
+    //! Loop points format
+    LoopFormat m_loopFormat;
+
+    //! Current position
+    Position m_currentPosition;
+    //! Track begin position
+    Position m_trackBeginPosition;
+    //! Loop start point
+    Position m_loopBeginPosition;
+
+    //! Is looping enabled or not
+    bool    m_loopEnabled;
+    //! Don't process loop: trigger hooks only if they are set
+    bool    m_loopHooksOnly;
+
+    //! Full song length in seconds
+    double m_fullSongTimeLength;
+    //! Delay after song playd before rejecting the output stream requests
+    double m_postSongWaitDelay;
+
+    //! Global loop start time
+    double m_loopStartTime;
+    //! Global loop end time
+    double m_loopEndTime;
+
+    //! Pre-processed track data storage
+    std::vector<MidiTrackQueue> m_trackData;
+
+    //! CMF instruments
+    std::vector<CmfInstrument> m_cmfInstruments;
+
+    //! Title of music
+    DataBlock m_musTitle;
+    //! Copyright notice of music
+    DataBlock m_musCopyright;
+    //! List of track titles
+    std::vector<DataBlock> m_musTrackTitles;
+    //! List of MIDI markers
+    std::vector<MIDI_MarkerEntry> m_musMarkers;
+
+    //! Time of one tick
+    fraction<uint64_t> m_invDeltaTicks;
+    //! Current tempo
+    fraction<uint64_t> m_tempo;
+    //! Is song at end
+    bool    m_atEnd;
+
+    //! Set the number of loops limit. Lesser than 0 - loop infinite
+    int     m_loopCount;
+
+
+    //! The XMI-specific list of raw songs, converted into SMF format
+    std::vector<std::vector<uint8_t > > m_rawSongsData;
+
+    //! The state of the loop
+    LoopState m_loop;
+
+    //! Whether the nth track has playback disabled
+    std::vector<bool> m_trackDisable;
+    //! Index of solo track, or max for disabled
+    size_t m_trackSolo;
+    //! MIDI channel disable (exception for extra port-prefix-based channels)
+    bool m_channelDisable[16];
+
+
+    // KEEP HERE AS A GLOBAL STATE
+
+    //! Global tempo multiplier factor
+    double  m_tempoMultiplier;
     //! File parsing errors string (adding into m_errorString on aborting of the process)
-    std::string m_parsingErrorsString;
+    ErrString m_parsingErrorsString;
     //! Common error string
-    std::string m_errorString;
+    ErrString m_errorString;
+    //! Sequencer's time processor
+    SequencerTime m_time;
 
-    struct SequencerTime
-    {
-        //! Time buffer
-        double   timeRest;
-        //! Sample rate
-        uint32_t sampleRate;
-        //! Size of one frame in bytes
-        uint32_t frameSize;
-        //! Minimum possible delay, granuality
-        double minDelay;
-        //! Last delay
-        double delay;
 
-        void init()
-        {
-            sampleRate = 44100;
-            frameSize = 2;
-            reset();
-        }
 
-        void reset()
-        {
-            timeRest = 0.0;
-            minDelay = 1.0 / static_cast<double>(sampleRate);
-            delay = 0.0;
-        }
-    } m_time;
+    /**
+     * @brief Prepare internal events storage for track data building
+     * @param trackCount Count of tracks
+     */
+    void buildSmfSetupReset(size_t trackCount);
+
+    /**
+     * @brief Build MIDI track data from the raw track data storage
+     * @return true if everything successfully processed, or false on any error
+     */
+    bool buildSmfTrackData(const std::vector<std::vector<uint8_t> > &trackData);
+
+    /**
+     * @brief Build the time line from off loaded events
+     * @param tempos Pre-collected list of tempo events
+     * @param loopStartTicks Global loop start tick (give zero if no global loop presented)
+     * @param loopEndTicks Global loop end tick (give zero if no global loop presented)
+     */
+    void buildTimeLine(const std::vector<TempoEvent> &tempos,
+                       uint64_t loopStartTicks = 0,
+                       uint64_t loopEndTicks = 0);
+
+    static void insertDataToBank(MidiEvent &evt, std::vector<uint8_t> &bank, const uint8_t *data, size_t length);
+    static void insertDataToBankWithByte(MidiEvent &evt, std::vector<uint8_t> &bank, uint8_t begin_byte, const uint8_t *data, size_t length);
+    static void insertDataToBankWithTerm(MidiEvent &evt, std::vector<uint8_t> &bank, const uint8_t *data, size_t length);
+
+    void addEventToBank(MidiTrackRow &row, const MidiEvent &evt);
+
+    /**
+     * @brief Parse one event from raw MIDI track stream
+     * @param [_inout] ptr pointer to pointer to current position on the raw data track
+     * @param [_in] end address to end of raw track data, needed to validate position and size
+     * @param [_inout] status status of the track processing
+     * @return Parsed MIDI event entry
+     */
+    MidiEvent parseEvent(const uint8_t **ptr, const uint8_t *end, int &status);
+
+    /**
+     * @brief Process MIDI events on the current tick moment
+     * @param isSeek is a seeking process
+     * @return returns false on reaching end of the song
+     */
+    bool processEvents(bool isSeek = false);
+
+    /**
+     * @brief Handle one event from the chain
+     * @param tk MIDI track
+     * @param evt MIDI event entry
+     * @param status Recent event type, -1 returned when end of track event was handled.
+     */
+    void handleEvent(size_t tk, const MidiEvent &evt, int32_t &status);
+
 
 public:
+    /**********************************************************************************
+     *                             Public functions API                               *
+     **********************************************************************************/
+
     BW_MidiSequencer();
     virtual ~BW_MidiSequencer();
 
@@ -662,7 +785,7 @@ public:
      * @brief Get string that describes reason of error
      * @return Error string
      */
-    const std::string &getErrorString();
+    const char *getErrorString() const;
 
     /**
      * @brief Check is loop enabled
@@ -698,19 +821,19 @@ public:
      * @brief Get music title
      * @return music title string
      */
-    const std::string &getMusicTitle();
+    const char *getMusicTitle() const;
 
     /**
      * @brief Get music copyright notice
      * @return music copyright notice string
      */
-    const std::string &getMusicCopyright();
+    const char *getMusicCopyright() const;
 
     /**
      * @brief Get list of track titles
      * @return array of track title strings
      */
-    const std::vector<std::string> &getTrackTitles();
+    const std::vector<DataBlock> &getTrackTitles();
 
     /**
      * @brief Get list of MIDI markers
@@ -803,7 +926,12 @@ public:
      */
     void   setTempo(double tempo);
 
+
 private:
+    /**********************************************************************************
+     *                             Private file parser functions                      *
+     **********************************************************************************/
+
 #ifdef BWMIDI_ENABLE_OPL_MUSIC_SUPPORT
     /**
      * @brief Load file as Id-software-Music-File (Wolfenstein)
@@ -855,14 +983,12 @@ private:
      */
     bool parseRMI(FileAndMemReader &fr);
 
-#ifndef BWMIDI_DISABLE_MUS_SUPPORT
     /**
      * @brief Load file as DMX MUS file (Doom)
      * @param fr Context with opened file
      * @return true on successful load
      */
     bool parseMUS(FileAndMemReader &fr);
-#endif
 
 #ifndef BWMIDI_DISABLE_XMI_SUPPORT
     /**

@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2024 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2025 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -244,13 +244,11 @@ static int read_event_mod(struct context_data *ctx, struct xmp_event *e, int chn
 	int new_swap_ins = 0;
 	int is_toneporta;
 	int is_retrig;
-	int use_ins_vol;
 
 	xc->flags = 0;
 	note = -1;
 	is_toneporta = 0;
 	is_retrig = 0;
-	use_ins_vol = 0;
 
 	if (IS_TONEPORTA(e->fxt) || IS_TONEPORTA(e->f2t)) {
 		is_toneporta = 1;
@@ -263,7 +261,6 @@ static int read_event_mod(struct context_data *ctx, struct xmp_event *e, int chn
 
 	if (e->ins) {
 		int ins = e->ins - 1;
-		use_ins_vol = 1;
 		SET(NEW_INS);
 		xc->fadeout = 0x10000;	/* for painlace.mod pat 0 ch 3 echo */
 		xc->per_flags = 0;
@@ -283,20 +280,16 @@ static int read_event_mod(struct context_data *ctx, struct xmp_event *e, int chn
 					xc->finetune = sub->fin;
 					xc->ins = ins;
 				}
+
+				/* Dennis Lindroos: instrument volume
+				 * is not used on split channels
+				 */
+				if (!xc->split && e->note != XMP_KEY_OFF) {
+					xc->volume = sub->vol;
+				}
 			}
 
-			if (is_toneporta) {
-				/* Get new instrument volume */
-				if (sub != NULL) {
-					/* Dennis Lindroos: instrument volume
-					 * is not used on split channels
-					 */
-					if (!xc->split) {
-						xc->volume = sub->vol;
-					}
-					use_ins_vol = 0;
-				}
-			} else {
+			if (!is_toneporta) {
 				xc->ins = ins;
 				xc->ins_fade = mod->xxi[ins].rls;
 			}
@@ -329,7 +322,6 @@ static int read_event_mod(struct context_data *ctx, struct xmp_event *e, int chn
 
 		if (e->note == XMP_KEY_OFF) {
 			SET_NOTE(NOTE_RELEASE);
-			use_ins_vol = 0;
 		} else if (!is_toneporta && IS_VALID_NOTE(e->note - 1)) {
 			xc->key = e->note - 1;
 			RESET_NOTE(NOTE_END);
@@ -354,7 +346,6 @@ static int read_event_mod(struct context_data *ctx, struct xmp_event *e, int chn
 				}
 			} else {
 				xc->flags = 0;
-				use_ins_vol = 0;
 				note = xc->key;
 			}
 		}
@@ -378,6 +369,8 @@ static int read_event_mod(struct context_data *ctx, struct xmp_event *e, int chn
 		xc->smp = sub->sid;
 	}
 
+	/* sub is now the currently playing subinstrument, which may not be
+	 * related to e->ins if there is active toneporta! */
 	sub = get_subinstrument(ctx, xc->ins, xc->key);
 
 	set_effect_defaults(ctx, note, sub, xc, is_toneporta);
@@ -424,10 +417,6 @@ static int read_event_mod(struct context_data *ctx, struct xmp_event *e, int chn
 			xc->offset.val += xc->offset.val2;
 		}
 		RESET(OFFSET);
-	}
-
-	if (use_ins_vol && !TEST(NEW_VOL) && !xc->split) {
-		xc->volume = sub->vol;
 	}
 
 	return 0;
@@ -525,12 +514,10 @@ static int read_event_ft2(struct context_data *ctx, struct xmp_event *e, int chn
 
 			/* No note */
 			if (sub != NULL) {
-				int pan = mod->xxc[chn].pan - 128;
 				xc->volume = sub->vol;
 
-				if (!HAS_QUIRK(QUIRK_FTMOD)) {
-					xc->pan.val = pan + ((sub->pan - 128) *
-						(128 - abs(pan))) / 128 + 128;
+				if (sub->pan >= 0) {
+					xc->pan.val = sub->pan;
 				}
 
 				xc->ins_fade = mod->xxi[xc->ins].rls;
@@ -588,12 +575,10 @@ static int read_event_ft2(struct context_data *ctx, struct xmp_event *e, int chn
 			/* Current instrument */
 			sub = get_subinstrument(ctx, xc->ins, key - 1);
 			if (sub != NULL) {
-				int pan = mod->xxc[chn].pan - 128;
 				xc->volume = sub->vol;
 
-				if (!HAS_QUIRK(QUIRK_FTMOD)) {
-					xc->pan.val = pan + ((sub->pan - 128) *
-						(128 - abs(pan))) / 128 + 128;
+				if (sub->pan >= 0) {
+					xc->pan.val = sub->pan;
 				}
 
 				xc->ins_fade = mod->xxi[xc->ins].rls;
@@ -805,13 +790,11 @@ static int read_event_st3(struct context_data *ctx, struct xmp_event *e, int chn
 	struct xmp_subinstrument *sub;
 	int not_same_ins;
 	int is_toneporta;
-	int use_ins_vol;
 
 	xc->flags = 0;
 	note = -1;
 	not_same_ins = 0;
 	is_toneporta = 0;
-	use_ins_vol = 0;
 
 	if (IS_TONEPORTA(e->fxt) || IS_TONEPORTA(e->f2t)) {
 		is_toneporta = 1;
@@ -826,34 +809,28 @@ static int read_event_st3(struct context_data *ctx, struct xmp_event *e, int chn
 	if (e->ins) {
 		int ins = e->ins - 1;
 		SET(NEW_INS);
-		use_ins_vol = 1;
 		xc->fadeout = 0x10000;
 		xc->per_flags = 0;
 		xc->offset.val = 0;
 		RESET_NOTE(NOTE_RELEASE|NOTE_FADEOUT);
 
 		if (IS_VALID_INSTRUMENT(ins)) {
-			/* valid ins */
 			if (xc->ins != ins) {
 				not_same_ins = 1;
 				if (!is_toneporta) {
 					xc->ins = ins;
 					xc->ins_fade = mod->xxi[ins].rls;
-				} else {
-					/* Get new instrument volume */
-					sub = get_subinstrument(ctx, ins, e->note - 1);
-					if (sub != NULL) {
-						xc->volume = sub->vol;
-						use_ins_vol = 0;
-					}
 				}
 			}
-		} else {
-			/* invalid ins */
 
+			/* Get new instrument volume */
+			sub = get_subinstrument(ctx, ins, e->note - 1);
+			if (sub != NULL && e->note != XMP_KEY_OFF) {
+				xc->volume = sub->vol;
+			}
+		} else {
 			/* Ignore invalid instruments */
 			xc->flags = 0;
-			use_ins_vol = 0;
 		}
 	}
 
@@ -864,7 +841,6 @@ static int read_event_st3(struct context_data *ctx, struct xmp_event *e, int chn
 
 		if (e->note == XMP_KEY_OFF) {
 			SET_NOTE(NOTE_RELEASE);
-			use_ins_vol = 0;
 		} else if (is_toneporta) {
 			/* Always retrig in tone portamento: Fix portamento in
 			 * 7spirits.s3m, mod.Biomechanoid
@@ -895,11 +871,12 @@ static int read_event_st3(struct context_data *ctx, struct xmp_event *e, int chn
 				}
 			} else {
 				xc->flags = 0;
-				use_ins_vol = 0;
 			}
 		}
 	}
 
+	/* sub is now the currently playing subinstrument, which may not be
+	 * related to e->ins if there is active toneporta! */
 	sub = get_subinstrument(ctx, xc->ins, xc->key);
 
 	set_effect_defaults(ctx, note, sub, xc, is_toneporta);
@@ -925,10 +902,6 @@ static int read_event_st3(struct context_data *ctx, struct xmp_event *e, int chn
 	if (note >= 0) {
 		xc->note = note;
 		libxmp_virt_voicepos(ctx, chn, xc->offset.val);
-	}
-
-	if (use_ins_vol && !TEST(NEW_VOL)) {
-		xc->volume = sub->vol;
 	}
 
 	if (HAS_QUIRK(QUIRK_ST3BUGS) && TEST(NEW_VOL)) {

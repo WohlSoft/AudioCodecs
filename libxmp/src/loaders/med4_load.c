@@ -29,6 +29,7 @@
 #include "med.h"
 #include "loader.h"
 #include "../med_extras.h"
+#include "../path.h"
 
 #define MAGIC_MED4	MAGIC4('M','E','D',4)
 #undef MED4_DEBUG
@@ -204,7 +205,7 @@ static int med4_load_sampled_instrument(HIO_HANDLE *f, struct module_data *m,
 	sub = &xxi->sub[0];
 
 	sub->vol = temp_inst[i].volume;
-	sub->pan = 0x80;
+	sub->pan = NO_SAMPLE_PANNING;
 	sub->xpo = temp_inst[i].transpose;
 	sub->sid = *smp_idx;
 
@@ -347,7 +348,7 @@ static int med4_load_synth_instrument(HIO_HANDLE *f, struct module_data *m,
 
 		sub = &xxi->sub[0];
 
-		sub->pan = 0x80;
+		sub->pan = NO_SAMPLE_PANNING;
 		sub->vol = temp_inst[i].volume;
 		sub->xpo = temp_inst[i].transpose;
 		sub->sid = *smp_idx;
@@ -383,7 +384,7 @@ static int med4_load_synth_instrument(HIO_HANDLE *f, struct module_data *m,
 
 		sub = &xxi->sub[j];
 
-		sub->pan = 0x80;
+		sub->pan = NO_SAMPLE_PANNING;
 		sub->vol = 64;
 		sub->xpo = -24;
 		sub->sid = *smp_idx;
@@ -445,7 +446,7 @@ static int med4_load_instrument(HIO_HANDLE *f, struct module_data *m,
 static int med4_load_external_instrument(HIO_HANDLE *f, struct module_data *m,
 	int i, int *smp_idx, struct temp_inst *temp_inst)
 {
-	char path[XMP_MAXPATH];
+	struct libxmp_path sp;
 	char ins_name[32];
 	HIO_HANDLE *s = NULL;
 	int length;
@@ -454,10 +455,13 @@ static int med4_load_external_instrument(HIO_HANDLE *f, struct module_data *m,
 	if (libxmp_copy_name_for_fopen(ins_name, m->mod.xxi[i].name, 32) != 0)
 		return 0;
 
-	if (!libxmp_find_instrument_file(m, path, sizeof(path), ins_name))
+	libxmp_path_init(&sp);
+	if (libxmp_find_instrument_file(m, &sp, ins_name) != 0)
 		return 0;
 
-	if ((s = hio_open(path, "rb")) == NULL) {
+	s = hio_open(sp.path, "rb");
+	libxmp_path_free(&sp);
+	if (s == NULL) {
 		return 0;
 	}
 

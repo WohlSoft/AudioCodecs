@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2024 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2025 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -246,7 +246,7 @@ static int imf_load(struct module_data *m, HIO_HANDLE *f, const int start)
 {
     struct xmp_module *mod = &m->mod;
     int c, r, i, j;
-    struct xmp_event *event = 0, dummy;
+    struct xmp_event *event = NULL, dummy;
     struct imf_header ih;
     struct imf_instrument ii;
     struct imf_sample is;
@@ -515,7 +515,7 @@ static int imf_load(struct module_data *m, HIO_HANDLE *f, const int start)
 
 	    sub->sid = smp_num;
 	    sub->vol = is.vol;
-	    sub->pan = (is.flg & IMF_SAMPLE_DEFPAN) ? is.pan : -1;
+	    sub->pan = (is.flg & IMF_SAMPLE_DEFPAN) ? is.pan : NO_SAMPLE_PANNING;
 	    xxs->len = is.len;
 	    xxs->lps = is.lps;
 	    xxs->lpe = is.lpe;

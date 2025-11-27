@@ -38,6 +38,14 @@
 #include <sys/stat.h>
 #endif
 
+#if defined(_MSC_VER) ||  defined(__WATCOMC__) || defined(__EMX__)
+#define XMP_MAXPATH _MAX_PATH
+#elif defined(PATH_MAX)
+#define XMP_MAXPATH  PATH_MAX
+#else
+#define XMP_MAXPATH  1024
+#endif
+
 #include "tempfile.h"
 
 #ifdef _WIN32
@@ -46,7 +54,6 @@
 #define close _close
 #define unlink _unlink
 #define umask _umask
-int mkstemp(char *);
 
 static int get_temp_dir(char *buf, size_t size)
 {

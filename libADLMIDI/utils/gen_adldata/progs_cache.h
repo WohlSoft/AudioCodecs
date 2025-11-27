@@ -117,7 +117,11 @@ struct BanksDump
             WOPL_VM_Apogee_Fixed,
             WOPL_VM_AIL,
             WOPL_VM_Win9x_GeneralFM,
-            WOPL_VM_HMI
+            WOPL_VM_HMI,
+            WOPL_VM_HMI_OLD,
+            WOPL_VM_MSAdLib,
+            WOPL_VM_IMFCreator,
+            WOPL_VM_OConnel
         } WOPL_VolumeModel;
 
         /**
@@ -132,11 +136,12 @@ struct BanksDump
             SETUP_Apogee  = 0x0003,
             SETUP_AIL     = 0x0307,
             SETUP_AIL_MT32= 0x0707,
-            SETUP_IBK     = 0x0301,
-            SETUP_IBK_MT32= 0x0700,
+            SETUP_IBK     = 0x030D,
+            SETUP_IBK_MT32= 0x070D,
             SETUP_IMF     = 0x0200,
             SETUP_CMF     = 0x0201,
-            SETUP_HMI     = 0x0309
+            SETUP_HMI     = 0x0309,
+            SETUP_HMI_OLD = 0x030A
         };
 
         uint_fast16_t       bankSetup = SETUP_Generic; // 0xAABB, AA - OPL flags, BB - Volume model
@@ -221,12 +226,14 @@ struct BanksDump
             WOPL_Ins_Pseudo4op  = 0x02,
             /* Is a blank instrument entry */
             WOPL_Ins_IsBlank    = 0x04,
+            /* Should melodic note play a fixed tone? */
+            WOPL_Ins_FixedNote  = 0x40,
 
             /* RythmMode flags mask */
-            WOPL_RhythmModeMask  = 0x38,
+            WOPL_RhythmModeMask = 0x38,
 
             /* Mask of the flags range */
-            WOPL_Ins_ALL_MASK   = 0x07
+            WOPL_Ins_ALL_MASK   = 0x47
         } WOPL_InstrumentFlags;
 
         typedef enum WOPL_RhythmMode

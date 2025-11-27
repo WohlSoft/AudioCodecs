@@ -28,6 +28,7 @@
 #include "med.h"
 #include "loader.h"
 #include "../med_extras.h"
+#include "../path.h"
 
 #ifdef DEBUG
 const char *const mmd_inst_type[] = {
@@ -593,7 +594,7 @@ static int mmd_load_hybrid_instrument(HIO_HANDLE *f, struct module_data *m, int 
 	mmd_set_default_pitch_note(xxi, exp_smp, ver);
 	sub = &xxi->sub[0];
 
-	sub->pan = 0x80;
+	sub->pan = NO_SAMPLE_PANNING;
 	sub->vol = info.enable ? sample->svol : 0;
 	sub->xpo = info.sampletrans;
 	sub->sid = smp_idx;
@@ -619,7 +620,7 @@ static int mmd_load_hybrid_instrument(HIO_HANDLE *f, struct module_data *m, int 
 		if (j >= xxi->nsm || smp_idx >= mod->smp)
 			return -1;
 
-		sub->pan = 0x80;
+		sub->pan = NO_SAMPLE_PANNING;
 		sub->vol = info.enable ? 64 : 0;
 		sub->xpo = info.synthtrans;
 		sub->sid = smp_idx;
@@ -711,7 +712,7 @@ static int mmd_load_synth_instrument(HIO_HANDLE *f, struct module_data *m, int i
 		if (j >= xxi->nsm || smp_idx >= mod->smp)
 			return -1;
 
-		sub->pan = 0x80;
+		sub->pan = NO_SAMPLE_PANNING;
 		sub->vol = info.enable ? 64 : 0;
 		sub->xpo = info.synthtrans;
 		sub->sid = smp_idx;
@@ -764,7 +765,7 @@ static int mmd_load_sampled_instrument(HIO_HANDLE *f, struct module_data *m, int
 	sub = &xxi->sub[0];
 
 	sub->vol = info.enable ? sample->svol : 0;
-	sub->pan = 0x80;
+	sub->pan = NO_SAMPLE_PANNING;
 	sub->xpo = info.sampletrans;
 	sub->sid = smp_idx;
 	sub->fin = exp_smp->finetune << 4;
@@ -866,7 +867,7 @@ static int mmd_load_iffoct_instrument(HIO_HANDLE *f, struct module_data *m, int 
 		sub = &xxi->sub[j];
 
 		sub->vol = info.enable ? sample->svol : 0;
-		sub->pan = 0x80;
+		sub->pan = NO_SAMPLE_PANNING;
 		sub->xpo = info.sampletrans - 12;
 		sub->sid = smp_idx;
 		sub->fin = exp_smp->finetune << 4;
@@ -989,7 +990,7 @@ int mmd_load_instrument(HIO_HANDLE *f, struct module_data *m, int i, int smp_idx
 int med_load_external_instrument(HIO_HANDLE *f, struct module_data *m, int i)
 {
 	struct xmp_module *mod = &m->mod;
-	char path[XMP_MAXPATH];
+	struct libxmp_path sp;
 	char ins_name[32];
 	HIO_HANDLE *s = NULL;
 
@@ -1001,10 +1002,13 @@ int med_load_external_instrument(HIO_HANDLE *f, struct module_data *m, int i)
 		mod->xxs[i].flg & XMP_SAMPLE_LOOP ? 'L' : ' ',
 		mod->xxi[i].sub[0].vol);
 
-	if (!libxmp_find_instrument_file(m, path, sizeof(path), ins_name))
+	libxmp_path_init(&sp);
+	if (libxmp_find_instrument_file(m, &sp, ins_name) != 0)
 		return 0;
 
-	if ((s = hio_open(path, "rb")) == NULL) {
+	s = hio_open(sp.path, "rb");
+	libxmp_path_free(&sp);
+	if (s == NULL) {
 		return 0;
 	}
 

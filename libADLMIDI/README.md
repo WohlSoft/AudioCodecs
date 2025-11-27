@@ -184,6 +184,18 @@ To build that example you will need to have installed SDL2 library.
 * Add support of MIDI Format 2 files
 
 # Changelog
+## 1.5.2   dev
+ * Fixed the random stuck problem in the DOS version of the ADLMIDI player.
+ * Added support for HMI and HMP files!
+ * Added support for in-track (local) loops.
+ * Optimized work with chip instruments.
+ * The panic will be always triggered on attempt to switch the bank.
+ * Improved sounding accuracy at DMX banks.
+ * Added MS Adlib driver's for Win3x volume model.
+ * Added IMF Creator's volume model.
+ * Added Jammie O'Connel's FM Synth volume model.
+ * Added support for DMX OP2's Fixed Note feature for melodic instruments.
+
 ## 1.6.1   2025-09-22
  * WinMM: Fixed random crash on waveOutOpen initialisation because of incorrect initialisation structure usage.
  * Fixed crash when playing too many notes at the same channel.

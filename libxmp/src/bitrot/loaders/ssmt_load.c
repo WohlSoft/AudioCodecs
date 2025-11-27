@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2025 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * This file is part of the Extended Module Player and is distributed
  * under the terms of the GNU Lesser General Public License. See COPYING.LIB
@@ -22,6 +22,7 @@
 
 #include "loader.h"
 #include "asif.h"
+#include "../path.h"
 
 
 static int mtp_test (HIO_HANDLE *, char *, const int);
@@ -92,7 +93,7 @@ static int mtp_load(struct module_data *m, HIO_HANDLE *f, const int start)
 		}
 		hio_read16l(f);		/* skip 2 reserved bytes */
 		mod->xxi[i].sub[0].vol = hio_read8(f) >> 2;
-		mod->xxi[i].sub[0].pan = 0x80;
+		mod->xxi[i].sub[0].pan = NO_SAMPLE_PANNING;
 		hio_seek(f, 5, SEEK_CUR);	/* skip 5 bytes */
 	}
 
@@ -182,16 +183,19 @@ static int mtp_load(struct module_data *m, HIO_HANDLE *f, const int start)
 	for (i = 0; i < mod->ins; i++) {
 		struct xmp_instrument *xxi = &mod->xxi[i];
 		HIO_HANDLE *s;
-		char filename[XMP_MAXPATH];
+		struct libxmp_path sp;
 		char tmpname[32];
 
 		if (libxmp_copy_name_for_fopen(tmpname, xxi->name, 32) != 0)
 			continue;
 
-		if (!libxmp_find_instrument_file(m, filename, sizeof(filename), tmpname))
+		libxmp_path_init(&sp);
+		if (libxmp_find_instrument_file(m, &sp, tmpname) != 0)
 			continue;
 
-		if ((s = hio_open(filename, "rb")) != NULL) {
+		s = hio_open(sp.path, "rb");
+		libxmp_path_free(&sp);
+		if (s != NULL) {
 			asif_load(m, s, i);
 			hio_close(s);
 		}
@@ -201,7 +205,7 @@ static int mtp_load(struct module_data *m, HIO_HANDLE *f, const int start)
 		mod->xxs[i].lpe = 0;
 		mod->xxs[i].flg = mod->xxs[i].lpe > 0 ? XMP_SAMPLE_LOOP : 0;
 		mod->xxi[i].sub[0].fin = 0;
-		mod->xxi[i].sub[0].pan = 0x80;
+		mod->xxi[i].sub[0].pan = NO_SAMPLE_PANNING;
 #endif
 
 		D_(D_INFO "[%2X] %-22.22s %04x %04x %04x %c V%02x", i,

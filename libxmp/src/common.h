@@ -4,7 +4,7 @@
 /* band-aid for autotools: we aren't using autoheader.
  * See: https://github.com/libxmp/libxmp/issues/373 . */
 #ifdef AC_APPLE_UNIVERSAL_BUILD
-# #undef WORDS_BIGENDIAN
+# undef  WORDS_BIGENDIAN
 # if defined __BIG_ENDIAN__
 #  define WORDS_BIGENDIAN 1
 # endif
@@ -54,14 +54,6 @@
 #define LIBXMP_RESTRICT __restrict
 #else
 #define LIBXMP_RESTRICT
-#endif
-
-#if defined(_MSC_VER) ||  defined(__WATCOMC__) || defined(__EMX__)
-#define XMP_MAXPATH _MAX_PATH
-#elif defined(PATH_MAX)
-#define XMP_MAXPATH  PATH_MAX
-#else
-#define XMP_MAXPATH  1024
 #endif
 
 #if defined(__MORPHOS__) || defined(__AROS__) || defined(__AMIGA__) \
@@ -241,6 +233,12 @@ static void __inline D_(const char *text, ...) {
 
 #endif	/* !_MSC_VER */
 
+#if defined(__GNUC__) || defined(__clang__)
+#define LIBXMP_ATTRIB_PRINTF(x,y) __attribute__((__format__(__printf__,x,y)))
+#else
+#define LIBXMP_ATTRIB_PRINTF(x,y)
+#endif
+
 #if defined(_WIN32) || defined(__WATCOMC__) /* in win32.c */
 #define USE_LIBXMP_SNPRINTF
 /* MSVC 2015+ has C99 compliant snprintf and vsnprintf implementations.
@@ -257,11 +255,6 @@ static void __inline D_(const char *text, ...) {
 #undef USE_LIBXMP_SNPRINTF
 #endif
 #ifdef USE_LIBXMP_SNPRINTF
-#if defined(__GNUC__) || defined(__clang__)
-#define LIBXMP_ATTRIB_PRINTF(x,y) __attribute__((__format__(__printf__,x,y)))
-#else
-#define LIBXMP_ATTRIB_PRINTF(x,y)
-#endif
 int libxmp_vsnprintf(char *, size_t, const char *, va_list) LIBXMP_ATTRIB_PRINTF(3,0);
 int libxmp_snprintf (char *, size_t, const char *, ...) LIBXMP_ATTRIB_PRINTF(3,4);
 #define snprintf  libxmp_snprintf
@@ -297,7 +290,7 @@ int libxmp_snprintf (char *, size_t, const char *, ...) LIBXMP_ATTRIB_PRINTF(3,4
 #define QUIRK_VOLPDN	(1 << 9)	/* Set priority to volume slide down */
 #define QUIRK_UNISLD	(1 << 10)	/* Unified pitch slide/portamento */
 #define QUIRK_ITVPOR	(1 << 11)	/* Disable fine bends in IT vol fx */
-#define QUIRK_FTMOD	(1 << 12)	/* Flag for multichannel mods */
+/*#define QUIRK_FTMOD	(1 << 12)*/	/* Flag for multichannel mods */
 #define QUIRK_INVLOOP	(1 << 13)	/* Enable invert loop */
 /*#define QUIRK_MODRNG	(1 << 13)*/	/* Limit periods to MOD range */
 #define QUIRK_INSVOL	(1 << 14)	/* Use instrument volume */
@@ -452,6 +445,8 @@ int libxmp_snprintf (char *, size_t, const char *, ...) LIBXMP_ATTRIB_PRINTF(3,4
 
 #define XMP_MARK_SKIP		0xfe /* S3M/IT (QUIRK_MARKER) skip position */
 #define XMP_MARK_END		0xff /* S3M/IT (QUIRK_MARKER) end position */
+
+#define NO_SAMPLE_PANNING	-1	/* disable sample/instrument panning */
 
 #define IS_PLAYER_MODE_MOD()	(m->read_event_type == READ_EVENT_MOD)
 #define IS_PLAYER_MODE_FT2()	(m->read_event_type == READ_EVENT_FT2)
@@ -676,7 +671,11 @@ struct context_data {
 
 /* Prototypes */
 
+LIBXMP_BEGIN_DECLS
+
 char	*libxmp_adjust_string	(char *);
+void	libxmp_load_prologue	(struct context_data *); /* use in load only */
+void	libxmp_load_epilogue	(struct context_data *); /* use in load only */
 int	libxmp_prepare_scan	(struct context_data *);
 void	libxmp_free_scan	(struct context_data *);
 int	libxmp_scan_sequences	(struct context_data *);
@@ -712,5 +711,7 @@ struct xmp_sample *libxmp_get_sample(struct context_data *, int);
 
 char *libxmp_strdup(const char *);
 int libxmp_get_filetype (const char *);
+
+LIBXMP_END_DECLS
 
 #endif /* LIBXMP_COMMON_H */
