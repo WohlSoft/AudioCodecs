@@ -135,6 +135,7 @@ file(GLOB EDMIDI_HEADERS
     ${libEmuDeMIDI_SOURCE_DIR}/src/device/*.h
     ${libEmuDeMIDI_SOURCE_DIR}/src/sequencer/*.hpp
     ${libEmuDeMIDI_SOURCE_DIR}/src/sequencer/*.h
+    ${libEmuDeMIDI_SOURCE_DIR}/src/sequencer/impl/*.hpp
     ${libEmuDeMIDI_SOURCE_DIR}/src/structures/*.hpp
 )
 list(APPEND EMIDI_SRC ${EDMIDI_HEADERS})
