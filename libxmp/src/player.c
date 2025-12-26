@@ -817,12 +817,20 @@ static inline void read_row(struct context_data *ctx, int pat, int row)
 	struct xmp_event tmp;
 
 	for (chn = 0; chn < mod->chn; chn++) {
+		struct channel_data *xc = &p->xc_data[chn];
 		const int num_rows = mod->xxt[TRACK_NUM(pat, chn)]->rows;
 		if (row < num_rows) {
 			event = &EVENT(pat, chn, row);
 		} else {
 			memset(&tmp, 0, sizeof(tmp));
 			event = &tmp;
+		}
+
+		if (IS_PLAYER_MODE_FT2()) {
+			/* Reset Kxx, even if delayed (ft2_kxx.xm). */
+			xc->keyoff = 0;
+			/* Reset tremor, even if delayed (ft2_tremor_delay.xm). */
+			RESET(TREMOR);
 		}
 
 		if (check_delay(ctx, event, chn) == 0) {
@@ -869,23 +877,21 @@ static int tremor_ft2(struct context_data *ctx, int chn, int finalvol)
 	struct player_data *p = &ctx->p;
 	struct channel_data *xc = &p->xc_data[chn];
 
-	if (xc->tremor.count & 0x80) {
-		if (TEST(TREMOR) && p->frame != 0) {
-			xc->tremor.count &= ~0x20;
-			if (xc->tremor.count == 0x80) {
-				/* end of down cycle, set up counter for up  */
-				xc->tremor.count = xc->tremor.up | 0xc0;
-			} else if (xc->tremor.count == 0xc0) {
-				/* end of up cycle, set up counter for down */
-				xc->tremor.count = xc->tremor.down | 0x80;
-			} else {
-				xc->tremor.count--;
-			}
+	if (TEST(TREMOR) && p->frame != 0) {
+		xc->tremor.count &= ~TREMOR_SUPPRESS;
+		if (xc->tremor.count == 0) {
+			/* end of down cycle, set up counter for up  */
+			xc->tremor.count = xc->tremor.up | TREMOR_ON;
+		} else if (xc->tremor.count == TREMOR_ON) {
+			/* end of up cycle, set up counter for down */
+			xc->tremor.count = xc->tremor.down;
+		} else {
+			xc->tremor.count--;
 		}
+	}
 
-		if ((xc->tremor.count & 0xe0) == 0x80) {
-			finalvol = 0;
-		}
+	if ((xc->tremor.count & (TREMOR_ON | TREMOR_SUPPRESS)) == 0) {
+		finalvol = 0;
 	}
 
 	return finalvol;
@@ -899,20 +905,56 @@ static int tremor_s3m(struct context_data *ctx, int chn, int finalvol)
 	if (TEST(TREMOR)) {
 		if (xc->tremor.count == 0) {
 			/* end of down cycle, set up counter for up  */
-			xc->tremor.count = xc->tremor.up | 0x80;
-		} else if (xc->tremor.count == 0x80) {
+			xc->tremor.count = xc->tremor.up | TREMOR_ON;
+		} else if (xc->tremor.count == TREMOR_ON) {
 			/* end of up cycle, set up counter for down */
 			xc->tremor.count = xc->tremor.down;
 		}
 
 		xc->tremor.count--;
 
-		if (~xc->tremor.count & 0x80) {
+		if (~xc->tremor.count & TREMOR_ON) {
 			finalvol = 0;
 		}
 	}
 
 	return finalvol;
+}
+
+/* Handle delayed keyoff effects. This should only be performed once on
+ * the tick where Kxx activates (ft2_note_off_fade.xm).
+ */
+static void delayed_keyoff(struct context_data *ctx, int chn)
+{
+	struct player_data *p = &ctx->p;
+	struct module_data *m = &ctx->m;
+	struct channel_data *xc = &p->xc_data[chn];
+	struct xmp_instrument *instrument;
+
+	instrument = libxmp_get_instrument(ctx, xc->ins);
+
+	switch (m->read_event_type) {
+	case READ_EVENT_FT2:
+		/* Ignore if frame>=speed (ft2_kxx.xm). */
+		if (p->frame >= p->speed) {
+			break;
+		}
+		/* See read_event_ft2 for more notes on keyoff. */
+		if (instrument->aei.flg & XMP_ENVELOPE_ON) {
+			SET_NOTE(NOTE_RELEASE);
+		} else {
+			xc->volume = 0;
+		}
+		SET_NOTE(NOTE_FADEOUT);
+		break;
+
+	default:
+		/* TODO: compatibility for old behavior (see process_volume)
+		 * until keyoff can be tested everywhere else.
+		 * Orpheus: keyoff clears the note, xx>speed works with delay.
+		 * RT2: keyoff clears the note, xx>speed acts like 0. */
+		SET_NOTE(NOTE_RELEASE);
+	}
 }
 
 /*
@@ -949,7 +991,8 @@ static void process_volume(struct context_data *ctx, int chn, int act)
 				fade = 1;
 			}
 		}
-	} else {
+	} else if (!IS_PLAYER_MODE_FT2()) {
+		/* TODO: FT2 doesn't do this. check other formats. */
 		if (~instrument->aei.flg & XMP_ENVELOPE_ON) {
 			if (TEST_NOTE(NOTE_ENV_RELEASE)) {
 				xc->fadeout = 0;
@@ -1634,7 +1677,7 @@ static void play_channel(struct context_data *ctx, int chn)
 	/* Do keyoff */
 	if (xc->keyoff) {
 		if (--xc->keyoff == 0)
-			SET_NOTE(NOTE_RELEASE);
+			delayed_keyoff(ctx, chn);
 	}
 
 	libxmp_virt_release(ctx, chn, TEST_NOTE(NOTE_SAMPLE_RELEASE));

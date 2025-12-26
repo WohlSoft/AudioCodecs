@@ -163,7 +163,7 @@ function(set_visibility_hidden destTarget)
 endfunction()
 #===========================================================================================
 
-if(VITA OR PSP OR NINTENDO_3DS OR NINTENDO_WII OR NINTENDO_WIIU)
+if(VITA OR PSP OR PS2 OR NINTENDO_3DS OR NINTENDO_WII OR NINTENDO_WIIU)
     set(DEFAULT_HEAVY_EMULATORS OFF)
 else()
     set(DEFAULT_HEAVY_EMULATORS ON)
@@ -172,6 +172,7 @@ endif()
 if(NOT EMSCRIPTEN
    AND NOT VITA
    AND NOT PSP
+   AND NOT PS2
    AND NOT NINTENDO_3DS
    AND NOT NINTENDO_WII
    AND NOT NINTENDO_WIIU
@@ -231,6 +232,8 @@ link_directories(${libOPNMIDI_BINARY_DIR}/)
 
 set(libOPNMIDI_SOURCES)
 
+include(src/models/opn_models.cmake)
+
 list(APPEND libOPNMIDI_SOURCES
     ${libOPNMIDI_SOURCE_DIR}/src/opnmidi.cpp
     ${libOPNMIDI_SOURCE_DIR}/src/opnmidi_load.cpp
@@ -238,6 +241,7 @@ list(APPEND libOPNMIDI_SOURCES
     ${libOPNMIDI_SOURCE_DIR}/src/opnmidi_opn2.cpp
     ${libOPNMIDI_SOURCE_DIR}/src/opnmidi_private.cpp
     ${libOPNMIDI_SOURCE_DIR}/src/wopn/wopn_file.c
+    ${OPN_MODELS_SOURCES}
 )
 
 # Make headers being properly visible at IDEs
@@ -370,7 +374,6 @@ if(USE_NUKED_OPN2_LLE_EMULATOR)
         ${libOPNMIDI_SOURCE_DIR}/src/chips/nuked_lle/fmopn2.h
     )
     set(HAS_EMULATOR TRUE)
-    add_definitions(-DOPNMIDI_ENABLE_OPN2_LLE_EMULATOR)
 endif()
 
 if(USE_NUKED_OPNA_LLE_EMULATOR)
@@ -383,7 +386,6 @@ if(USE_NUKED_OPNA_LLE_EMULATOR)
         ${libOPNMIDI_SOURCE_DIR}/src/chips/nuked_lle/fmopna_2608.h
     )
     set(HAS_EMULATOR TRUE)
-    add_definitions(-DOPNMIDI_ENABLE_OPNA_LLE_EMULATOR)
 endif()
 
 if(USE_NUKED_OPN2_LLE_EMULATOR OR USE_NUKED_OPNA_LLE_EMULATOR)
@@ -431,6 +433,7 @@ endif()
 if(NOT WIN32
    AND NOT VITA
    AND NOT PSP
+   AND NOT PS2
    AND NOT NINTENDO_3DS
    AND NOT NINTENDO_WII
    AND NOT NINTENDO_WIIU
@@ -440,6 +443,16 @@ if(NOT WIN32
 else()
     set(ENABLE_FPIC OFF)
 endif()
+
+function(handle_options targetLib)
+    if(USE_NUKED_OPN2_LLE_EMULATOR)
+        target_compile_definitions(${targetLib} PUBLIC -DOPNMIDI_ENABLE_OPN2_LLE_EMULATOR)
+    endif()
+
+    if(USE_NUKED_OPNA_LLE_EMULATOR)
+        target_compile_definitions(${targetLib} PUBLIC -DOPNMIDI_ENABLE_OPNA_LLE_EMULATOR)
+    endif()
+endfunction()
 
 # === Static library ====
 if(libOPNMIDI_STATIC OR WITH_VLC_PLUGIN)
@@ -452,6 +465,7 @@ if(libOPNMIDI_STATIC OR WITH_VLC_PLUGIN)
     target_include_directories(OPNMIDI_static PUBLIC $<BUILD_INTERFACE:${libOPNMIDI_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include>)
     set_legacy_standard(OPNMIDI_static)
     set_visibility_hidden(OPNMIDI_static)
+    handle_options(OPNMIDI_static)
 
     # -fPIC thing
     if(ENABLE_FPIC)
@@ -474,6 +488,7 @@ if(libOPNMIDI_SHARED)
     target_include_directories(OPNMIDI_shared PUBLIC $<BUILD_INTERFACE:${libOPNMIDI_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include>)
     set_legacy_standard(OPNMIDI_shared)
     set_visibility_hidden(OPNMIDI_shared)
+    handle_options(OPNMIDI_shared)
 
     if(WIN32)
         target_compile_definitions(OPNMIDI_shared PRIVATE "-DOPNMIDI_BUILD_DLL")
@@ -503,9 +518,9 @@ if(libOPNMIDI_STATIC OR WITH_VLC_PLUGIN)
 endif()
 
 if(libOPNMIDI_SHARED)
-  target_link_libraries(OPNMIDI_IF INTERFACE OPNMIDI_shared)
+    target_link_libraries(OPNMIDI_IF INTERFACE OPNMIDI_shared)
 else()
-  target_link_libraries(OPNMIDI_IF INTERFACE OPNMIDI_static)
+    target_link_libraries(OPNMIDI_IF INTERFACE OPNMIDI_static)
 endif()
 
 if(WITH_MIDIPLAY)

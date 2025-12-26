@@ -206,16 +206,20 @@ public:
                 //! Destination chip channel
                 uint16_t chip_chan;
                 //! ins, inde to adl[]
-                OpnTimbre ains;
+                const OpnTimbre *ains;
+                //! Should we play the second voice?
+                bool dbl_voice;
 
                 void assign(const Phys &oth)
                 {
                     ains = oth.ains;
                 }
+
                 bool operator==(const Phys &oth) const
                 {
                     return (ains == oth.ains);
                 }
+
                 bool operator!=(const Phys &oth) const
                 {
                     return !operator==(oth);
@@ -448,12 +452,11 @@ public:
         {
             uint16_t    MidCh;
             uint8_t     note;
-            bool operator==(const Location &l) const
-                { return MidCh == l.MidCh && note == l.note; }
-            bool operator!=(const Location &l) const
-                { return !operator==(l); }
-            char _padding[1];
+
+            bool operator==(const Location &l) const { return MidCh == l.MidCh && note == l.note; }
+            bool operator!=(const Location &l) const { return !operator==(l); }
         };
+
         struct LocationData
         {
             Location loc;
@@ -464,7 +467,6 @@ public:
                 Sustain_ANY         = Sustain_Pedal | Sustain_Sostenuto
             };
             uint32_t sustained;
-            char _padding[3];
             MIDIchannel::NoteInfo::Phys ins;  // a copy of that in phys[]
             //! Has fixed sustain, don't iterate "on" timeout
             bool    fixed_sustain;
@@ -474,10 +476,9 @@ public:
 
             struct FindPredicate
             {
-                explicit FindPredicate(Location loc)
-                    : loc(loc) {}
-                bool operator()(const LocationData &ld) const
-                    { return ld.loc == loc; }
+                explicit FindPredicate(Location loc) : loc(loc) {}
+                bool operator()(const LocationData &ld) const { return ld.loc == loc; }
+
                 Location loc;
             };
         };
@@ -934,6 +935,18 @@ private:
         Upd_Mute   = 0x40,
         Upd_OffMute = Upd_Off + Upd_Mute
     };
+
+    void noteUpdPatch(const OpnChannel::Location &loc, const MIDIchannel::NoteInfo::Phys &ins, const OpnInstMeta *ains);
+
+    void noteUpdOff(size_t midCh,
+                    MIDIchannel::NoteInfo &info,
+                    const OpnChannel::Location &loc,
+                    const MIDIchannel::NoteInfo::Phys &ins,
+                    bool mute);
+
+    void noteUpdVolume(size_t midCh, MIDIchannel::NoteInfo &info, const MIDIchannel::NoteInfo::Phys &ins);
+
+    void noteUpdFreq(size_t midCh, const OpnChannel::Location &loc, MIDIchannel::NoteInfo &info, const MIDIchannel::NoteInfo::Phys &ins);
 
     /**
      * @brief Update active note

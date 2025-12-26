@@ -449,11 +449,10 @@ static int read_event_ft2(struct context_data *ctx, const struct xmp_event *e, i
 	struct xmp_subinstrument *sub;
 	int is_toneporta;
 	int is_delayed;
-	int k00 = 0;
 	struct xmp_event ev;
 
 	/* From the OpenMPT DelayCombination.xm test case:
-         * "Naturally, Fasttracker 2 ignores notes next to an out-of-range
+	 * "Naturally, Fasttracker 2 ignores notes next to an out-of-range
 	 *  note delay. However, to check whether the delay is out of range,
 	 *  it is simply compared against the current song speed, not taking
 	 *  any pattern delays into account."
@@ -463,14 +462,6 @@ static int read_event_ft2(struct context_data *ctx, const struct xmp_event *e, i
 	}
 
 	memcpy(&ev, e, sizeof (struct xmp_event));
-
-	/* From OpenMPT TremorReset.xm test case:
-	 * "Even if a tremor effect muted the sample on a previous row, volume
-	 *  commands should be able to override this effect."
-	 */
-	if (ev.vol) {
-		xc->tremor.count &= ~0x80;
-	}
 
 	xc->flags = 0;
 	note = -1;
@@ -494,56 +485,24 @@ static int read_event_ft2(struct context_data *ctx, const struct xmp_event *e, i
 		is_delayed = 1;
 	}
 
-	/* From the OpenMPT key_off.xm test case:
-	 * "Key off at tick 0 (K00) is very dodgy command. If there is a note
-	 *  next to it, the note is ignored. If there is a volume column
-	 *  command or instrument next to it and the current instrument has
-	 *  no volume envelope, the note is faded out instead of being cut."
-	 */
-	if (ev.fxt == FX_KEYOFF && ev.fxp == 0) {
-		k00 = 1;
-		key = 0;
-
-		if (ev.ins || ev.vol || ev.f2t) {
-			if (IS_VALID_INSTRUMENT(xc->ins) &&
-			    ~mod->xxi[xc->ins].aei.flg & XMP_ENVELOPE_ON) {
-				SET_NOTE(NOTE_FADEOUT);
-				ev.fxt = 0;
-			}
-		}
-	}
-
 	if (IS_TONEPORTA(ev.fxt) || IS_TONEPORTA(ev.f2t)) {
 		is_toneporta = 1;
+	}
+
+	/* FT2 deletes K00 and, if there is no volume fx toneporta, overwrites
+	 * the note with keyoff (ft2_k00_is_note_off.xm, OpenMPT key_off.xm,
+	 * ft2_envelope_reset.xm). */
+	if (ev.fxt == FX_KEYOFF && ev.fxp == 0) {
+		ev.fxt = 0;
+		if (!is_toneporta) {
+			key = XMP_KEY_OFF;
+		}
 	}
 
 	/* Retain previous subinstrument for default volume. */
 	sub = get_subinstrument(ctx, xc->ins, xc->key);
 
-	/* Check instrument */
-
-	/* TODO: finish removal of this block.
-	 */
-	if (ev.ins && key != XMP_KEY_FADE) {
-		SET(NEW_INS);
-		xc->per_flags = 0;
-
-		if (!IS_VALID_INSTRUMENT(ev.ins - 1)) {
-			/* If no note is set FT2 doesn't cut on invalid
-			 * instruments (it keeps playing the previous one).
-			 * If a note is set it cuts the current sample.
-			 */
-			xc->flags = 0;
-
-			if (is_toneporta) {
-				key = 0;
-			}
-		}
-
-		xc->tremor.count = 0x20;
-	}
-
-	/* Check subinstrument
+	/* Check instrument
 	 *
 	 * Only update the (sub)instrument if there's a valid note +
 	 * no toneporta/K00. Otherwise, keep the old (sub)instrument.
@@ -581,16 +540,19 @@ static int read_event_ft2(struct context_data *ctx, const struct xmp_event *e, i
 		}
 	}
 	if (ev.ins) {
+		int pan;
+		SET(NEW_INS);
+		xc->per_flags = 0; /* For posterity; not used by XM */
+
 		/* On any line with an instrument, use the active subinstrument
 		 * for default volume and panning. Invalid instruments have
 		 * volume 0 panning 0x80 (test_player_ft2_invalid_ins_defaults).
 		 * Works on lines with K00 (test_player_ft2_k00_defaults).
 		 */
-		int pan = sub ? sub->pan : 0x80;
-
 		xc->volume = sub ? sub->vol : 0;
 		SET(NEW_VOL);
 
+		pan = sub ? sub->pan : 0x80;
 		if (pan >= 0) {
 			xc->pan.val = pan;
 		}
@@ -600,76 +562,42 @@ static int read_event_ft2(struct context_data *ctx, const struct xmp_event *e, i
 
 	if (key) {
 		SET(NEW_NOTE);
-
-		if (key == XMP_KEY_OFF) {
-			int env_on = 0;
-			int vol_set = ev.vol != 0 || ev.fxt == FX_VOLSET;
-			struct xmp_envelope *env = NULL;
-
-			/* OpenMPT NoteOffVolume.xm:
-			 * "If an instrument has no volume envelope, a note-off
-			 *  command should cut the sample completely - unless
-			 *  there is a volume command next it. This applies to
-			 *  both volume commands (volume and effect column)."
-			 *
-			 * ...and unless we have a keyoff+delay without setting
-			 * an instrument. See OffDelay.xm.
-			 */
-			if (IS_VALID_INSTRUMENT(xc->ins)) {
-				env = &mod->xxi[xc->ins].aei;
-				if (env->flg & XMP_ENVELOPE_ON) {
-					env_on = 1;
-				}
-			}
-
-			if (env_on || (!vol_set && !ev.ins)) {
-				if (sustain_check(env, xc->v_idx)) {
-					/* See OpenMPT EnvOff.xm. In certain
-					 * cases a release event is effective
-					 * only in the next frame
-					 */
-					SET_NOTE(NOTE_SUSEXIT);
-				} else {
-					SET_NOTE(NOTE_RELEASE);
-				}
-			} else {
-				SET_NOTE(NOTE_FADEOUT);
-			}
-		} else if (key == XMP_KEY_FADE) {
-			/* Handle keyoff + instrument case (NoteOff2.xm) */
-			/* TODO: when an envelope is on sustain this is just
-			 * not how this works (ft2_delay_envelope_sustain.xm).
-			 */
-			SET_NOTE(NOTE_FADEOUT);
-		} else if (is_toneporta) {
-			/* set key to 0 so we can have the tone portamento from
-			 * the original note (see funky_stars.xm pos 5 ch 9)
-			 */
-			key = 0;
-
-			/* And do the same if there's no keyoff (see comic
-			 * bakery remix.xm pos 1 ch 3)
-			 */
-		}
 	}
+	if (key == XMP_KEY_OFF) {
+		struct xmp_envelope *env = NULL;
 
-	if (is_delayed && !ev.ins && !ev.vol && !ev.f2t && key == XMP_KEY_OFF) {
-		/* HACK: if keyoff + noins + no volume column effect + delay
-		 * and no envelope, do not reset envelopes/release/fadeout
-		 * (ft2_delay_envelope_off.xm, ft2_delay_volume_column.xm).
-		 */
 		if (IS_VALID_INSTRUMENT(xc->ins)) {
-			if (~mod->xxi[xc->ins].aei.flg & XMP_ENVELOPE_ON) {
-				is_delayed = 0;
-			}
+			env = &mod->xxi[xc->ins].aei;
 		}
+
+		if (env != NULL && (env->flg & XMP_ENVELOPE_ON)) {
+			if (sustain_check(env, xc->v_idx)) {
+				/* See OpenMPT EnvOff.xm. In certain
+				 * cases a release event is effective
+				 * only in the next frame
+				 */
+				SET_NOTE(NOTE_SUSEXIT);
+			} else {
+				SET_NOTE(NOTE_RELEASE);
+			}
+		} else if (!ev.ins) {
+			/* No volume envelope -> cut volume to 0
+			 * (ft2_note_off_fade.xm, OpenMPT NoteOffVolume.xm). */
+			xc->volume = 0;
+			SET(NEW_VOL);
+		}
+
+		/* Keyoff always begins fadeout (ft2_note_off_fade.xm). */
+		SET_NOTE(NOTE_FADEOUT);
 	}
-	if ((ev.ins && key != XMP_KEY_FADE && !k00) || is_delayed) {
+	if ((ev.ins && key != XMP_KEY_OFF) || is_delayed) {
 		/* Reset release/fadeout for instrument numbers with no keyoff/K00
 		 * (xyce-dans_la_rue.xm chn 0 pat. 0E/0F, chn 10 pat. 0D/0E;
-		 * ft2_k00_defaults.xm; ft2_note_off_sustain.xm)
-		 * and on most delayed rows (ft2_delay_envelope_off.xm,
-		 * ft2_delay_envelope_on.xm, ft2_delay_envelope_sustain.xm).
+		 * ft2_k00_defaults.xm; ft2_note_off_sustain.xm), and on
+		 * delayed rows (ft2_delay_envelope_*.xm, ft2_note_off_fade.xm,
+		 * OpenMPT NoteOff.xm). Other cases like note w/o ins# don't
+		 * reset fadeout (Cave Story - Last Battle.xm pos 11 chn 2,
+		 * ft2_note_no_fadeout_reset.xm).
 		 */
 		xc->fadeout = 0x10000;
 		RESET_NOTE(NOTE_FADEOUT);
@@ -683,6 +611,9 @@ static int read_event_ft2(struct context_data *ctx, const struct xmp_event *e, i
 			 */
 			reset_envelopes(ctx, xc);
 		}
+
+		/* Tremor count resets with fadeout (ft2_tremor_reset.xm). */
+		xc->tremor.count = TREMOR_SUPPRESS;
 	}
 
 	/* Check note */
@@ -694,8 +625,11 @@ static int read_event_ft2(struct context_data *ctx, const struct xmp_event *e, i
 	 *  range, it is ignored completely (wiped from its internal channel
 	 *  memory). The instrument number next it, however, is not affected
 	 *  and remains in the memory."
+	 *
+	 * Do not send a new note for toneporta (Quazar/funky stars.xm pos 5
+	 * ch 9, Mark Birch/comic bakery remix.xm pos 1 ch 3).
 	 */
-	if (IS_VALID_NOTE(key - 1)) {
+	if (IS_VALID_NOTE(key - 1) && !is_toneporta) {
 		int k = key - 1;
 		if (sub != NULL) {
 			int transp = mod->xxi[xc->ins].map[k].xpo;
@@ -707,16 +641,9 @@ static int read_event_ft2(struct context_data *ctx, const struct xmp_event *e, i
 		}
 	}
 
-	if (IS_VALID_NOTE(key - 1)) {
+	if (IS_VALID_NOTE(key - 1) && !is_toneporta) {
 		xc->key = --key;
-		xc->fadeout = 0x10000;
 		RESET_NOTE(NOTE_END);
-
-		if (sub != NULL) {
-			if (~mod->xxi[xc->ins].aei.flg & XMP_ENVELOPE_ON) {
-				RESET_NOTE(NOTE_RELEASE|NOTE_FADEOUT);
-			}
-		}
 
 		if (sub != NULL) {
 			int transp = mod->xxi[xc->ins].map[key].xpo;
@@ -746,10 +673,6 @@ static int read_event_ft2(struct context_data *ctx, const struct xmp_event *e, i
 	if (ev.vol) {
 		xc->volume = ev.vol - 1;
 		SET(NEW_VOL);
-		if (TEST_NOTE(NOTE_END)) {	/* m5v-nine.xm */
-			xc->fadeout = 0x10000;	/* OpenMPT NoteOff.xm */
-			RESET_NOTE(NOTE_RELEASE|NOTE_FADEOUT);
-		}
 	}
 
 	/* FT2: always reset sample offset */
@@ -759,6 +682,16 @@ static int read_event_ft2(struct context_data *ctx, const struct xmp_event *e, i
 	libxmp_process_fx(ctx, xc, chn, &ev, 1);
 	libxmp_process_fx(ctx, xc, chn, &ev, 0);
 	set_period_ft2(ctx, note, sub, xc, is_toneporta);
+
+	if (TEST(NEW_VOL)) {
+		/* Tremor is reset by ins# without keyoff or by delay rows.
+		 * Other events that set volume (volume column/Cxx, keyoff+ins#)
+		 * also temporarily override tremor, but don't reset it.
+		 * (Tremor likely just overwrites the channel volume in FT2.)
+		 * (ft2_tremor_reset.xm, OpenMPT TremorRecover.xm)
+		 */
+		xc->tremor.count |= TREMOR_SUPPRESS;
+	}
 
 	if (sub == NULL) {
 		return 0;

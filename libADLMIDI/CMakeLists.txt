@@ -208,7 +208,7 @@ function(set_visibility_hidden destTarget)
 endfunction()
 #===========================================================================================
 
-if(VITA OR PSP OR NINTENDO_3DS OR NINTENDO_WII OR NINTENDO_WIIU)
+if(VITA OR PSP OR PS2 OR NINTENDO_3DS OR NINTENDO_WII OR NINTENDO_WIIU)
     set(DEFAULT_HEAVY_EMULATORS OFF)
 else()
     set(DEFAULT_HEAVY_EMULATORS ON)
@@ -217,6 +217,7 @@ endif()
 if(NOT EMSCRIPTEN
    AND NOT VITA
    AND NOT PSP
+   AND NOT PS2
    AND NOT NINTENDO_3DS
    AND NOT NINTENDO_WII
    AND NOT NINTENDO_WIIU
@@ -284,6 +285,7 @@ option(ENABLE_ADDRESS_SANITIZER "Enable the Address Sanitizer GCC feature" OFF)
 if(NOT WIN32
    AND NOT VITA
    AND NOT PSP
+   AND NOT PS2
    AND NOT NINTENDO_3DS
    AND NOT NINTENDO_WII
    AND NOT NINTENDO_WIIU
@@ -614,6 +616,23 @@ function(libADLMIDI_find_SDL2)
             string(STRIP ${SDL2_LIBRARIES} SDL2_LIBRARIES)
             target_include_directories(ADLMIDI_SDL2 INTERFACE ${SDL2_INCLUDE_DIRS})
             target_link_libraries(ADLMIDI_SDL2 INTERFACE ${SDL2_LIBRARIES})
+        endif()
+    endif()
+endfunction()
+
+function(libADLMIDI_find_SDL3)
+    if(NOT TARGET ADLMIDI_SDL3)
+        find_package(SDL3 QUIET)
+        if(SDL3_FOUND)
+            add_library(ADLMIDI_SDL3 INTERFACE)
+            if(TARGET SDL3::SDL3)
+                target_link_libraries(ADLMIDI_SDL3 INTERFACE SDL3::SDL3)
+                target_include_directories(ADLMIDI_SDL3 INTERFACE ${SDL3_INCLUDE_DIRS})
+            else()
+                string(STRIP ${SDL3_LIBRARIES} SDL3_LIBRARIES)
+                target_include_directories(ADLMIDI_SDL3 INTERFACE ${SDL3_INCLUDE_DIRS})
+                target_link_libraries(ADLMIDI_SDL3 INTERFACE ${SDL3_LIBRARIES})
+            endif()
         endif()
     endif()
 endfunction()
