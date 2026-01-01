@@ -28,6 +28,7 @@ Stable versions
 	  most notes to play at slightly wrong volumes.
 	- Fix Galaxy Music System 4.0 sample default panning.
 	- Fix Imago Orpheus IMF note 255 (no note, not key off).
+	- Fix Imago Orpheus IMF Ixx/Jxx/Kxx/Lxx memory, Axy when x and y != 0.
 	- Simplify read_event_mod, read_event_st3, read_event_ft2,
 	  read_event_med sample default volume handling.
 	- MED "hold symbols" now apply the referenced instrument's default
@@ -40,6 +41,7 @@ Stable versions
 	- MED: only load long repeat fields for MMD3 modules.
 	- Anticlick decay curves are now applied after IT note cut, DCA note
 	  cut, IT effect S70 (etc.), and API-requested position changes.
+	- XM, MOD: remove QUIRK_FINEFX from QUIRKS_FT2.
 	- XM: channel fade rate is only copied from the instrument on rows
 	  with note + ins. + no toneporta/K00.
 	- XM: zero-length samples cut the channel like invalid instruments.
@@ -75,6 +77,9 @@ Stable versions
 	  (fixes Comic Bakery Remix position 35).
 	- XM: fix Kxx persisting between rows and pattern delay interaction.
 	- XM: fix note without ins# resetting fadeout position and state.
+	- XM: detect more Modplug Tracker XMs via large unused instruments.
+	- XM: handle out-of-range notes more closely to FT2.
+	- XM: fix setting toneporta target with an active invalid instrument.
 	Changes by Alice Rowan and ds-sloth:
 	- Minor Impulse Tracker loader performance improvements.
 

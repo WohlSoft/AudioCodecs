@@ -202,12 +202,19 @@ static void set_period(struct context_data *ctx, int note,
  *  portamento target is valid until a new target is specified by combining a
  *  note and a portamento effect."
  */
-static void set_period_ft2(struct context_data *ctx, int note,
+static void set_period_ft2(struct context_data *ctx, int key, int note,
 				struct xmp_subinstrument *sub,
 				struct channel_data *xc, int is_toneporta)
 {
-	if (note > 0 && is_toneporta) {
-		xc->porta.target = libxmp_note_to_period(ctx, note, xc->finetune,
+	if (IS_VALID_NOTE(key - 1) && is_toneporta) {
+		/* Toneporta target updates even for invalid instruments, using
+		 * the default transpose +0 (ft2_invalid_porta_target.xm). */
+		int n = key - 1;
+		if (sub != NULL) {
+			n += ctx->m.mod.xxi[xc->ins].map[key - 1].xpo;
+			n += sub->xpo;
+		}
+		xc->porta.target = libxmp_note_to_period(ctx, n, xc->finetune,
 								xc->per_adj);
 	}
 	if (sub != NULL && note >= 0) {
@@ -473,7 +480,7 @@ static int read_event_ft2(struct context_data *ctx, const struct xmp_event *e, i
 	if (ev.fxt == FX_EXTENDED && MSN(ev.fxp) == EX_DELAY && LSN(ev.fxp)) {
 		/* No note + delay -> note memory (ft2_delay_note_memory.xm).
 		 * Combined with ins# memory, effectively causes a retrigger. */
-		key = key ? key : xc->key + 1;
+		key = key ? key : xc->key_memory ? xc->key_memory : xc->key + 1;
 
 		/* Key off + no ins# + delay + volume column pan -> ignore pan
 		 * (OpenMPT PanOff.xm) (ft2_delay_volume_column.xm).
@@ -499,9 +506,6 @@ static int read_event_ft2(struct context_data *ctx, const struct xmp_event *e, i
 		}
 	}
 
-	/* Retain previous subinstrument for default volume. */
-	sub = get_subinstrument(ctx, xc->ins, xc->key);
-
 	/* Check instrument
 	 *
 	 * Only update the (sub)instrument if there's a valid note +
@@ -511,34 +515,52 @@ static int read_event_ft2(struct context_data *ctx, const struct xmp_event *e, i
 	if (IS_VALID_NOTE(key - 1) && !is_toneporta) {
 		/* Note w/o instrument loads the last referenced instrument. */
 		int ins = ev.ins ? ev.ins : xc->old_ins;
+		int smp = -1;
+		int n = key - 1;
 
-		/* Note + invalid instrument (either instrument number
-		 * or from memory) activates an invalid instrument
+		/* Updates on note + !toneporta + !K00 and is unaffected by
+		 * out-of-range transposition checks (ft2_note_range.xm). */
+		xc->key_memory = key;
+
+		/* FT2 seems to not have the concept of an "invalid" instrument:
+		 * there are 128 instruments with 16 samples each. The unused
+		 * instruments/samples all have default transpose 0, fadeout
+		 * 0x80, volume 0, panning 0x80, no envelopes, etc. FT2
+		 * activates/plays unused instruments/samples like any other;
+		 * because they do not have sample data, this cuts the channel.
+		 * libxmp represents unused/invalid instruments/samples as -1.
 		 * (test_player_ft2_note_noins_after_invalid_ins)
-		 * (test_player_ft2_note_off_after_invalid_ins).
+		 * (test_player_ft2_note_off_after_invalid_ins)
 		 */
 		if (IS_VALID_INSTRUMENT(ins - 1)) {
-			xc->ins = ins - 1;
-		} else if (ins) {
-			xc->ins = -1;
-		}
-		sub = get_subinstrument(ctx, xc->ins, key - 1);
-
-		/* Only update on new instrument, not on instrument memory. */
-		if (ev.ins) {
-			/* test_player_ft2_instrument_fade_update */
-			xc->ins_fade = sub ? mod->xxi[xc->ins].rls :
-					0x80 /* FT2 default */ << 1 /* conv */;
+			sub = get_subinstrument(ctx, ins - 1, key - 1);
+			if (sub) {
+				n += mod->xxi[ins - 1].map[key - 1].xpo;
+				n += sub->xpo;
+				smp = sub->sid;
+			}
 		}
 
-		/* Playing with an active invalid sample cuts the channel:
-		 * invalid instrument, valid instrument with invalid subins, or
-		 * zero-length sample (test_player_ft2_invalid_ins_defaults).
+		/* Valid notes update the instrument, sample, key, and note.
+		 * Note B-(-1) updates key/instrument/sample, but not the note.
+		 * Notes >A#9, <B-(-1) act as if the key does not exist at all.
+		 * (ft2_note_range.xm, OpenMPT NoteLimit.xm/NoteLimit2.xm)
 		 */
-		if (sub == NULL || !IS_VALID_SAMPLE(sub->sid)) {
-			libxmp_virt_resetchannel(ctx, chn);
+		if (n >= FT2_NOTE_BN1 && n <= FT2_NOTE_AS9) {
+			if (n >= FT2_NOTE_C0) {
+				xc->note = n;
+			}
+			xc->key = key - 1;
+			xc->ins = IS_VALID_INSTRUMENT(ins - 1) ? ins - 1 : -1;
+			xc->smp = IS_VALID_SAMPLE(smp) ? smp : -1;
+		} else {
+			key = 0;
 		}
 	}
+	/* Get the new instrument. If the instrument/key wasn't updated, this
+	 * is equivalent to FT2 retaining the previous instrument/sample. */
+	sub = get_subinstrument(ctx, xc->ins, xc->key);
+
 	if (ev.ins) {
 		int pan;
 		SET(NEW_INS);
@@ -558,11 +580,36 @@ static int read_event_ft2(struct context_data *ctx, const struct xmp_event *e, i
 		}
 	}
 
-	/* Check key off/envelopes */
-
+	/* Check note
+	 *
+	 * Do not send a new note for toneporta (Quazar/funky stars.xm pos 5
+	 * ch 9, Mark Birch/comic bakery remix.xm pos 1 ch 3).
+	 */
 	if (key) {
 		SET(NEW_NOTE);
 	}
+	if (IS_VALID_NOTE(key - 1) && !is_toneporta) {
+		RESET_NOTE(NOTE_END);
+
+		/* Only update on new instrument, not on instrument memory. */
+		/* TODO: probably relocate to defaults, check for note >= 0 */
+		if (ev.ins) {
+			/* test_player_ft2_instrument_fade_update */
+			xc->ins_fade = sub ? mod->xxi[xc->ins].rls :
+					0x80 /* FT2 default */ << 1 /* conv */;
+		}
+
+		/* Send note even if the current sample is invalid.
+		 * Playing with an active invalid sample cuts the channel:
+		 * invalid instrument, valid instrument with invalid subins, or
+		 * zero-length sample (test_player_ft2_invalid_ins_defaults).
+		 */
+		set_patch(ctx, chn, xc->ins, xc->smp, xc->note);
+		note = xc->note;
+	}
+
+	/* Check key off/envelopes */
+
 	if (key == XMP_KEY_OFF) {
 		struct xmp_envelope *env = NULL;
 
@@ -616,57 +663,6 @@ static int read_event_ft2(struct context_data *ctx, const struct xmp_event *e, i
 		xc->tremor.count = TREMOR_SUPPRESS;
 	}
 
-	/* Check note */
-
-	/* Check note range -- from the OpenMPT test NoteLimit.xm:
-	 * "I think one of the first things Fasttracker 2 does when parsing a
-	 *  pattern cell is calculating the “real” note (i.e. pattern note +
-	 *  sample transpose), and if this “real” note falls out of its note
-	 *  range, it is ignored completely (wiped from its internal channel
-	 *  memory). The instrument number next it, however, is not affected
-	 *  and remains in the memory."
-	 *
-	 * Do not send a new note for toneporta (Quazar/funky stars.xm pos 5
-	 * ch 9, Mark Birch/comic bakery remix.xm pos 1 ch 3).
-	 */
-	if (IS_VALID_NOTE(key - 1) && !is_toneporta) {
-		int k = key - 1;
-		if (sub != NULL) {
-			int transp = mod->xxi[xc->ins].map[k].xpo;
-			int k2 = k + sub->xpo + transp;
-			if (k2 < 12 || k2 > 130) {
-				key = 0;
-				RESET(NEW_NOTE);
-			}
-		}
-	}
-
-	if (IS_VALID_NOTE(key - 1) && !is_toneporta) {
-		xc->key = --key;
-		RESET_NOTE(NOTE_END);
-
-		if (sub != NULL) {
-			int transp = mod->xxi[xc->ins].map[key].xpo;
-			int smp;
-
-			note = key + sub->xpo + transp;
-			smp = sub->sid;
-
-			if (!IS_VALID_SAMPLE(smp)) {
-				smp = -1;
-			}
-
-			if (smp >= 0 && smp < mod->smp) {
-				set_patch(ctx, chn, xc->ins, smp, note);
-				xc->smp = smp;
-			}
-		} else {
-			xc->flags = 0;
-		}
-	}
-
-	sub = get_subinstrument(ctx, xc->ins, xc->key);
-
 	set_effect_defaults(ctx, note, sub, xc, is_toneporta);
 
 	/* Process new volume */
@@ -681,7 +677,7 @@ static int read_event_ft2(struct context_data *ctx, const struct xmp_event *e, i
 	/* Secondary effect handled first */
 	libxmp_process_fx(ctx, xc, chn, &ev, 1);
 	libxmp_process_fx(ctx, xc, chn, &ev, 0);
-	set_period_ft2(ctx, note, sub, xc, is_toneporta);
+	set_period_ft2(ctx, key, note, sub, xc, is_toneporta);
 
 	if (TEST(NEW_VOL)) {
 		/* Tremor is reset by ins# without keyoff or by delay rows.
@@ -698,8 +694,6 @@ static int read_event_ft2(struct context_data *ctx, const struct xmp_event *e, i
 	}
 
 	if (note >= 0) {
-		xc->note = note;
-
 		/* From the OpenMPT test cases (3xx-no-old-samp.xm):
 		 * "An offset effect that points beyond the sample end should
 		 *  stop playback on this channel."
