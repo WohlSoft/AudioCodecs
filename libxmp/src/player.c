@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2025 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2026 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -1728,7 +1728,7 @@ static void inject_event(struct context_data *ctx)
  * Sequencing
  */
 
-static void next_order(struct context_data *ctx)
+static void next_order(struct context_data *ctx, int last_ord)
 {
 	struct player_data *p = &ctx->p;
 	struct flow_control *f = &p->flow;
@@ -1759,17 +1759,18 @@ static void next_order(struct context_data *ctx)
 			/* This might be a marker, so delay updating global
 			 * volume until an actual pattern is found */
 			reset_gvol = 1;
+			/* Module restart should always reset the play time. */
+			last_ord = -1;
 		}
 	} while (mod->xxo[p->ord] >= mod->pat);
 
 	if (reset_gvol)
 		p->gvol = m->xxo_info[p->ord].gvl;
 
-#ifndef LIBXMP_CORE_PLAYER
-	/* Archimedes line jump -- don't reset time tracking. */
-	if (f->jump_in_pat != p->ord)
-#endif
-	p->current_time = m->xxo_info[p->ord].time;
+	/* Bxx+Dxx within same position, Archimedes line jump,
+	 * etc. should not reset time tracking. */
+	if (last_ord != p->ord)
+		p->current_time = m->xxo_info[p->ord].time;
 
 	f->num_rows = mod->xxp[mod->xxo[p->ord]]->rows;
 	if (f->jumpline >= f->num_rows)
@@ -1792,8 +1793,6 @@ static void next_order(struct context_data *ctx)
 	}
 
 #ifndef LIBXMP_CORE_PLAYER
-	f->jump_in_pat = -1;
-
 	/* Reset persistent effects at new pattern */
 	if (HAS_QUIRK(QUIRK_PERPAT)) {
 		int chn;
@@ -1808,6 +1807,7 @@ static void next_row(struct context_data *ctx)
 {
 	struct player_data *p = &ctx->p;
 	struct flow_control *f = &p->flow;
+	int last_ord = p->ord;
 
 	p->frame = 0;
 	f->delay = 0;
@@ -1822,7 +1822,7 @@ static void next_row(struct context_data *ctx)
 			f->jump = -1;
 		}
 
-		next_order(ctx);
+		next_order(ctx, last_ord);
 	} else {
 		if (f->rowdelay == 0) {
 			p->row++;
@@ -1838,7 +1838,7 @@ static void next_row(struct context_data *ctx)
 
 		/* check end of pattern */
 		if (p->row >= f->num_rows) {
-			next_order(ctx);
+			next_order(ctx, last_ord);
 		}
 	}
 }
@@ -1869,7 +1869,7 @@ void libxmp_player_set_fadeout(struct context_data *ctx, int chn)
 /* Get frame time for calculation of the current playback time
  * based on the most recent scan. This value should be used for
  * playback time calculation ONLY. */
-static double libxmp_get_frame_time(struct context_data *ctx)
+double libxmp_get_frame_time(struct context_data *ctx)
 {
 	struct player_data *p = &ctx->p;
 	struct module_data *m = &ctx->m;
@@ -1909,9 +1909,15 @@ void libxmp_reset_flow(struct context_data *ctx)
 	f->delay = 0;
 	f->rowdelay = 0;
 	f->rowdelay_set = 0;
-#ifndef LIBXMP_CORE_PLAYER
-	f->jump_in_pat = -1;
-#endif
+	f->force_reposition = 0;
+
+	if (f->loop) {
+		int i;
+		for (i = 0; i < ctx->m.mod.chn; i++) {
+			f->loop[i].start = 0;
+			f->loop[i].count = 0;
+		}
+	}
 }
 
 int xmp_start_player(xmp_context opaque, int rate, int format)
@@ -1937,6 +1943,7 @@ int xmp_start_player(xmp_context opaque, int rate, int format)
 	if (libxmp_mixer_on(ctx, rate, format, m->c4rate) < 0)
 		return -XMP_ERROR_INTERNAL;
 
+	p->time_factor_relative = 1.0;
 	p->master_vol = 100;
 	p->smix_vol = 100;
 	p->gvol = m->volbase;
@@ -1948,13 +1955,12 @@ int xmp_start_player(xmp_context opaque, int rate, int format)
 	p->sequence = 0;
 
 	/* Set default volume and mute status */
-	for (i = 0; i < mod->chn; i++) {
-		if (mod->xxc[i].flg & XMP_CHANNEL_MUTE)
+	for (i = 0; i < XMP_MAX_CHANNELS; i++) {
+		if (i < mod->chn && (mod->xxc[i].flg & XMP_CHANNEL_MUTE)) {
 			p->channel_mute[i] = 1;
-		p->channel_vol[i] = 100;
-	}
-	for (i = mod->chn; i < XMP_MAX_CHANNELS; i++) {
-		p->channel_mute[i] = 0;
+		} else {
+			p->channel_mute[i] = 0;
+		}
 		p->channel_vol[i] = 100;
 	}
 
@@ -2071,8 +2077,9 @@ int xmp_play_frame(xmp_context opaque)
 	}
 
 	/* check reposition */
-	if (p->ord != p->pos) {
+	if (p->ord != p->pos || f->force_reposition) {
 		int start = m->seq_data[p->sequence].entry_point;
+		f->force_reposition = 0;
 
 		if (p->pos == -2) {		/* set by xmp_module_stop */
 			return -XMP_END;	/* that's all folks */
@@ -2092,7 +2099,6 @@ int xmp_play_frame(xmp_context opaque)
 			f->end_point = 0;
 		}
 
-		f->jumpline = 0;
 		f->jump = -1;
 
 		p->ord = p->pos - 1;
@@ -2102,7 +2108,7 @@ int xmp_play_frame(xmp_context opaque)
 			p->ord = start - 1;
 		}
 
-		next_order(ctx);
+		next_order(ctx, -1);
 
 		update_from_ord_info(ctx);
 
@@ -2317,14 +2323,8 @@ void xmp_get_frame_info(xmp_context opaque, struct xmp_frame_info *info)
 	info->time = (int)current_time;
 	info->buffer = s->buffer;
 
-	info->total_size = XMP_MAX_FRAMESIZE;
-	info->buffer_size = s->ticksize;
-	if (~s->format & XMP_FORMAT_MONO) {
-		info->buffer_size *= 2;
-	}
-	if (~s->format & XMP_FORMAT_8BIT) {
-		info->buffer_size *= 2;
-	}
+	info->total_size = s->total_size;
+	info->buffer_size = s->ticksize * s->output_chn * s->sample_size;
 
 	info->volume = p->gvol;
 	info->loop_count = p->loop_count;

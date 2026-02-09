@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2025 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2026 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -161,6 +161,11 @@ static void set_effect_defaults(struct context_data *ctx, int note,
 	xc->arpeggio.val[0] = 0;
 	xc->arpeggio.count = 0;
 	xc->arpeggio.size = 1;
+
+	/* Reset toneporta--each libxmp_process_fx may add to the rate. */
+	if (is_toneporta) {
+		xc->porta.slide = 0;
+	}
 }
 
 static void set_channel_volume(struct channel_data *xc, int vol)
@@ -173,7 +178,9 @@ static void set_channel_volume(struct channel_data *xc, int vol)
 
 static void set_channel_pan(struct channel_data *xc, int pan)
 {
-	/* TODO: LIQ supports surround for default panning. */
+	/* TODO: LIQ supports surround for default panning, unclear if it works.
+	 * TODO: Imago Orpheus only temporarily sets channel panning for
+	 *       instrument numbers with no note. */
 	if (pan >= 0) {
 		xc->pan.val = pan;
 		xc->pan.surround = 0;
@@ -284,6 +291,9 @@ static int read_event_mod(struct context_data *ctx, const struct xmp_event *e, i
 
 	/* Check instrument */
 
+	if (IS_VALID_NOTE(e->note - 1) && !is_toneporta) {
+		xc->key = e->note - 1;
+	}
 	if (e->ins) {
 		int ins = e->ins - 1;
 		SET(NEW_INS);
@@ -295,7 +305,7 @@ static int read_event_mod(struct context_data *ctx, const struct xmp_event *e, i
 		RESET_NOTE(NOTE_RELEASE|NOTE_FADEOUT);
 
 		if (IS_VALID_INSTRUMENT(ins)) {
-			sub = get_subinstrument(ctx, ins, e->note - 1);
+			sub = get_subinstrument(ctx, ins, xc->key);
 
 			if (sub != NULL) {
 				new_swap_ins = 1;
@@ -312,7 +322,8 @@ static int read_event_mod(struct context_data *ctx, const struct xmp_event *e, i
 				 * is not used on split channels
 				 */
 				if (!xc->split && e->note != XMP_KEY_OFF) {
-					xc->volume = sub->vol;
+					set_channel_volume(xc, sub->vol);
+					set_channel_pan(xc, sub->pan);
 				}
 			}
 
@@ -354,7 +365,6 @@ static int read_event_mod(struct context_data *ctx, const struct xmp_event *e, i
 		if (e->note == XMP_KEY_OFF) {
 			SET_NOTE(NOTE_RELEASE);
 		} else if (!is_toneporta && IS_VALID_NOTE(e->note - 1)) {
-			xc->key = e->note - 1;
 			RESET_NOTE(NOTE_END);
 
 			sub = get_subinstrument(ctx, xc->ins, xc->key);
@@ -410,9 +420,8 @@ static int read_event_mod(struct context_data *ctx, const struct xmp_event *e, i
 	}
 
 	/* Process new volume */
+	set_channel_volume(xc, e->vol - 1);
 	if (e->vol) {
-		xc->volume = e->vol - 1;
-		SET(NEW_VOL);
 		/* Farandole Composer - volume resets slide to volume. */
 		RESET_PER(VOL_SLIDE);
 	}
@@ -511,6 +520,13 @@ static int read_event_ft2(struct context_data *ctx, const struct xmp_event *e, i
 
 	if (IS_TONEPORTA(ev.fxt) || IS_TONEPORTA(ev.f2t)) {
 		is_toneporta = 1;
+		/* Mx + 3xx/5xy applies toneporta for both commands, but 3xx
+		 * uses the rate from the volume slot (ft2_double_toneporta.xm,
+		 * OpenMPT TonePortamentoMemory.xm). */
+		if (HAS_QUIRK(QUIRK_FT2BUGS) &&
+		    ev.fxt == FX_TONEPORTA && IS_TONEPORTA(ev.f2t)) {
+			ev.fxp = 0;
+		}
 	}
 
 	/* FT2 deletes K00 and, if there is no volume fx toneporta, overwrites
@@ -683,6 +699,7 @@ static int read_event_ft2(struct context_data *ctx, const struct xmp_event *e, i
 	libxmp_process_fx(ctx, xc, chn, &ev, 1);
 	libxmp_process_fx(ctx, xc, chn, &ev, 0);
 	set_period_ft2(ctx, key, note, sub, xc, is_toneporta);
+	/* TODO: Modplug, MT2, rstST process some FX every tick (affects toneporta memory). */
 
 	if (TEST(NEW_VOL)) {
 		/* Tremor is reset by ins# without keyoff or by delay rows.
@@ -742,6 +759,9 @@ static int read_event_st3(struct context_data *ctx, const struct xmp_event *e, i
 
 	/* Check instrument */
 
+	if (IS_VALID_NOTE(e->note - 1) && !is_toneporta) {
+		xc->key = e->note - 1;
+	}
 	if (e->ins) {
 		int ins = e->ins - 1;
 		SET(NEW_INS);
@@ -760,9 +780,10 @@ static int read_event_st3(struct context_data *ctx, const struct xmp_event *e, i
 			}
 
 			/* Get new instrument volume */
-			sub = get_subinstrument(ctx, ins, e->note - 1);
+			sub = get_subinstrument(ctx, ins, xc->key);
 			if (sub != NULL && e->note != XMP_KEY_OFF) {
-				xc->volume = sub->vol;
+				set_channel_volume(xc, sub->vol);
+				set_channel_pan(xc, sub->pan);
 			}
 		} else {
 			/* Ignore invalid instruments */
@@ -785,7 +806,6 @@ static int read_event_st3(struct context_data *ctx, const struct xmp_event *e, i
 				xc->offset.val = 0;
 			}
 		} else if (IS_VALID_NOTE(e->note - 1)) {
-			xc->key = e->note - 1;
 			RESET_NOTE(NOTE_END);
 
 			sub = get_subinstrument(ctx, xc->ins, xc->key);
@@ -821,15 +841,15 @@ static int read_event_st3(struct context_data *ctx, const struct xmp_event *e, i
 	}
 
 	/* Process new volume */
-	if (e->vol) {
-		xc->volume = e->vol - 1;
-		SET(NEW_VOL);
-	}
+	set_channel_volume(xc, e->vol - 1);
 
 	/* Secondary effect handled first */
 	libxmp_process_fx(ctx, xc, chn, e, 1);
 	libxmp_process_fx(ctx, xc, chn, e, 0);
 	set_period(ctx, note, sub, xc, is_toneporta);
+	/* TODO: Orpheus processes some FX every tick (affects toneporta memory);
+	 * toneporta is additive only if both values are the same (otherwise,
+	 * use the value from slot 2). */
 
 	if (sub == NULL) {
 		return 0;
@@ -1284,10 +1304,7 @@ static int read_event_it(struct context_data *ctx, const struct xmp_event *e, in
 	if (sub != NULL) {
 		if (note >= 0) {
 			/* Reset pan, see OpenMPT PanReset.it */
-			if (sub->pan >= 0) {
-				xc->pan.val = sub->pan;
-				xc->pan.surround = 0;
-			}
+			set_channel_pan(xc, sub->pan);
 
 			if (TEST_NOTE(NOTE_CUT)) {
 				reset_envelopes(ctx, xc);
@@ -1301,8 +1318,7 @@ static int read_event_it(struct context_data *ctx, const struct xmp_event *e, in
 	/* Process new volume */
 	if (ev.vol && (!TEST_NOTE(NOTE_CUT) || ev.ins != 0)) {
 		/* Do this even for XMP_KEY_OFF (see OpenMPT NoteOffInstr.it row 4). */
-		xc->volume = ev.vol - 1;
-		SET(NEW_VOL);
+		set_channel_volume(xc, ev.vol - 1);
 	}
 
 	/* IT: always reset sample offset */
@@ -1310,6 +1326,9 @@ static int read_event_it(struct context_data *ctx, const struct xmp_event *e, in
 
 	/* According to Storlek test 25, Impulse Tracker handles the volume
 	 * column effects after the standard effects.
+	 * TODO: IT updates toneporta memory on first tick but reloads memory
+	 * to use for the rate for both channels every tick afterward.
+	 * TODO: Modplug processes some FX every tick (affects toneporta memory).
 	 */
 	libxmp_process_fx(ctx, xc, chn, &ev, 0);
 	libxmp_process_fx(ctx, xc, chn, &ev, 1);
@@ -1403,7 +1422,7 @@ static int read_event_med(struct context_data *ctx, const struct xmp_event *e, i
 			/* Get new instrument volume */
 			sub = get_subinstrument(ctx, e->ins - 1, e->note - 1);
 			if (sub != NULL) {
-				xc->volume = sub->vol;
+				set_channel_volume(xc, sub->vol);
 			}
 		}
 	}
@@ -1475,10 +1494,7 @@ static int read_event_med(struct context_data *ctx, const struct xmp_event *e, i
 	}
 
 	/* Process new volume */
-	if (e->vol) {
-		xc->volume = e->vol - 1;
-		SET(NEW_VOL);
-	}
+	set_channel_volume(xc, e->vol - 1);
 
 	/* Secondary effect handled first */
 	libxmp_process_fx(ctx, xc, chn, e, 1);
@@ -1589,7 +1605,7 @@ static int read_event_smix(struct context_data *ctx, const struct xmp_event *e, 
 		reset_envelopes(ctx, xc);
 	}
 
-	xc->volume = e->vol - 1;
+	set_channel_volume(xc, e->vol - 1);
 
 	xc->note = note;
 	libxmp_virt_voicepos(ctx, chn, xc->offset.val);

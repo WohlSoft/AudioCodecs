@@ -1,8 +1,33 @@
 Stable versions
 ---------------
 
-4.6.4 (?):
+4.7.0 (?):
 	Changes by Alice Rowan:
+	- Increase maximum sampling rate (XMP_MAX_SRATE) to 768000.
+	  This increases XMP_MAX_FRAMESIZE to 384000. The tick buffers are now
+	  allocated using the player-provided rate instead of XMP_MAX_FRAMESIZE:
+	  the frame info buffer may also be much smaller than XMP_MAX_FRAMESIZE.
+	  In case of existing software misusing the old XMP_MAX_FRAMESIZE, the
+	  minimum value for mixer_data->total_size is the old XMP_MAX_FRAMESIZE
+	  for now.
+	- xmp_seek_time now always seeks (even if the position is the same
+	  as the current position) and uses the start row detected by the scan.
+	- New function: xmp_seek_time_frame, which attempts to seek to the time
+	  requested by the caller within frame precision. This is achieved by
+	  using xmp_seek_time then repeatedly calling xmp_play_frame until the
+	  *next* frame contains the caller-requested time. The caller can then
+	  use xmp_play_frame/xmp_play_buffer to render the requested frame.
+	  WARNING: this is more computationally expensive than xmp_seek_time.
+	- New function: xmp_set_tempo_factor_relative, to set a relative
+	  tempo factor without clobbering the module's tempo factor.
+	- New function: xmp_get_tempo_factor, to get the base tempo factor
+	  set by loading a module or by xmp_set_tempo_factor.
+	- New function: xmp_get_tempo_factor_relative, to get the relative
+	  tempo factor set by xmp_start_player/xmp_set_tempo_factor_relative.
+	- New API define: XMP_FORMAT_32BIT for xmp_start_player to enable
+	  32-bit integer output.
+	- New API define: XMP_INST_NO_DEFAULT_PAN for xmp_subinstrument::pan
+	- New API defines: XMP_MARK_SKIP and XMP_MARK_END for xmp_module::xxo
 	- Add support for Pack-Ice ("Ice!", "ICE!") depacking.
 	- Add support for Software Visions DMF (Apocalypse Abyss MOD variant).
 	- Replace kernel list helper in iff.c with custom list management
@@ -21,14 +46,18 @@ Stable versions
 	  non-delta coded samples, and instrument flags.
 	- Correct default of sample default panning values to -1 (no default
 	  panning) for most module formats.
+	- Fix DigiBooster Pro sample default panning.
 	- Fix DigiBooster Pro note 0x1f (key off) and misc. other tidying.
+	- Fix Funktracker sample default panning.
 	- Fix FunkTracker Fk** and DOS32 initial channel panning.
 	- Fix FunkTracker notes 0x3d (partial fix) and 0x3e.
 	- Fix FunkTracker injecting sample default volume into events, causing
 	  most notes to play at slightly wrong volumes.
 	- Fix Galaxy Music System 4.0 sample default panning.
+	- Fix Imago Orpheus IMF sample default panning.
 	- Fix Imago Orpheus IMF note 255 (no note, not key off).
 	- Fix Imago Orpheus IMF Ixx/Jxx/Kxx/Lxx memory, Axy when x and y != 0.
+	- Fix Liquid Tracker LIQ sample default panning.
 	- Simplify read_event_mod, read_event_st3, read_event_ft2,
 	  read_event_med sample default volume handling.
 	- MED "hold symbols" now apply the referenced instrument's default
@@ -81,6 +110,25 @@ Stable versions
 	- XM: handle out-of-range notes more closely to FT2.
 	- XM: fix setting toneporta target with an active invalid instrument.
 	- XM: implement FT2-style offset effect memory (QUIRK_FT2BUGS only).
+	- Sum toneporta rates when toneporta is present in both effects slots
+	  in an event; FT2 bug emulation for double toneporta now zeroes the
+	  parameter of 3xx in the player instead of using a loader hack. This
+	  doesn't affect Ultra Tracker toneporta.
+	- XMF: toneporta is identical to Ultra Tracker toneporta (slightly
+	  affects max.xmf pos 13+, but the notes are out-of-tune either way).
+	- Fix time tracking bugs in some complex pattern loop cases.
+	- Fix time tracking bugs when Bxx+Dxx jumps within the same position.
+	- Dxx (S3M/IT: Cxx) followed by Byy on the same row now jumps to pos Y
+	  row X for S3M, IT, ModPlug XM, and Skale Tracker XM modules.
+	- IT: fix importing channel initial panning for muted channels.
+	- IT: fix playing instruments with samples >=120 in the key map.
+	- MTM: fix pattern break hex parameter.
+	- PTM: actually fix pattern break hex parameter.
+	- STM: always use 0 for pattern break parameter (ST2 ignores it).
+	- STM: import ST2 tempo values as both speed and BPM.
+	- GDM: don't zero channel volume for muted channels.
+	- Fix xmp_start_player not unmuting non-muted channels (regression
+	  introduced in 4.5.0).
 	Changes by Alice Rowan and ds-sloth:
 	- Minor Impulse Tracker loader performance improvements.
 

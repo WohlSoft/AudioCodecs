@@ -115,14 +115,13 @@ error. Error codes are::
 If a system error occurs, the specific error is set in ``errno``.
 
 Parameters to `xmp_start_player()`_ are the sampling
-rate (up to 48kHz) and a bitmapped integer holding one or more of the
+rate (up to 768kHz) and a bitmapped integer holding one or more of the
 following mixer flags::
 
-  XMP_MIX_8BIT          /* Mix to 8-bit instead of 16 */
-  XMP_MIX_UNSIGNED      /* Mix to unsigned samples */
-  XMP_MIX_MONO          /* Mix to mono instead of stereo */
-  XMP_MIX_NEAREST       /* Mix using nearest neighbor interpolation */
-  XMP_MIX_NOFILTER      /* Disable lowpass filter */
+  XMP_FORMAT_8BIT       /* Mix to 8-bit instead of 16 */
+  XMP_FORMAT_UNSIGNED   /* Mix to unsigned samples */
+  XMP_FORMAT_MONO       /* Mix to mono instead of stereo */
+  XMP_FORMAT_32BIT      /* Mix to 32-bit integer instead of 16 */
 
 After `xmp_start_player()`_ is called, each call to `xmp_play_frame()`_
 will render an audio frame. Call `xmp_get_frame_info()`_ to retrieve the
@@ -532,6 +531,8 @@ void xmp_scan_module(xmp_context c)
   if `xmp_set_player()`_ is used to change player timing (with parameter
   ``XMP_PLAYER_VBLANK``) in libxmp 4.0.2 or older, or if
   `xmp_set_tempo_factor()`_ is used to change the base tempo factor.
+  The scan is unaffected by the relative tempo factor set by
+  `xmp_set_tempo_factor_relative()`_.
 
   **Parameters:**
     :c: the player context handle.
@@ -600,7 +601,7 @@ int xmp_start_player(xmp_context c, int rate, int format)
     :c: the player context handle.
 
     :rate: the sampling rate to use, in Hz (typically 44100). Valid values
-       range from 8kHz to 48kHz.
+       range from 8kHz to 768kHz.
 
     :flags: bitmapped configurable player flags, one or more of the
       following::
@@ -608,6 +609,7 @@ int xmp_start_player(xmp_context c, int rate, int format)
         XMP_FORMAT_8BIT         /* Mix to 8-bit instead of 16 */
         XMP_FORMAT_UNSIGNED     /* Mix to unsigned samples */
         XMP_FORMAT_MONO         /* Mix to mono instead of stereo */
+        XMP_FORMAT_32BIT        /* Mix to 32-bit integer instead of 16 */
 
   **Returns:**
     0 if successful, or a negative error code in case of error.
@@ -710,7 +712,9 @@ void xmp_get_frame_info(xmp_context c, struct xmp_frame_info \*info)
       This function should be used to retrieve sound buffer data after
       `xmp_play_frame()`_ is called. Fields ``buffer`` and ``buffer_size``
       contain the pointer to the sound buffer PCM data and its size. The
-      buffer size will be no larger than ``XMP_MAX_FRAMESIZE``.
+      buffer size will be no larger than ``XMP_MAX_FRAMESIZE``; typically,
+      it will be much smaller than ``XMP_MAX_FRAMESIZE`` unless very large
+      sampling rates are used.
       Fields ``time``, ``total_time``, and ``frame_time`` are based on the
       base tempo factor set when the module was last scanned (see
       `xmp_set_tempo_factor()`_ and `xmp_scan_module()`_).
@@ -738,9 +742,12 @@ int xmp_next_position(xmp_context c)
 ````````````````````````````````````
 
   Skip replay to the start of the next position.
-  If the module was stopped with ``xmp_stop_module``, this operation
+  If the module was stopped with `xmp_stop_module()`_, this operation
   restarts the module at position 0. If the module is restarting
   at position 0, this operation does nothing.
+
+  libxmp functions that set the current position do not fully take effect until
+  the next `xmp_play_frame()`_ or `xmp_play_buffer()`_ call.
 
   **Parameters:**
     :c: the player context handle.
@@ -755,9 +762,12 @@ int xmp_prev_position(xmp_context c)
 ````````````````````````````````````
 
   Skip replay to the start of the previous position.
-  If the module was stopped with ``xmp_stop_module``, is restarting at
+  If the module was stopped with `xmp_stop_module()`_, is restarting at
   position 0, or if the previous position is part of a different sequence,
   this operation does nothing.
+
+  libxmp functions that set the current position do not fully take effect until
+  the next `xmp_play_frame()`_ or `xmp_play_buffer()`_ call.
 
   **Parameters:**
     :c: the player context handle.
@@ -772,8 +782,11 @@ int xmp_set_position(xmp_context c, int pos)
 ````````````````````````````````````````````
 
   Skip replay to the start of the given position.
-  If the module was stopped with ``xmp_stop_module``, this operation
+  If the module was stopped with `xmp_stop_module()`_, this operation
   will restart the module at the destination position.
+
+  libxmp functions that set the current position do not fully take effect until
+  the next `xmp_play_frame()`_ or `xmp_play_buffer()`_ call.
 
   **Parameters:**
     :c: the player context handle.
@@ -817,6 +830,8 @@ int xmp_set_tempo_factor(xmp_context c, double val)
   `xmp_get_frame_info()`_. To recalculate these times, call
   `xmp_scan_module()`_ after setting the tempo factor.
 
+  To set a relative tempo factor, see `xmp_set_tempo_factor_relative()`_.
+
   **Parameters:**
     :c: the player context handle.
 
@@ -825,6 +840,65 @@ int xmp_set_tempo_factor(xmp_context c, double val)
   **Returns:**
     0 on success, -1 if value is invalid, or ``-XMP_ERROR_STATE`` if
     the player is not in the playing state.
+
+.. _xmp_set_tempo_factor_relative():
+
+int xmp_set_tempo_factor_relative(xmp_context c, double val)
+````````````````````````````````````````````````````````````
+
+  *[Added in libxmp 4.7]* Set a relative tempo multiplier. This value
+  will be multiplied against the base tempo multiplier (as set by
+  loading a module or calling `xmp_set_tempo_factor()_`) when
+  calculating the duration of the next tick. This value does not
+  affect the times reported by scanning the module, even if
+  `xmp_scan_module()`_ is called. The default relative tempo factor
+  value is ``1.0``, and it is reset to this value every time
+  `xmp_start_player()`_ is called.
+
+  Relative tempo factors between ``0.1`` and ``2.0`` should work with
+  the default base tempo multiplier, but more extreme values are not
+  guaranteed to work.
+
+  To set the base tempo factor, see `xmp_set_tempo_factor()`_.
+
+  **Parameters:**
+    :c: the player context handle.
+
+    :val: the new multiplier.
+
+  **Returns:**
+    0 on success, -1 if value is invalid, or ``-XMP_ERROR_STATE`` if
+    the player is not in the playing state.
+
+.. _xmp_get_tempo_factor():
+
+double xmp_get_tempo_factor(xmp_context c)
+``````````````````````````````````````````
+
+  *[Added in libxmp 4.7]* Get the base tempo multiplier, as set by
+  loading a module or after calling `xmp_set_tempo_factor()`_.
+
+  **Parameters:**
+    :c: the player context handle.
+
+  **Returns:**
+    the current base time factor on success or ``-1.0 * XMP_ERROR_STATE``
+    if the player is not in either the loaded or the playing states.
+
+.. _xmp_get_tempo_factor_relative():
+
+double xmp_get_tempo_factor_relative(xmp_context c)
+````````````````````````````````````````````````````````````
+
+  *[Added in libxmp 4.7]* Get the relative tempo multiplier, as set by
+  `xmp_start_player()`_ or after calling `xmp_set_tempo_factor_relative()`_.
+
+  **Parameters:**
+    :c: the player context handle.
+
+  **Returns:**
+    the current relative time factor on success or ``-1.0 * XMP_ERROR_STATE``
+    if the player is not in the playing state.
 
 .. _xmp_stop_module():
 
@@ -843,6 +917,9 @@ void xmp_restart_module(xmp_context c)
 
   Restart the currently playing module.
 
+  libxmp functions that set the current position do not fully take effect until
+  the next `xmp_play_frame()`_ or `xmp_play_buffer()`_ call.
+
   **Parameters:**
     :c: the player context handle.
 
@@ -851,7 +928,41 @@ void xmp_restart_module(xmp_context c)
 int xmp_seek_time(xmp_context c, int time)
 ``````````````````````````````````````````
 
-  Skip replay to the specified time.
+  Skip replay to the specified time. This function sets the current position to
+  the position closest to the specified time in the current sequence. This
+  function is fast, but not particularly precise; it does not process any
+  frames to seek closer to the requested time. For a more accurate (but much
+  slower) function, see `xmp_seek_time_frame()`_.
+
+  libxmp functions that set the current position do not fully take effect until
+  the next `xmp_play_frame()`_ or `xmp_play_buffer()`_ call.
+
+  **Parameters:**
+    :c: the player context handle.
+
+    :time: time to seek in milliseconds.
+
+  **Returns:**
+    The new position index, or ``-XMP_ERROR_STATE`` if the player is not
+    in playing state.
+
+.. _xmp_seek_time_frame():
+
+int xmp_seek_time_frame(xmp_context c, int time)
+````````````````````````````````````````````````
+
+  Skip replay to the specified time. This function sets the current position to
+  the position closest to the specified time in the current sequence, then
+  plays frames as-needed (via `xmp_play_frame()`_) until the player is
+  positioned at the frame containing the requested time. The caller can then
+  render this frame with a subsequent call to `xmp_play_frame()`_ or
+  `xmp_play_buffer()`_.
+
+  *Warning:* this function is computationally expensive. It is not
+  guaranteed to call `xmp_play_frame()`_, but may call it numerous times.
+
+  libxmp functions that set the current position do not fully take effect until
+  the next `xmp_play_frame()`_ or `xmp_play_buffer()`_ call.
 
   **Parameters:**
     :c: the player context handle.
@@ -874,8 +985,8 @@ int xmp_channel_mute(xmp_context c, int chn, int status)
 
     :chn: the channel to mute or unmute.
 
-    :status: 0 to mute channel, 1 to unmute, 2 the inverse of the current channel status, or -1 to query the
-      current channel status.
+    :status: 0 to mute channel, 1 to unmute, 2 the inverse of the current
+      channel status, or -1 to query the current channel status.
 
   **Returns:**
     The previous channel status, or ``-XMP_ERROR_STATE`` if the player is not
@@ -1098,7 +1209,8 @@ int xmp_set_player(xmp_context c, int param, int val)
 
       By default, formats similar to S3M such as PTM or IMF will use S3M
       replayer (without Scream Tracker 3 quirks/bug emulation), and formats
-      similar to XM such as RTM and MDL will use the XM replayer (without             FT2 quirks/bug emulation).
+      similar to XM such as RTM and MDL will use the XM replayer (without
+      FT2 quirks/bug emulation).
 
       Multichannel MOD files will use the XM replayer, and Scream Tracker 3
       MOD files will use S3M replayer with ST3 quirks. S3M files will use

@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2025 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2026 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -657,7 +657,7 @@ static int mod_load(struct module_data *m, HIO_HANDLE *f, const int start)
 		XMP_SAMPLE_LOOP : 0;
 	sub->fin = (int8)(mh.ins[i].finetune << 4);
 	sub->vol = mh.ins[i].volume;
-	sub->pan = NO_SAMPLE_PANNING;
+	sub->pan = XMP_INST_NO_DEFAULT_PAN;
 	sub->sid = i;
 	libxmp_instrument_name(mod, i, mh.ins[i].name, 22);
 
@@ -986,6 +986,7 @@ skip_test:
 	if (detected) {
 		m->flow_mode = FLOW_MODE_OCTALYSER;
 	}
+	/* TODO: hexadecimal pattern break parameter. */
 	break;
     case TRACKER_DIGITALTRACKER:
 	tracker = "Digital Tracker";
