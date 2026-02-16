@@ -5,6 +5,8 @@
 # Regarding POWER/PowerPC, just as is noted in the Qt source,
 # "There are many more known variants/revisions that we do not handle/detect."
 
+# FIXME: properly detect armv7l and armv7hf to properly detect possibility of asm optimisations
+
 set(archdetect_c_code "
 #if defined(__arm__) || defined(__TARGET_ARCH_ARM) || defined(__ARM_ARCH)
     #if defined(__ARM_ARCH_8__) \\
