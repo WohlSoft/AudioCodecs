@@ -67,7 +67,7 @@ include_directories(
 
 target_include_directories(vorbis PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(vorbisfile PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_include_directories(vorbisfile PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(vorbisenc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 install(TARGETS vorbis vorbisfile vorbisenc
         LIBRARY DESTINATION "lib"
