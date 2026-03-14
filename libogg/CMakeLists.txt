@@ -8,6 +8,10 @@ set(CMAKE_C_STANDARD 90)
 add_library(ogg STATIC
     src/bitwise.c
     src/framing.c
+    src/crctable.h
+    include/ogg/config_types.h
+    include/ogg/ogg.h
+    include/ogg/os_types.h
 )
 
 if(OGG_UNSAFE_DISABLE_CRC)

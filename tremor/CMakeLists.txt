@@ -31,6 +31,23 @@ add_library(vorbisidec STATIC
     registry.c
     sharedbook.c
     vorbisfile.c
+
+    asm_arm.h
+    backends.h
+    block.h
+    codebook.h
+    codec_internal.h
+    config_types.h
+    ivorbiscodec.h
+    ivorbisfile.h
+    lsp_lookup.h
+    mdct.h
+    mdct_lookup.h
+    misc.h
+    os.h
+    registry.h
+    window.h
+    window_lookup.h
 )
 
 target_include_directories(vorbisidec PRIVATE

@@ -28,6 +28,7 @@ if(MSVC)
 endif()
 
 add_library(vorbis STATIC
+    include/vorbis/codec.h
     lib/analysis.c
     lib/bitrate.c
     lib/block.c
@@ -48,14 +49,58 @@ add_library(vorbis STATIC
     lib/smallft.c
     lib/synthesis.c
     lib/window.c
+    lib/backends.h
+    lib/bitrate.h
+    lib/codebook.h
+    lib/codec_internal.h
+    lib/envelope.h
+    lib/highlevel.h
+    lib/lookup.h
+    lib/lookup_data.h
+    lib/lpc.h
+    lib/lsp.h
+    lib/masking.h
+    lib/mdct.h
+    lib/misc.h
+    lib/os.h
+    lib/psy.h
+    lib/registry.h
+    lib/scales.h
+    lib/smallft.h
+    lib/window.h
+    lib/modes/floor_all.h
+    lib/modes/psych_8.h
+    lib/modes/psych_11.h
+    lib/modes/psych_16.h
+    lib/modes/psych_44.h
+    lib/modes/residue_8.h
+    lib/modes/residue_16.h
+    lib/modes/residue_44.h
+    lib/modes/residue_44p51.h
+    lib/modes/residue_44u.h
+    lib/modes/setup_8.h
+    lib/modes/setup_11.h
+    lib/modes/setup_16.h
+    lib/modes/setup_22.h
+    lib/modes/setup_32.h
+    lib/modes/setup_44.h
+    lib/modes/setup_44p51.h
+    lib/modes/setup_44u.h
+    lib/modes/setup_X.h
+    lib/books/coupled/res_books_51.h
+    lib/books/coupled/res_books_stereo.h
+    lib/books/floor/floor_books.h
+    lib/books/uncoupled/res_books_uncoupled.h
 )
 
 add_library(vorbisfile STATIC
     lib/vorbisfile.c
+    include/vorbis/vorbisfile.h
 )
 
 add_library(vorbisenc STATIC
     lib/vorbisenc.c
+    include/vorbis/vorbisenc.h
 )
 
 include_directories(
