@@ -117,7 +117,6 @@ set(libgme_SRCS
     src/Nes_Fds_Apu.cpp
     src/Nes_Vrc7_Apu.cpp
     src/ext/emu2413.c
-    src/ext/panning.c
     src/Sap_Apu.cpp
     src/Sap_Cpu.cpp
     src/Sap_Emu.cpp
