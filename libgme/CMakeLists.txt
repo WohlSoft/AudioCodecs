@@ -98,6 +98,7 @@ set(libgme_SRCS
     src/Gme_File.cpp
     src/Gym_Emu.cpp
     src/Hes_Apu.cpp
+    src/Hes_Apu_Adpcm.cpp
     src/Hes_Cpu.cpp
     src/Hes_Emu.cpp
     src/Kss_Cpu.cpp
