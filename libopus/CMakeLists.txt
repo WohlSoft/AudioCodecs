@@ -532,13 +532,14 @@ list(APPEND OPUS_SRC
     src/opus_projection_decoder.c
     src/opus_projection_encoder.c
     src/repacketizer.c
+    src/mapping_matrix.c
 )
 
-if(ENABLE_EXPERIMENTAL_AMBISONICS)
-    list(APPEND OPUS_SRC
-        src/mapping_matrix.c
-    )
-endif()
+# if(ENABLE_EXPERIMENTAL_AMBISONICS)
+#     list(APPEND OPUS_SRC
+#         src/mapping_matrix.c
+#     )
+# endif()
 
 list(APPEND OPUS_SRC
     celt/bands.c
