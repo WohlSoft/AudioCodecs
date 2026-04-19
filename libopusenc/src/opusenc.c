@@ -1176,7 +1176,6 @@ static void extend_signal(float *x, int before, int after, int channels) {
   if (after==0) return;
   before = MIN(before, LPC_INPUT);
   if (before < 4*LPC_ORDER) {
-    int i;
     for (i=0;i<after*channels;i++) x[i] = 0;
     return;
   }
