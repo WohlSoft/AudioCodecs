@@ -119,6 +119,11 @@ if(BUILD_MPG123)
     unset(IPV6)
 endif()
 
+option(BUILD_MP3LAME "Enable building of Lame MP3 Encoder" OFF)
+if(BUILD_MPG123)
+    add_subdirectory(liblamemp3)
+endif()
+
 option(BUILD_GME "Enable building of GME" ON)
 option(BUILD_GME_SYSTEM_ZLIB "Use ZLib from the system for GME" OFF)
 if(BUILD_GME)

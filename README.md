@@ -34,7 +34,7 @@ cd AudioCodecs
 mkdir build
 cd build
 
-# Step 3: Configure project ()
+# Step 3: Configure project (build a basic set of decoders)
 cmake ..
 
 # Step 4: Build
@@ -55,7 +55,7 @@ cd AudioCodecs
 mkdir build
 cd build
 
-# Step 3: Configure project ()
+# Step 3: Configure project (build a basic set of decoders)
 cmake -DUSE_LOCAL_SDL2=ON -DCMAKE_INSTALL_PREFIX=~/AudioCodecs/ ..
 
 # Step 4: Build and install
@@ -85,7 +85,7 @@ rem Step 2: PRepare build directory
 mkdir build
 cd build
 
-rem Step 3: Configure project
+rem Step 3: Configure project (build a basic set of decoders)
 cmake -G "MinGW Makefiles" -DUSE_LOCAL_SDL2=ON -DCMAKE_INSTALL_PREFIX=%UserProfile%\MyLibs\ ..
 
 rem Step 4: Build and install
@@ -99,7 +99,7 @@ rem Step 1: Download repository
 git clone https://github.com/WohlSoft/AudioCodecs.git
 cd AudioCodecs
 
-rem Step 2: PRepare build directory
+rem Step 2: Prepare build directory
 mkdir build
 cd build
 rem Important: You must to set the MinGW-w64 path first, also you must to remove a git from PATH if it is set
@@ -120,7 +120,7 @@ rem Step 1: Download repository
 git clone https://github.com/WohlSoft/AudioCodecs.git
 cd AudioCodecs
 
-rem Step 2: PRepare build directory
+rem Step 2: Prepare build directory
 mkdir build
 cd build
 
@@ -143,6 +143,7 @@ rem Tip: instead of "release" you can have "debug" to build debug versions. Inst
 * **libGME:** GNU LGPLv2.1+
 * **libModPlug:** Public Domain
 * **libMPG123:** GNU LGPLv2.1
+* **libMP3Lame:** GNU GPLv2+
 * **libOGG:** BSD 3-clause "New" or "Revised" License
 * **libOpenMPT:** BSD
 * **libOPNMIDI:** GNU LGPLv3+ or GNU GPLv3+
@@ -192,3 +193,5 @@ rem Tip: instead of "release" you can have "debug" to build debug versions. Inst
 (These libraries has the viral GPL license and you can use these libraries in libre projects only with applying the GPL license to the whole project)
 * libADLMIDI
 * libOPNMIDI
+* libMP3Lame
+
