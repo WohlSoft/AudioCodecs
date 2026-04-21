@@ -1,6 +1,6 @@
 /* Game music emulator library C interface (also usable from C++) */
 
-/* Game_Music_Emu 0.6.4 */
+/* Game_Music_Emu 0.6.5 */
 #ifndef GME_H
 #define GME_H
 
@@ -8,7 +8,7 @@
 	extern "C" {
 #endif
 
-#define GME_VERSION 0x000604 /* 1 byte major, 1 byte minor, 1 byte patch-level */
+#define GME_VERSION 0x000605 /* 1 byte major, 1 byte minor, 1 byte patch-level */
 
 /* Error string returned by library functions, or NULL if no error (success) */
 typedef const char* gme_err_t;
