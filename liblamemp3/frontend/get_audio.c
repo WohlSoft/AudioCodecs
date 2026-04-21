@@ -1376,13 +1376,13 @@ static int const WAV_ID_FMT = 0x666d7420; /* "fmt " */
 static int const WAV_ID_DATA = 0x64617461; /* "data" */
 
 #ifndef WAVE_FORMAT_PCM
-static short const WAVE_FORMAT_PCM = 0x0001;
+static unsigned short const WAVE_FORMAT_PCM = 0x0001;
 #endif
 #ifndef WAVE_FORMAT_IEEE_FLOAT
-static short const WAVE_FORMAT_IEEE_FLOAT = 0x0003;
+static unsigned short const WAVE_FORMAT_IEEE_FLOAT = 0x0003;
 #endif
 #ifndef WAVE_FORMAT_EXTENSIBLE
-static short const WAVE_FORMAT_EXTENSIBLE = 0xFFFE;
+static unsigned short const WAVE_FORMAT_EXTENSIBLE = 0xFFFE;
 #endif
 
 
@@ -1448,7 +1448,7 @@ parse_wave_header(lame_global_flags * gfp, FILE * sf)
             subSize -= 2;
 
             /* WAVE_FORMAT_EXTENSIBLE support */
-            if ((subSize > 9) && (format_tag == WAVE_FORMAT_EXTENSIBLE)) {
+            if ((subSize > 9) && (format_tag == (int)WAVE_FORMAT_EXTENSIBLE)) {
                 read_16_bits_low_high(sf); /* cbSize */
                 read_16_bits_low_high(sf); /* ValidBitsPerSample */
                 read_32_bits_low_high(sf); /* ChannelMask */
@@ -1485,7 +1485,7 @@ parse_wave_header(lame_global_flags * gfp, FILE * sf)
         if (format_tag == 0x0050 || format_tag == 0x0055) {
             return sf_mp123;
         }
-        if (format_tag != WAVE_FORMAT_PCM && format_tag != WAVE_FORMAT_IEEE_FLOAT) {
+        if (format_tag != (int)WAVE_FORMAT_PCM && format_tag != (int)WAVE_FORMAT_IEEE_FLOAT) {
             if (global_ui_config.silent < 10) {
                 error_printf("Unsupported data format: 0x%04X\n", format_tag);
             }
@@ -1506,7 +1506,7 @@ parse_wave_header(lame_global_flags * gfp, FILE * sf)
         }
         global. pcmbitwidth = bits_per_sample;
         global. pcm_is_unsigned_8bit = 1;
-        global. pcm_is_ieee_float = (format_tag == WAVE_FORMAT_IEEE_FLOAT ? 1 : 0);
+        global. pcm_is_ieee_float = (format_tag == (int)WAVE_FORMAT_IEEE_FLOAT ? 1 : 0);
         if (data_length == MAX_U_32_NUM)
             (void) lame_set_num_samples(gfp, MAX_U_32_NUM);
         else

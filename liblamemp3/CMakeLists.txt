@@ -29,6 +29,7 @@ if(NOT MSVC)
     ac_disable_c_warning_flag("unused-but-set-variable" UNUSED_BUT_SET_VARIABLE)
     ac_disable_c_warning_flag("shift-negative-value" SHIFT_NEGATIVE_VALUE)
     ac_disable_c_warning_flag("shadow" SHADOW)
+    ac_disable_c_warning_flag("empty-body" EMPTY_BODY)
 endif()
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/config.tests/TargetArch.cmake)
@@ -48,9 +49,14 @@ set(PACKAGE_STRING "\"${PACKAGE_NAME} v.${PACKAGE_VERSION}\"")
 set(PACKAGE_NAME "\"${PACKAGE_NAME}\"")
 set(PACKAGE_VERSION "\"${PACKAGE_VERSION}\"")
 
-option(DECODE_ON_THE_FLY "Allow to compute a more accurate replaygain value" ON)
-if(DECODE_ON_THE_FLY)
+option(LAME_BUILD_TOOL "Enable building of the console tool" OFF)
+option(LAME_ENABLE_DECODER "Enable linking to decoder to increase the  replaygain value accuracy" ON)
+if(LAME_ENABLE_DECODER)
+    set(HAVE_MPGLIB 1)
     set(DECODE_ON_THE_FLY 1)
+else()
+    unset(HAVE_MPGLIB)
+    unset(DECODE_ON_THE_FLY)
 endif()
 
 check_include_files(alloca.h HAVE_ALLOCA_H)
@@ -207,6 +213,31 @@ set(LIBLAME_SRC
     include/lame.h
 )
 
+if(LAME_ENABLE_DECODER)
+    list(APPEND LIBLAME_SRC
+        mpglib/common.c
+        mpglib/common.h
+        mpglib/dct64_i386.c
+        mpglib/dct64_i386.h
+        mpglib/decode_i386.c
+        mpglib/decode_i386.h
+        mpglib/huffman.h
+        mpglib/interface.c
+        mpglib/interface.h
+        mpglib/l2tables.h
+        mpglib/layer1.c
+        mpglib/layer1.h
+        mpglib/layer2.c
+        mpglib/layer2.h
+        mpglib/layer3.c
+        mpglib/layer3.h
+        mpglib/mpg123.h
+        mpglib/mpglib.h
+        mpglib/tabinit.c
+        mpglib/tabinit.h
+    )
+endif()
+
 if(WIN32)
     list(APPEND LIBLAME_SRC libmp3lame/lame.rc libmp3lame/logoe.ico)
 endif()
@@ -214,6 +245,48 @@ endif()
 add_library(mp3lame STATIC ${LIBLAME_SRC})
 target_compile_definitions(mp3lame PRIVATE -DHAVE_CONFIG_H)
 target_include_directories(mp3lame PUBLIC include ${CMAKE_CURRENT_BINARY_DIR}/config/)
+
+if(LAME_ENABLE_DECODER)
+    target_include_directories(mp3lame PRIVATE mpglib libmp3lame)
+endif()
+
+if(LAME_BUILD_TOOL)
+    add_executable(lame
+    #    frontend/amiga_mpega.c
+        frontend/brhist.c
+        frontend/brhist.h
+        frontend/console.c
+        frontend/console.h
+        frontend/get_audio.c
+        frontend/get_audio.h
+    #    frontend/gpkplotting.c
+    #    frontend/gpkplotting.h
+    #    frontend/gtkanal.c
+    #    frontend/gtkanal.h
+        frontend/lame_main.c
+        frontend/lametime.c
+        frontend/lametime.h
+        frontend/main.c
+        frontend/main.h
+    #    frontend/mp3rtp.c
+    #    frontend/mp3x.c
+        frontend/parse.c
+        frontend/parse.h
+    #    frontend/rtp.c
+    #    frontend/rtp.h
+        frontend/timestatus.c
+        frontend/timestatus.h
+    )
+
+    target_compile_definitions(lame PRIVATE -DHAVE_CONFIG_H)
+    target_include_directories(lame PUBLIC include libmp3lame ${CMAKE_CURRENT_BINARY_DIR}/config/)
+    target_link_libraries(lame PRIVATE mp3lame)
+    if(HAVE_LIBM)
+        target_link_libraries(lame PRIVATE m)
+    endif()
+    
+    install(TARGETS lame RUNTIME DESTINATION "bin")
+endif()
 
 install(TARGETS mp3lame
         LIBRARY DESTINATION "lib"

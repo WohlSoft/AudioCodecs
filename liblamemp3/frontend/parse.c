@@ -259,8 +259,8 @@ char* toUtf16( char* src )
         if (dst != 0) {
             char* cur_code = nl_langinfo(CODESET);
             iconv_t xiconv = iconv_open("UTF-16LE//TRANSLIT", cur_code);
-            dst[0] = 0xff;
-            dst[1] = 0xfe;
+            dst[0] = (char)0xff;
+            dst[1] = (char)0xfe;
             if (xiconv != (iconv_t)-1) {
                 char* i_ptr = (char*)src;
                 char* o_ptr = &dst[2];
