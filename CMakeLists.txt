@@ -120,7 +120,7 @@ if(BUILD_MPG123)
 endif()
 
 option(BUILD_MP3LAME "Enable building of Lame MP3 Encoder" OFF)
-if(BUILD_MPG123)
+if(BUILD_MP3LAME)
     add_subdirectory(liblamemp3)
 endif()
 
