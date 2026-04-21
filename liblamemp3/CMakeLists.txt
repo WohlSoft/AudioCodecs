@@ -13,6 +13,7 @@ include(CheckIncludeFile)
 include(CheckIncludeFiles)
 include(CheckLibraryExists)
 include(CheckTypeSize)
+include(TestBigEndian)
 include(CheckLanguage)
 
 #set(AUDIO_CODECS_KEEP_SSE ON)
@@ -47,6 +48,11 @@ set(PACKAGE_STRING "\"${PACKAGE_NAME} v.${PACKAGE_VERSION}\"")
 set(PACKAGE_NAME "\"${PACKAGE_NAME}\"")
 set(PACKAGE_VERSION "\"${PACKAGE_VERSION}\"")
 
+option(DECODE_ON_THE_FLY "Allow to compute a more accurate replaygain value" ON)
+if(DECODE_ON_THE_FLY)
+    set(DECODE_ON_THE_FLY 1)
+endif()
+
 check_include_files(alloca.h HAVE_ALLOCA_H)
 if(HAVE_ALLOCA_H)
     add_definitions(-DUSE_ALLOCA=1)
@@ -72,11 +78,13 @@ check_include_file(inttypes.h HAVE_INTTYPES_H)
 check_include_file(memory.h HAVE_MEMORY_H)
 check_include_file(stdlib.h HAVE_STDLIB_H)
 check_include_file(string.h HAVE_STRING_H)
+check_include_file(limits.h HAVE_LIMITS_H)
 check_include_file(strings.h HAVE_STRINGS_H)
 check_include_file(sys/stat.h HAVE_SYS_STAT_H)
 check_include_file(sys/time.h HAVE_SYS_TIME_H)
 check_include_file(sys/types.h HAVE_SYS_TYPES_H)
 check_include_file(unistd.h HAVE_UNISTD_H)
+check_include_files("sys/time.h;time.h" TIME_WITH_SYS_TIME)
 check_include_files("stdlib.h;time.h;math.h;sys/stat.h;signal.h" HAVE_STDC_HEADERS)
 if(HAVE_STDC_HEADERS)
     set(STDC_HEADERS 1)
@@ -99,33 +107,29 @@ check_type_size("unsigned int" SIZEOF_UNSIGNED_INT)
 check_type_size("unsigned long" SIZEOF_UNSIGNED_LONG)
 check_type_size("unsigned long long" SIZEOF_UNSIGNED_LONG_LONG)
 check_type_size("unsigned short" SIZEOF_UNSIGNED_SHORT)
+test_big_endian(WORDS_BIGENDIAN)
+
+if(CMAKE_BUILD_TYPE_LOWER STREQUAL "debug")
+    check_include_file(dmalloc.h WITH_DMALLOC)
+endif()
+
+set(HAVE_LONG_DOUBLE 1)
+if(SIZEOF_LONG_DOUBLE GREATER SIZEOF_DOUBLE)
+    set(HAVE_LONG_DOUBLE_WIDER 1)
+endif()
 
 check_include_files(alloca.h HAVE_ALLOCA_H)
 if(HAVE_ALLOCA_H)
-    add_definitions(-DUSE_ALLOCA=1)
+    set(HAVE_ALLOCA 1)
 endif()
 
-try_compile(VAR_ARRAYS
-    ${CMAKE_BINARY_DIR}/compile_tests
-    ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/c99/var_size_arrays.c
-)
-if(VAR_ARRAYS)
-    set(VAR_ARRAYS 1)
-    set(USE_ALLOCA 0)
-endif()
-
-if(NOT VAR_ARRAYS AND NOT MSVC)
-    try_compile(USE_ALLOCA
+if(NOT MSVC)
+    try_compile(HAVE_ALLOCA
         ${CMAKE_BINARY_DIR}/compile_tests
         ${CMAKE_CURRENT_SOURCE_DIR}/config.tests/c99/alloca.c
     )
-    if(USE_ALLOCA)
-        set(USE_ALLOCA 1)
-    endif()
-endif()
-
-if(MSVC)
-    set(USE_ALLOCA 1)
+else()
+    set(HAVE_ALLOCA 1)
 endif()
 
 foreach(INLINE_KEYWORD "inline" "__inline__" "__inline")
