@@ -737,7 +737,7 @@ III_dequantize_sample(PMPSTR mp, real xr[SBLIMIT][SSLIMIT], int *scf,
     {
         int     i;
 
-        for (i = (&xr[SBLIMIT][0] - xrpnt) >> 1; i > 0; i--) {
+        for (i = (*(xr + SBLIMIT) - xrpnt) >> 1; i > 0; i--) {
             *xrpnt++ = 0.0;
             *xrpnt++ = 0.0;
         }
