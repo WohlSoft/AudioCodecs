@@ -3,6 +3,10 @@ project(libOPUS VERSION 1.3.1.158 LANGUAGES C ASM)
 
 set(CMAKE_C_STANDARD 99)
 
+if(POLICY CMP0075) # Include file check macros honor CMAKE_REQUIRED_LIBRARIES.
+    cmake_policy(SET CMP0075 NEW)
+endif()
+
 include(CheckSymbolExists)
 include(CheckFunctionExists)
 include(CheckIncludeFile)
@@ -163,6 +167,7 @@ if(HAVE_STDC_HEADERS)
 endif()
 
 if(NOT MSVC)
+    check_library_exists(m sin "" HAVE_LIBM)
     set(CMAKE_REQUIRED_LIBRARIES m)
 endif()
 check_symbol_exists(lrint "math.h;tgmath.h" HAVE_LRINT)

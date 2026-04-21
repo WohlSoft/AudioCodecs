@@ -379,7 +379,7 @@ lame_init_qval(lame_global_flags * gfp)
 
     case 8:
         gfp->quality = 7;
-        /*lint --fallthrough */
+        /*lint --fallthrough */ /* fallthrough*/
     case 7:            /* use psymodel (for short block and m/s switching), but no noise shapping */
         cfg->noise_shaping = 0;
         cfg->noise_shaping_amp = 0;

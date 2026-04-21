@@ -135,9 +135,9 @@ vec_max_c(const float * xr34, unsigned int bw)
         xr34 += 4;
     }
     switch( remaining ) {
-    case 3: if (xfsf < xr34[2]) xfsf = xr34[2];
-    case 2: if (xfsf < xr34[1]) xfsf = xr34[1];
-    case 1: if (xfsf < xr34[0]) xfsf = xr34[0];
+    case 3: if (xfsf < xr34[2]) xfsf = xr34[2]; /*fallthrough */
+    case 2: if (xfsf < xr34[1]) xfsf = xr34[1]; /*fallthrough */
+    case 1: if (xfsf < xr34[0]) xfsf = xr34[0]; /*fallthrough */
     default: break;
     }
     return xfsf;
@@ -246,18 +246,18 @@ calc_sfb_noise_x34(const FLOAT * xr, const FLOAT * xr34, unsigned int bw, uint8_
     if (remaining) {
         x[0] = x[1] = x[2] = x[3] = 0;
         switch( remaining ) {
-        case 3: x[2] = sfpow34 * xr34[2];
-        case 2: x[1] = sfpow34 * xr34[1];
-        case 1: x[0] = sfpow34 * xr34[0];
+        case 3: x[2] = sfpow34 * xr34[2]; /* fallthrough */
+        case 2: x[1] = sfpow34 * xr34[1]; /* fallthrough */
+        case 1: x[0] = sfpow34 * xr34[0]; /* fallthrough */
         }
 
         k_34_4(x, l3);
         x[0] = x[1] = x[2] = x[3] = 0;
 
         switch( remaining ) {
-        case 3: x[2] = fabsf(xr[2]) - sfpow * pow43[l3[2]];
-        case 2: x[1] = fabsf(xr[1]) - sfpow * pow43[l3[1]];
-        case 1: x[0] = fabsf(xr[0]) - sfpow * pow43[l3[0]];
+        case 3: x[2] = fabsf(xr[2]) - sfpow * pow43[l3[2]]; /* fallthrough */
+        case 2: x[1] = fabsf(xr[1]) - sfpow * pow43[l3[1]]; /* fallthrough */
+        case 1: x[0] = fabsf(xr[0]) - sfpow * pow43[l3[0]]; /* fallthrough */
         }
         xfsf += (x[0] * x[0] + x[1] * x[1]) + (x[2] * x[2] + x[3] * x[3]);
     }
@@ -545,17 +545,17 @@ quantize_x34(const algo_t * that)
             int tmp_l3[4];
             x[0] = x[1] = x[2] = x[3] = 0;
             switch( remaining ) {
-            case 3: x[2] = sfpow34 * xr34_orig[2];
-            case 2: x[1] = sfpow34 * xr34_orig[1];
-            case 1: x[0] = sfpow34 * xr34_orig[0];
+            case 3: x[2] = sfpow34 * xr34_orig[2]; /*fallthrough */
+            case 2: x[1] = sfpow34 * xr34_orig[1]; /*fallthrough */
+            case 1: x[0] = sfpow34 * xr34_orig[0]; /*fallthrough */
             }
 
             k_34_4(x, tmp_l3);
 
             switch( remaining ) {
-            case 3: l3[2] = tmp_l3[2];
-            case 2: l3[1] = tmp_l3[1];
-            case 1: l3[0] = tmp_l3[0];
+            case 3: l3[2] = tmp_l3[2]; /*fallthrough */
+            case 2: l3[1] = tmp_l3[1]; /*fallthrough */
+            case 1: l3[0] = tmp_l3[0]; /*fallthrough */
             }
 
             l3 += remaining;

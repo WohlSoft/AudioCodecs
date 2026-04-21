@@ -624,7 +624,7 @@ quant_compare(const int quant_comp,
 
     case 8:
         calc->max_noise = get_klemm_noise(distort, gi);
-        /*lint --fallthrough */
+        /*lint --fallthrough */ /* fallthrough */
     case 1:
         better = calc->max_noise < best->max_noise;
         break;
@@ -1497,7 +1497,7 @@ VBR_old_iteration_loop(lame_internal_flags * gfc, const FLOAT pe[2][2],
 
     FLOAT   xrpow[576];
     int     bands[2][2];
-    int     frameBits[15];
+    int     frameBits[16];
     int     used_bits;
     int     bits;
     int     min_bits[2][2], max_bits[2][2];
@@ -1651,7 +1651,7 @@ VBR_new_iteration_loop(lame_internal_flags * gfc, const FLOAT pe[2][2],
     FLOAT   l3_xmin[2][2][SFBMAX];
 
     FLOAT   xrpow[2][2][576];
-    int     frameBits[15];
+    int     frameBits[16];
     int     used_bits;
     int     max_bits[2][2];
     int     ch, gr, analog_silence, pad;

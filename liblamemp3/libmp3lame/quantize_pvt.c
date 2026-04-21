@@ -427,7 +427,7 @@ iteration_init(lame_internal_flags * gfc)
  * bugfixes rh 8/01: often allocated more than the allowed 4095 bits
  ************************************************************************/
 int
-on_pe(lame_internal_flags * gfc, const FLOAT pe[][2], int targ_bits[2], int mean_bits, int gr, int cbr)
+on_pe(lame_internal_flags * gfc, const FLOAT pe[2][2], int targ_bits[2], int mean_bits, int gr, int cbr)
 {
     SessionConfig_t const *const cfg = &gfc->cfg;
     int     extra_bits = 0, tbits, bits;
