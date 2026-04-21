@@ -49,6 +49,13 @@ set(PACKAGE_STRING "\"${PACKAGE_NAME} v.${PACKAGE_VERSION}\"")
 set(PACKAGE_NAME "\"${PACKAGE_NAME}\"")
 set(PACKAGE_VERSION "\"${PACKAGE_VERSION}\"")
 
+option(BUILD_LAMEMP3_STATIC "Build static library of Lame MP3" ON)
+if(NOT WIN32)
+    option(BUILD_LAMEMP3_SHARED "Build shared library of Lame MP3" OFF)
+else()
+    set(BUILD_LAMEMP3_SHARED OFF) # FIXME: Fix the lame.h to have the `__declspec(dllexport)` marker at files without extra overlays.
+endif()
+
 option(LAME_BUILD_TOOL "Enable building of the console tool" OFF)
 option(LAME_ENABLE_DECODER "Enable linking to decoder to increase the  replaygain value accuracy" ON)
 if(LAME_ENABLE_DECODER)
@@ -242,12 +249,39 @@ if(WIN32)
     list(APPEND LIBLAME_SRC libmp3lame/lame.rc libmp3lame/logoe.ico)
 endif()
 
-add_library(mp3lame STATIC ${LIBLAME_SRC})
-target_compile_definitions(mp3lame PRIVATE -DHAVE_CONFIG_H)
-target_include_directories(mp3lame PUBLIC include ${CMAKE_CURRENT_BINARY_DIR}/config/)
+set(LAME_INSTALL_TARGETS)
 
-if(LAME_ENABLE_DECODER)
-    target_include_directories(mp3lame PRIVATE mpglib libmp3lame)
+if(BUILD_LAMEMP3_STATIC)
+    add_library(mp3lame_static STATIC ${LIBLAME_SRC})
+    set_target_properties(mp3lame_static PROPERTIES OUTPUT_NAME mp3lame)
+    target_compile_definitions(mp3lame_static PRIVATE -DHAVE_CONFIG_H)
+    target_include_directories(mp3lame_static PUBLIC include ${CMAKE_CURRENT_BINARY_DIR}/config/)
+
+    if(LAME_ENABLE_DECODER)
+        target_include_directories(mp3lame_static PRIVATE mpglib libmp3lame)
+    endif()
+
+    list(APPEND LAME_INSTALL_TARGETS mp3lame_static)
+endif()
+
+if(BUILD_LAMEMP3_SHARED)
+    add_library(mp3lame_shared SHARED ${LIBLAME_SRC})
+    set_target_properties(mp3lame_shared PROPERTIES OUTPUT_NAME mp3lame)
+    target_compile_definitions(mp3lame_shared PRIVATE -DHAVE_CONFIG_H)
+    target_include_directories(mp3lame_shared PUBLIC include ${CMAKE_CURRENT_BINARY_DIR}/config/)
+
+    if(LAME_ENABLE_DECODER)
+        target_include_directories(mp3lame_shared PRIVATE mpglib libmp3lame)
+    endif()
+
+    if(HAVE_LIBM)
+        target_link_libraries(mp3lame_shared PRIVATE m)
+    endif()
+
+    list(APPEND LAME_INSTALL_TARGETS mp3lame_shared)
+
+    set_target_properties(mp3lame_shared PROPERTIES VERSION ${libLAME_VERSION} SOVERSION ${libLAME_VERSION_MAJOR})
+    message("== GME will be built as shared library ==")
 endif()
 
 if(LAME_BUILD_TOOL)
@@ -280,7 +314,13 @@ if(LAME_BUILD_TOOL)
 
     target_compile_definitions(lame PRIVATE -DHAVE_CONFIG_H)
     target_include_directories(lame PUBLIC include libmp3lame ${CMAKE_CURRENT_BINARY_DIR}/config/)
-    target_link_libraries(lame PRIVATE mp3lame)
+
+    if(BUILD_LAMEMP3_SHARED)
+        target_link_libraries(lame PRIVATE mp3lame_shared)
+    else()
+        target_link_libraries(lame PRIVATE mp3lame_static)
+    endif()
+
     if(HAVE_LIBM)
         target_link_libraries(lame PRIVATE m)
     endif()
@@ -288,7 +328,7 @@ if(LAME_BUILD_TOOL)
     install(TARGETS lame RUNTIME DESTINATION "bin")
 endif()
 
-install(TARGETS mp3lame
+install(TARGETS ${LAME_INSTALL_TARGETS}
         LIBRARY DESTINATION "lib"
         ARCHIVE DESTINATION "lib"
         INCLUDES DESTINATION "include")

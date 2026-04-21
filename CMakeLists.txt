@@ -121,7 +121,11 @@ endif()
 
 option(BUILD_MP3LAME "Enable building of Lame MP3 Encoder" OFF)
 if(BUILD_MP3LAME)
+    set(BUILD_LAMEMP3_SHARED ${CODECS_BUILD_SHARED} CACHE BOOL "" FORCE)
+    set(BUILD_LAMEMP3_STATIC ${CODECS_BUILD_STATIC} CACHE BOOL "" FORCE)
     add_subdirectory(liblamemp3)
+    unset(BUILD_LAMEMP3_STATIC)
+    unset(BUILD_LAMEMP3_SHARED)
 endif()
 
 option(BUILD_GME "Enable building of GME" ON)
