@@ -1,6 +1,6 @@
 /*
- * ADLMIDI Player is a free MIDI player based on a libADLMIDI,
- * a Software MIDI synthesizer library with OPL3 emulation
+ * OPNMIDI Player is a free MIDI player based on a libOPNMIDI,
+ * a Software MIDI synthesizer library with OPN2 and OPNA emulation
  *
  * Original ADLMIDI code: Copyright (c) 2010-2014 Joel Yliluoma <bisqwit@iki.fi>
  * ADLMIDI Library API:   Copyright (c) 2015-2026 Vitaly Novichkov <admin@wohlnet.ru>
@@ -22,43 +22,32 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifdef __cplusplus
-extern "C"
-{
+#pragma once
+#ifndef MIDIPLAY_PLAYBACK_H
+#define MIDIPLAY_PLAYBACK_H
+
+#include "opnmidi.h"
+#include <stdint.h>
+#include "../audio/audio.h"
+#include <string>
+
+
+
+extern int stop;
+
+#if !defined(ADLMIDI_ENABLE_HW_DOS)
+const char* audio_format_to_str(int format, int is_msb);
+void fillAudioFormat(const AudioOutputSpec &spec);
+
+void applyGain(uint8_t *buffer, size_t bufferSize);
 #endif
 
-typedef void (*AudioOutputCallback)(void *, unsigned char *stream, int len);
 
-struct AudioOutputSpec
-{
-    unsigned int freq;
-    unsigned short format;
-    unsigned short is_msb;
-    unsigned short samples;
-    unsigned char  channels;
-};
-
-extern int audio_init(struct AudioOutputSpec *in_spec, struct AudioOutputSpec *out_obtained, AudioOutputCallback callback);
-
-extern void audio_close(void);
-
-extern const char* audio_get_error(void);
-
-extern void audio_start(void);
-
-extern void audio_stop(void);
-
-extern void audio_lock(void);
-
-extern void audio_unlock(void);
-
-extern void audio_delay(unsigned int ms);
-
-extern void* audio_mutex_create(void);
-extern void  audio_mutex_destroy(void *m);
-extern void  audio_mutex_lock(void *m);
-extern void  audio_mutex_unlock(void *m);
-
-#ifdef __cplusplus
-}
+#if !defined(OUTPUT_WAVE_ONLY) && !defined(ADLMIDI_ENABLE_HW_DOS)
+int runAudioLoop(OPN2_MIDIPlayer *myDevice, AudioOutputSpec &spec);
 #endif
+
+int runWaveOutLoopLoop(OPN2_MIDIPlayer *myDevice, const std::string &musPath, const AudioOutputSpec &obtained, unsigned sampleRate);
+
+
+#endif /* MIDIPLAY_PLAYBACK_H */
