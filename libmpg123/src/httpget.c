@@ -348,11 +348,12 @@ int fill_request(mpg123_string *request, mpg123_string *host, mpg123_string *por
 	/* Authorization. */
 	if (httpauth1->fill || param.httpauth) {
 		char *buf;
+		/* Warn that Basic Auth credentials are sent in cleartext over plain HTTP. */
+		if(!param.quiet)
+			fprintf(stderr, "Warning: Sending HTTP Basic Auth credentials over unencrypted HTTP connection.\n");
 		if(!mpg123_add_string(request,"Authorization: Basic ")) return FALSE;
 		if(httpauth1->fill) {
-			if(httpauth1->fill > SIZE_MAX / 4) return FALSE;
-
-			buf=(char *)malloc(httpauth1->fill * 4);
+			buf=(char *)calloc(httpauth1->fill, 4);
 			if(!buf)
 			{
 				error("malloc() failed for http auth, out of memory.");
@@ -360,9 +361,7 @@ int fill_request(mpg123_string *request, mpg123_string *host, mpg123_string *por
 			}
 			encode64(httpauth1->p,buf);
 		} else {
-			if(strlen(param.httpauth) > SIZE_MAX / 4 - 4 ) return FALSE;
-
-			buf=(char *)malloc((strlen(param.httpauth) + 1) * 4);
+			buf=(char *)calloc(strlen(param.httpauth) + 1, 4);
 			if(!buf)
 			{
 				error("malloc() for http auth failed, out of memory.");
