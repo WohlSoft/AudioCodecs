@@ -64,6 +64,9 @@ void MIDIplay::AdlChannel::addAge(int64_t us)
 }
 
 MIDIplay::MIDIplay(unsigned long sampleRate):
+#ifdef ADLMIDI_ENABLE_HW_DOS
+    m_dpmi_locker(this),
+#endif
     m_cmfPercussionMode(false),
     m_sysExDeviceId(0),
     m_synthMode(Mode_XG),
@@ -166,13 +169,12 @@ void MIDIplay::applySetup()
         adlCalculateFourOpChannels(this, true);
 
     chipReset();
-    m_chipChannels.clear();
     m_chipChannels.resize(synth.m_numChannels);
 
     // Preserve caller's chip-channel reservations across chip resets;
     // just grow the vector to match the new chip count if needed.
-    if(m_reservedChipChannels.size() < synth.m_numChips)
-        m_reservedChipChannels.resize(synth.m_numChips, 0u);
+    if(m_reservedChipChannels.size < synth.m_numChips)
+        m_reservedChipChannels.resize_fill(synth.m_numChips, 0u);
 
     // Reset the arpeggio counter
     m_arpeggioCounter = 0;
@@ -185,11 +187,11 @@ void MIDIplay::partialReset()
     m_setup.tick_skip_samples_delay = 0;
     synth.m_runAtPcmRate = m_setup.runAtPcmRate;
     chipReset();
-    m_chipChannels.clear();
+
     m_chipChannels.resize((size_t)synth.m_numChannels);
 
-    if(m_reservedChipChannels.size() < synth.m_numChips)
-        m_reservedChipChannels.resize(synth.m_numChips, 0u);
+    if(m_reservedChipChannels.size < synth.m_numChips)
+        m_reservedChipChannels.resize_fill(synth.m_numChips, 0u);
 
     resetMIDIDefaults();
 }
@@ -206,14 +208,15 @@ void MIDIplay::resetMIDI()
     std::memset(m_currentMidiDevice, 0, sizeof(m_currentMidiDevice));
     m_midiDevicesUsed = 0;
 
-    m_midiChannels.clear();
-    m_midiChannels.resize(16, MIDIchannel());
+    m_midiChannels.resize_fill(16, MIDIchannel());
 
     resetMIDIDefaults();
 
+#ifndef ENABLE_HW_OPL_DOS
     caugh_missing_instruments.clear();
     caugh_missing_banks_melodic.clear();
     caugh_missing_banks_percussion.clear();
+#endif
 }
 
 void MIDIplay::chipReset()
@@ -235,7 +238,7 @@ void MIDIplay::resetMIDIDefaults(int offset)
 {
     Synth &synth = *m_synth;
 
-    for(size_t c = offset, n = m_midiChannels.size(); c < n; ++c)
+    for(size_t c = offset, n = m_midiChannels.size; c < n; ++c)
     {
         MIDIchannel &ch = m_midiChannels[c];
 
@@ -264,7 +267,7 @@ void MIDIplay::TickIterators(double s)
     }
 
     // Resolve "hell of all times" of too short drum notes
-    for(size_t c = 0, n = m_midiChannels.size(); c < n; ++c)
+    for(size_t c = 0, n = m_midiChannels.size; c < n; ++c)
     {
         MIDIchannel &ch = m_midiChannels[c];
         if(ch.extended_note_count == 0)
@@ -306,7 +309,7 @@ void MIDIplay::TickIterators(double s)
 void MIDIplay::realTime_ResetState()
 {
     Synth &synth = *m_synth;
-    for(size_t ch = 0; ch < m_midiChannels.size(); ch++)
+    for(size_t ch = 0; ch < m_midiChannels.size; ch++)
     {
         MIDIchannel &chan = m_midiChannels[ch];
         chan.resetAllControllers();
@@ -345,7 +348,7 @@ bool MIDIplay::realTime_NoteOn(uint8_t channel, uint8_t note, uint8_t velocity)
         }
     }
 
-    if(static_cast<size_t>(channel) > m_midiChannels.size())
+    if(static_cast<size_t>(channel) > m_midiChannels.size)
         channel = channel % 16;
 
     //noteOff(channel, note, velocity != 0);
@@ -396,7 +399,10 @@ bool MIDIplay::realTime_NoteOn(uint8_t channel, uint8_t note, uint8_t velocity)
 
     //Set bank bank
     const Synth::Bank *bnk = NULL;
+#ifndef ENABLE_HW_OPL_DOS
     bool caughtMissingBank = false;
+#endif
+
     if((bank & ~static_cast<uint16_t>(Synth::PercussionTag)) > 0)
     {
         Synth::BankMap::iterator b = synth.m_insBanks.find(bank);
@@ -404,8 +410,10 @@ bool MIDIplay::realTime_NoteOn(uint8_t channel, uint8_t note, uint8_t velocity)
             bnk = &b->second;
         if(bnk)
             ains = &bnk->ins[midiins];
+#ifndef ENABLE_HW_OPL_DOS
         else
             caughtMissingBank = true;
+#endif
     }
 
     //Or fall back to bank ignoring LSB (GS/XG)
@@ -415,16 +423,21 @@ bool MIDIplay::realTime_NoteOn(uint8_t channel, uint8_t note, uint8_t velocity)
         if(fallback != bank)
         {
             Synth::BankMap::iterator b = synth.m_insBanks.find(fallback);
+#ifndef ENABLE_HW_OPL_DOS
             caughtMissingBank = false;
+#endif
             if(b != synth.m_insBanks.end())
                 bnk = &b->second;
             if(bnk)
                 ains = &bnk->ins[midiins];
+#ifndef ENABLE_HW_OPL_DOS
             else
                 caughtMissingBank = true;
+#endif
         }
     }
 
+#ifndef ENABLE_HW_OPL_DOS
     if(caughtMissingBank && hooks.onDebugMessage)
     {
         std::set<size_t> &missing = (isPercussion) ?
@@ -438,6 +451,7 @@ bool MIDIplay::realTime_NoteOn(uint8_t channel, uint8_t note, uint8_t velocity)
                                  channel, text, (bank & ~static_cast<uint16_t>(Synth::PercussionTag)), midiins);
         }
     }
+#endif
 
     //Or fall back to first bank
     if((ains->flags & OplInstMeta::Flag_NoSound) != 0)
@@ -453,16 +467,19 @@ bool MIDIplay::realTime_NoteOn(uint8_t channel, uint8_t note, uint8_t velocity)
     velocity = (uint8_t)std::min(127, std::max(1, (int)velocity + veloffset));
 
     int32_t tone = note;
+
     if(!isPercussion && (bank > 0)) // For non-zero banks
     {
         if(ains->flags & OplInstMeta::Flag_NoSound)
         {
+#ifndef ENABLE_HW_OPL_DOS
             if(hooks.onDebugMessage && caugh_missing_instruments.insert(static_cast<uint8_t>(midiins)).second)
             {
                 hooks.onDebugMessage(hooks.onDebugMessage_userData,
                      "[%i] Caught a blank instrument %i (offset %i) in the MIDI bank %u",
                      channel, m_midiChannels[channel].patch, midiins, bank);
             }
+#endif
             bank = 0;
             midiins = midiChan.patch;
         }
@@ -503,11 +520,13 @@ bool MIDIplay::realTime_NoteOn(uint8_t channel, uint8_t note, uint8_t velocity)
 
     bool isBlankNote = (ains->flags & OplInstMeta::Flag_NoSound) != 0;
 
+#ifndef ENABLE_HW_OPL_DOS
     if(hooks.onDebugMessage)
     {
         if(isBlankNote && caugh_missing_instruments.insert(static_cast<uint8_t>(midiins)).second)
             hooks.onDebugMessage(hooks.onDebugMessage_userData, "[%i] Playing missing instrument %i", channel, midiins);
     }
+#endif
 
     if(isBlankNote)
     {
@@ -564,7 +583,7 @@ bool MIDIplay::realTime_NoteOn(uint8_t channel, uint8_t note, uint8_t velocity)
             size_t chipIdx = a / NUM_OF_CHANNELS;
             size_t localCh = a % NUM_OF_CHANNELS;
 
-            if(chipIdx < m_reservedChipChannels.size() && ((m_reservedChipChannels[chipIdx] >> localCh) & 1u))
+            if(chipIdx < m_reservedChipChannels.size && ((m_reservedChipChannels[chipIdx] >> localCh) & 1u))
                 continue;
 
             if(is_2op || pseudo_4op)
@@ -722,14 +741,14 @@ bool MIDIplay::realTime_NoteOn(uint8_t channel, uint8_t note, uint8_t velocity)
 
 void MIDIplay::realTime_NoteOff(uint8_t channel, uint8_t note)
 {
-    if(static_cast<size_t>(channel) > m_midiChannels.size())
+    if(static_cast<size_t>(channel) > m_midiChannels.size)
         channel = channel % 16;
     noteOff(channel, note);
 }
 
 void MIDIplay::realTime_NoteAfterTouch(uint8_t channel, uint8_t note, uint8_t atVal)
 {
-    if(static_cast<size_t>(channel) > m_midiChannels.size())
+    if(static_cast<size_t>(channel) > m_midiChannels.size)
         channel = channel % 16;
     MIDIchannel &chan = m_midiChannels[channel];
     MIDIchannel::notes_iterator i = m_midiChannels[channel].find_activenote(note);
@@ -751,7 +770,7 @@ void MIDIplay::realTime_NoteAfterTouch(uint8_t channel, uint8_t note, uint8_t at
 
 void MIDIplay::realTime_ChannelAfterTouch(uint8_t channel, uint8_t atVal)
 {
-    if(static_cast<size_t>(channel) > m_midiChannels.size())
+    if(static_cast<size_t>(channel) > m_midiChannels.size)
         channel = channel % 16;
     m_midiChannels[channel].aftertouch = atVal;
 }
@@ -763,7 +782,7 @@ void MIDIplay::realTime_Controller(uint8_t channel, uint8_t type, uint8_t value)
     if(value > 127) // Allowed values 0~127 only
         value = 127;
 
-    if(static_cast<size_t>(channel) > m_midiChannels.size())
+    if(static_cast<size_t>(channel) > m_midiChannels.size)
         channel = channel % 16;
 
     switch(type)
@@ -931,14 +950,14 @@ void MIDIplay::realTime_Controller(uint8_t channel, uint8_t type, uint8_t value)
 
 void MIDIplay::realTime_PatchChange(uint8_t channel, uint8_t patch)
 {
-    if(static_cast<size_t>(channel) > m_midiChannels.size())
+    if(static_cast<size_t>(channel) > m_midiChannels.size)
         channel = channel % 16;
     m_midiChannels[channel].patch = patch;
 }
 
 void MIDIplay::realTime_PitchBend(uint8_t channel, uint16_t pitch)
 {
-    if(static_cast<size_t>(channel) > m_midiChannels.size())
+    if(static_cast<size_t>(channel) > m_midiChannels.size)
         channel = channel % 16;
     m_midiChannels[channel].bend = int(pitch) - 8192;
     noteUpdateAll(channel, Upd_Pitch);
@@ -946,7 +965,7 @@ void MIDIplay::realTime_PitchBend(uint8_t channel, uint16_t pitch)
 
 void MIDIplay::realTime_PitchBend(uint8_t channel, uint8_t msb, uint8_t lsb)
 {
-    if(static_cast<size_t>(channel) > m_midiChannels.size())
+    if(static_cast<size_t>(channel) > m_midiChannels.size)
         channel = channel % 16;
     m_midiChannels[channel].bend = int(lsb) + int(msb) * 128 - 8192;
     noteUpdateAll(channel, Upd_Pitch);
@@ -954,21 +973,21 @@ void MIDIplay::realTime_PitchBend(uint8_t channel, uint8_t msb, uint8_t lsb)
 
 void MIDIplay::realTime_BankChangeLSB(uint8_t channel, uint8_t lsb)
 {
-    if(static_cast<size_t>(channel) > m_midiChannels.size())
+    if(static_cast<size_t>(channel) > m_midiChannels.size)
         channel = channel % 16;
     m_midiChannels[channel].bank_lsb = lsb;
 }
 
 void MIDIplay::realTime_BankChangeMSB(uint8_t channel, uint8_t msb)
 {
-    if(static_cast<size_t>(channel) > m_midiChannels.size())
+    if(static_cast<size_t>(channel) > m_midiChannels.size)
         channel = channel % 16;
     m_midiChannels[channel].bank_msb = msb;
 }
 
 void MIDIplay::realTime_BankChange(uint8_t channel, uint16_t bank)
 {
-    if(static_cast<size_t>(channel) > m_midiChannels.size())
+    if(static_cast<size_t>(channel) > m_midiChannels.size)
         channel = channel % 16;
     m_midiChannels[channel].bank_lsb = uint8_t(bank & 0xFF);
     m_midiChannels[channel].bank_msb = uint8_t((bank >> 8) & 0xFF);
@@ -1040,7 +1059,7 @@ bool MIDIplay::doUniversalSysEx(unsigned dev, bool realtime, const uint8_t *data
                 (((unsigned)data[1] & 0x7F) << 7);
             if(m_synth.get())
                 m_synth->m_masterVolume = static_cast<uint8_t>(volume >> 7);
-            for(size_t ch = 0; ch < m_midiChannels.size(); ch++)
+            for(size_t ch = 0; ch < m_midiChannels.size; ch++)
                 noteUpdateAll(uint16_t(ch), Upd_Volume);
             return true;
     }
@@ -1131,7 +1150,7 @@ bool MIDIplay::doRolandSysEx(unsigned dev, const uint8_t *data, size_t size)
     {
         if(size != 1 || (dev & 0xF0) != 0x10)
             break;
-        if(m_midiChannels.size() < 16)
+        if(m_midiChannels.size < 16)
             break;
         unsigned value = data[0] & 0x7F;
         const uint8_t channels_map[16] =
@@ -1249,8 +1268,8 @@ int MIDIplay::reserveChipChannels(size_t chipId, uint32_t channelMask)
     if(chipId >= synth.m_numChips)
         return 0;
 
-    if(m_reservedChipChannels.size() < synth.m_numChips)
-        m_reservedChipChannels.resize(synth.m_numChips, 0u);
+    if(m_reservedChipChannels.size < synth.m_numChips)
+        m_reservedChipChannels.resize_fill(synth.m_numChips, 0u);
 
     m_reservedChipChannels[chipId] = channelMask;
     return 1;
@@ -1258,7 +1277,7 @@ int MIDIplay::reserveChipChannels(size_t chipId, uint32_t channelMask)
 
 uint32_t MIDIplay::getReservedChipChannels(size_t chipId) const
 {
-    if(chipId >= m_reservedChipChannels.size())
+    if(chipId >= m_reservedChipChannels.size)
         return 0u;
 
     return m_reservedChipChannels[chipId];
@@ -1836,7 +1855,7 @@ void MIDIplay::killOrEvacuate(size_t from_channel,
 
 void MIDIplay::panic()
 {
-    for(uint8_t chan = 0; chan < m_midiChannels.size(); chan++)
+    for(uint8_t chan = 0; chan < m_midiChannels.size; chan++)
     {
         for(uint8_t note = 0; note < 128; note++)
             noteOff(chan, note, true);
@@ -1977,7 +1996,7 @@ void MIDIplay::noteOff(size_t midCh, uint8_t note, bool forceNow)
 
 void MIDIplay::updateVibrato(double amount)
 {
-    for(size_t a = 0, b = m_midiChannels.size(); a < b; ++a)
+    for(size_t a = 0, b = m_midiChannels.size; a < b; ++a)
     {
         if(m_midiChannels[a].hasVibrato() && !m_midiChannels[a].activenotes.empty())
         {
@@ -2106,7 +2125,7 @@ retry_arpeggio:
 
 void MIDIplay::updateGlide(double amount)
 {
-    size_t num_channels = m_midiChannels.size();
+    size_t num_channels = m_midiChannels.size;
 
     for(size_t channel = 0; channel < num_channels; ++channel)
     {

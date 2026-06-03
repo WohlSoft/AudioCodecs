@@ -187,7 +187,7 @@ bool MIDIplay::LoadMIDI_post()
 
     if(format == MidiSequencer::Format_CMF)
     {
-        const std::vector<MidiSequencer::CmfInstrument> &instruments = seq.getRawCmfInstruments();
+        const std::vector<MidiSequencer::CmfInstrument, dpmi_allocator<MidiSequencer::CmfInstrument> > &instruments = seq.getRawCmfInstruments();
         synth.m_insBanks.clear();//Clean up old banks
 
         uint16_t ins_count = static_cast<uint16_t>(instruments.size());
@@ -270,11 +270,10 @@ bool MIDIplay::LoadMIDI_post()
     m_setup.tick_skip_samples_delay = 0;
     chipReset(); // Reset OPL3 chip
     //opl.Reset(); // ...twice (just in case someone misprogrammed OPL3 previously)
-    m_chipChannels.clear();
     m_chipChannels.resize(synth.m_numChannels);
 
-    if(m_reservedChipChannels.size() < synth.m_numChips)
-        m_reservedChipChannels.resize(synth.m_numChips, 0u);
+    if(m_reservedChipChannels.size < synth.m_numChips)
+        m_reservedChipChannels.resize_fill(synth.m_numChips, 0u);
 
     if(setToOPL2)
         synth.toggleOPL3(false);

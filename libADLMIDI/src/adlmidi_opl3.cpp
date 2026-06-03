@@ -50,6 +50,7 @@
 #       include "chips/nuked_opl3.h"
 #       include "chips/nuked_opl3_fast.h"
 #       include "chips/nuked_opl2.h"
+#       include "chips/nuked_cqm.h"
 #   endif
 
 // DosBox 0.74 OPL3 emulator, Well-accurate and fast
@@ -102,7 +103,7 @@
 static const unsigned adl_emulatorSupport = 0
 #ifndef ENABLE_HW_OPL_DOS
 #   ifndef ADLMIDI_DISABLE_NUKED_EMULATOR
-    | (1u << ADLMIDI_EMU_NUKED) | (1u << ADLMIDI_EMU_NUKED_FAST) | (1u << ADLMIDI_EMU_NUKED_OPL2_LITE)
+    | (1u << ADLMIDI_EMU_NUKED) | (1u << ADLMIDI_EMU_NUKED_FAST) | (1u << ADLMIDI_EMU_NUKED_OPL2_LITE) | (1u << ADLMIDI_EMU_NUKED_CQM)
 #   endif
 
 #   ifndef ADLMIDI_DISABLE_DOSBOX_EMULATOR
@@ -288,6 +289,9 @@ static OplInstMeta makeEmptyInstrument()
 const OplInstMeta OPL3::m_emptyInstrument = makeEmptyInstrument();
 
 OPL3::OPL3() :
+#ifdef ENABLE_HW_OPL_DOS
+    m_dpmi_locker(this),
+#endif
 #ifdef ADLMIDI_ENABLE_HW_SERIAL
     m_serial(false),
     m_serialBaud(0),
@@ -480,8 +484,8 @@ void OPL3::setEmbeddedBank(uint32_t bank)
 
 void OPL3::clearInstCache()
 {
-    adl_fill_vector<const OplTimbre*>(m_insCache, &c_defaultInsCache);
-    adl_fill_vector<bool>(m_insCacheModified, false);
+    m_insCache.fill(&c_defaultInsCache);
+    m_insCacheModified.fill(false);
 }
 
 void OPL3::writeReg(size_t chip, uint16_t address, uint8_t value)
@@ -523,13 +527,13 @@ void OPL3::noteOff(size_t c)
 void OPL3::noteOn(size_t c1, size_t c2, double tone)
 {
     size_t chip = c1 / NUM_OF_CHANNELS, cc1 = c1 % NUM_OF_CHANNELS, cc2 = c2 % NUM_OF_CHANNELS;
-    size_t chan2 = c2 < m_insCache.size() ? c2 : 0;
+    size_t chan2 = c2 < m_insCache.size ? c2 : 0;
     uint32_t chn = m_musicMode == MODE_CMF ? g_channelsMapPan[cc1] : g_channelsMap[cc1];
     uint32_t mul_offset = 0;
     uint16_t ftone = 0;
     const OplTimbre *patch1 = m_insCache[c1];
     const OplTimbre *patch2 = m_insCache[chan2];
-    bool cacheModded[2] = {m_insCacheModified[c1], m_insCacheModified[chan2]};
+    char cacheModded[2] = {m_insCacheModified[c1], m_insCacheModified[chan2]};
 
     if(tone < 0.0)
         tone = 0.0; // Lower than 0 is impossible!
@@ -1035,8 +1039,9 @@ ADLMIDI_VolumeModels OPL3::getVolumeScaleModel()
 
 void OPL3::clearChips()
 {
-    for(size_t i = 0; i < m_chips.size(); i++)
+    for(size_t i = 0; i < m_chips.size; i++)
         m_chips[i].reset(NULL);
+
     m_chips.clear();
 }
 
@@ -1061,19 +1066,19 @@ void OPL3::reset(int emulator, unsigned long PCM_RATE, void *audioTickHandler)
         m_regBD.clear();
         m_regC0.clear();
         m_channelCategory.clear();
-        m_chips.resize(m_numChips, AdlMIDI_SPtr<OPLChipBase>());
+        m_chips.resize(m_numChips);
     }
     else
     {
         if(!m_chips.empty())
             silenceAll(); // Ensure no junk will be played after bank change
 
-        adl_fill_vector<const OplTimbre*>(m_insCache, &c_defaultInsCache);
-        adl_fill_vector<bool>(m_insCacheModified, false);
-        adl_fill_vector<uint32_t>(m_channelCategory, 0);
-        adl_fill_vector<uint32_t>(m_keyBlockFNumCache, 0);
-        adl_fill_vector<uint32_t>(m_regBD, 0);
-        adl_fill_vector<uint8_t>(m_regC0, OPL_PANNING_BOTH);
+        m_insCache.fill(&c_defaultInsCache);
+        m_insCacheModified.fill(false);
+        m_channelCategory.fill(0);
+        m_keyBlockFNumCache.fill(0);
+        m_regBD.fill(0);
+        m_regC0.fill(OPL_PANNING_BOTH);
     }
 
 #ifdef ADLMIDI_ENABLE_HW_SERIAL
@@ -1084,12 +1089,13 @@ void OPL3::reset(int emulator, unsigned long PCM_RATE, void *audioTickHandler)
     if(rebuild_needed)
     {
         m_numChannels = m_numChips * NUM_OF_CHANNELS;
-        m_insCache.resize(m_numChannels, &c_defaultInsCache);
-        m_insCacheModified.resize(m_numChannels, false);
-        m_channelCategory.resize(m_numChannels, 0);
-        m_keyBlockFNumCache.resize(m_numChannels,   0);
-        m_regBD.resize(m_numChips,    0);
-        m_regC0.resize(m_numChips * m_numChannels, OPL_PANNING_BOTH);
+
+        m_insCache.resize_fill(m_numChannels, &c_defaultInsCache);
+        m_insCacheModified.resize_fill(m_numChannels, false);
+        m_channelCategory.resize_fill(m_numChannels, 0);
+        m_keyBlockFNumCache.resize_fill(m_numChannels, 0);
+        m_regBD.resize_fill(m_numChips, 0);
+        m_regC0.resize_fill(m_numChips * m_numChannels, OPL_PANNING_BOTH);
     }
 
     if(!rebuild_needed)
@@ -1136,6 +1142,9 @@ void OPL3::reset(int emulator, unsigned long PCM_RATE, void *audioTickHandler)
             break;
         case ADLMIDI_EMU_NUKED_OPL2_LITE: /* Nuked OPL2 Lite */
             chip = new NukedOPL2;
+            break;
+        case ADLMIDI_EMU_NUKED_CQM: /* Nuked CQM */
+            chip = new NukedCQM;
             break;
 #endif
 #ifndef ADLMIDI_DISABLE_DOSBOX_EMULATOR

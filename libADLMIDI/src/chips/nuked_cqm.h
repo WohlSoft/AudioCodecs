@@ -1,5 +1,5 @@
 /*
- * Interfaces over Yamaha OPL3 (YMF262) chip emulators
+ * Interfaces over Creative CQM (A clone of YMF262) chip emulators
  *
  * Copyright (c) 2017-2026 Vitaly Novichkov (Wohlstand)
  *
@@ -18,40 +18,29 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-
-#ifndef DOS_HW_OPL_H
-#define DOS_HW_OPL_H
+#ifndef NUKED_CQM_H
+#define NUKED_CQM_H
 
 #include "opl_chip_base.h"
 
-class DOS_HW_OPL : public OPLChipBaseT<DOS_HW_OPL>
+class NukedCQM final : public OPLChipBaseT<NukedCQM>
 {
+    void *m_chip;
 public:
-    void dpmi_lock_begin();
-
-private:
-    friend void adl_lock_code();
-    friend void adl_unlock_code();
-public:
-    DOS_HW_OPL();
-    virtual ~DOS_HW_OPL() override;
-
-    static void setChipType(ChipType type);
-    static void setOplAddress(uint16_t address);
+    NukedCQM();
+    ~NukedCQM() override;
 
     bool canRunAtPcmRate() const override { return false; }
-    void setRate(uint32_t /*rate*/) override {}
-    void reset() override {}
+    void setRate(uint32_t rate) override;
+    void reset() override;
     void writeReg(uint16_t addr, uint8_t data) override;
+    void writePan(uint16_t addr, uint8_t data) override;
     void nativePreGenerate() override {}
     void nativePostGenerate() override {}
     void nativeGenerate(int16_t *frame) override;
     const char *emulatorName() override;
     ChipType chipType() override;
     bool hasFullPanning() override;
-
-public:
-    void dpmi_lock_end();
 };
 
-#endif // DOS_HW_OPL_H
+#endif // NUKED_CQM_H
