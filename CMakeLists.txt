@@ -177,7 +177,7 @@ endif()
 
 option(BUILD_LIBXMP "Enable building of libXMP" ON)
 if(BUILD_LIBXMP AND ${CMAKE_VERSION} VERSION_LESS "3.4")
-    messages(WARNING "To build libXMP, the CMake 3.4 or newer is required. The libXMP component will be disabled...")
+    message(WARNING "To build libXMP, the CMake 3.4 or newer is required. The libXMP component will be disabled...")
 elseif(BUILD_LIBXMP)
     set(BUILD_SHARED ${CODECS_BUILD_SHARED} CACHE BOOL "" FORCE)
     set(BUILD_STATIC ${CODECS_BUILD_STATIC} CACHE BOOL "" FORCE)
