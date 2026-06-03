@@ -9,17 +9,16 @@
 /* Need snprintf(). */
 #define _DEFAULT_SOURCE
 #define _BSD_SOURCE
-#include "config.h"
+#include "mpg123config.h"
 #include "version.h"
 #include "compat/compat.h"
-#if defined(WIN32) && defined(DYNAMIC_BUILD)
-#define LINK_MPG123_DLL
-#endif
 #include "mpg123.h"
 #include "getlopt.h"
 #include <errno.h>
 #include <ctype.h>
+#ifdef _WIN32
 #include "win32_support.h"
+#endif
 
 #include "common/debug.h"
 
@@ -364,7 +363,11 @@ int main(int argc, char **argv)
 	int i, result;
 	mpg123_handle* m;
 #if defined(WANT_WIN32_UNICODE)
-	win32_cmdline_utf8(&argc,&argv);
+	if(win32_cmdline_utf8(&argc,&argv) != 0)
+	{
+		error("Cannot convert command line to UTF8!");
+		return 1;
+	}
 #endif
 	progname = argv[0];
 
@@ -428,9 +431,9 @@ int main(int argc, char **argv)
 	mpg123_delete(m);
 	mpg123_exit();
 
-	if(errors) error1("Encountered %i errors along the way.", errors);
-	return errors != 0;
 #if defined(WANT_WIN32_UNICODE)
 	win32_cmdline_free(argc,argv);
 #endif
+	if(errors) error1("Encountered %i errors along the way.", errors);
+	return errors != 0;
 }

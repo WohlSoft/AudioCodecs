@@ -6,13 +6,10 @@
 	initially written by Taihei Monma
 */
 
+#include "aarch64_defs.h"
 #include "mangle.h"
 
-#ifndef __APPLE__
-	.section	.rodata
-#else
-	.data
-#endif
+	RODATA
 	ALIGN16
 scale:
 	.word   939524096

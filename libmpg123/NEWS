@@ -1,3 +1,121 @@
+1.33.5
+------
+- mpg123: Fix generic control mode for largefile-sensitive builds, where 32 bit
+  off_t was used with mpg123 API calls expecting 64 bit off_t.
+  I am appalled that it took a user on 32 bit ARM and a specific https stream
+  to notice this (bug 385, regression since 1.32.0).
+  The security impact of this could be serious, with memory corruption including
+  segfault being observed.
+- mpg123-id3dump, out123: Enable 64 bit offset usage on largefile-sensitive
+  platforms (regression since 1.32.0).
+- libmpg123:
+-- Announce support for shadow stack / IBT in x86-64 assembly.
+-- Also announce PAC/BTI for non-accurate neon64 (aarch64) synth.
+- libout123: Add a safeguard to ensure variable-length records from buffer
+  communication are always zero-terminated.
+- libsyn123: Use union work buffer to avoid casts that may look like breaking
+  strict aliasing.
+
+1.33.4
+------
+- mpg123: In terminal control, ignore 7-bit escape sequences to avoid spurious
+  actions, e.g. when hitting cursor keys. Inspired by Peter Tirsek.
+- ports/cmake: Avoid possibly conflicting use of SIZEOF_OFF_T CMake variable
+  when embedding mpg123 with other projects using cmake and different off_t
+  semantics. (bug 382)
+
+1.33.3
+------
+- libmpg123:
+-- Fix build with newer toolchain on Android by using __ANDROID__ macro (bug 380).
+-- Consolidate and more consistently use .rodata switch in macro.
+
+1.33.2
+------
+- libmpg123:
+-- Do not modify raw ID3v2 data while parsing (bug 379). This used to be fine
+   before MPG123_STORE_RAW_ID3 got introduced. Not anymore.
+
+1.33.1
+------
+- INSTALL updated with hints for Windows, mainly.
+- Finally formatted README. Maybe do it in Markdown sometime, as that's
+  the fashion.
+- build:
+-- The ports/cmake only installs manpages for BUILD_PROGRAMS now.
+-- The configure gives better hint if pkg-config was missing during generation
+   (bug 378).
+- mpg123:
+-- Replace usage of signal() in terminal code with our sigaction() wrapper
+   to fix repeated handling for --sigusr1 and --sigusr2, which got subtly
+   broken on Linux + glibc by a feature test macro change in mpg123 1.31.
+
+1.33.0
+------
+- mpg123
+-- Fix printout of filenames at end (convert/limit text encoding).
+-- Treat HTTP header encoding as unknown/ASCII and formally convert to UTF-8.
+-- Make --continue mode work with --random.
+-- Handle possible failure of __wgetmainargs on Windows (bug 375).
+- mpg123-id3dump: Fix up command line arg handling for Windows.
+- out123
+-- Finally give zero exit code when generating sounds, not indicating
+   spurious failure.
+- build:
+-- Use CCASFLAGS for assembler tests, to enable builds that enable instruction
+   sets that way (bug 377).
+-- PIC for compat libs (convenience libs used during build) only if building
+   shared libs (github PR 17 by Wouter Wijsman).
+- compat:
+-- Map strtok use to strtok_r or strtok_s (MS platforms), if possible.
+   users only in control_generic and libout123 so far. Out123 itself uses mytok.
+   Shall fix bug 376 (build with MSVC again).
+-- Enable build on PSP by merging in the hotfix of opmitting signal code
+   (github PR 18 by Wouter Wijsman).
+- libout123
+-- modules/win32: Align waveOutGetDevCapsA to WAVEOUTCAPSA, in anticipation
+   of some UNICODE change.
+- libmpg123
+-- API version 49 with added mpg123_open_handle64(), mpg123_open64(), and
+   mpg123_open_fixed64() that are not subject to largefile renaming. This
+   means you can still access internal I/O with MPG123_PORTABLE_API. The
+   code has been there before, anyway.
+-- With MPG123_PORTABLE_API, mpg123_open_handle() is hidden now (use
+   mpg123_open_handle64() instead).
+-- more silence on errors (sideband limit message)
+
+1.32.10
+------
+- scripts/tag_lyrics.py: fix for python3 (thanks to cclauss,
+  github PR 16)
+- libout123: Use strtok_r() to avoid conflicts multithreaded contexts
+  (both sides should avoid plain strtok()! Debian-bug 1089543).
+- libmpg123:
+-- Un-break DLL builds that need I/O functions defined in libmpg123.c
+   (like mpg123_open(), bug 374).
+- ports/cmake: More fixup to also produce .pc files with Libs.private.
+
+1.32.9
+------
+- libmpg123:
+-- enable 64 bit offset path for MSVCRT and avoid warnings about
+   MS's game about POSIX API with and without underscores (bug 373).
+-- Increase the library patchlevel, as was forgotten on previous
+   release. Now you can check for distversion >= 1.32.8 or
+   mpg123 libversion >= 48 patchlevel 3 to see if you're vulnerable
+   to CVE-2024-10573.
+
+1.32.8
+------
+- libmpg123:
+-- Add sections to assembly to support PAC/BTI code
+   for aarch64 (-mbranch-protection variants), thanks to Bill Roberts
+   (github PR 15).
+-- Prevent premature application of header info into decoding structure,
+   at worst having triggered out-of-bounds writes of decoded PCM data
+   (bug 322, again). The bug got named CVE-2024-10573.
+- out123: Show --quiet in --longhelp.
+
 1.32.7
 ------
 - ports/cmake: Work around bug in CMake that does not detect FPU on

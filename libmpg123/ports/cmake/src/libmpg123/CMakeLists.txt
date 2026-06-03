@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2...3.12)
+cmake_minimum_required(VERSION 3.2...4.0)
 
 option(NO_FEATURE_REPORT "Disable feature report function" OFF)
 if(CMAKE_SYSTEM_NAME STREQUAL "Android")
@@ -243,6 +243,23 @@ else()
     target_sources(${TARGET} PRIVATE ${PLATFORM_SOURCES})
 endif()
 
+if(HAVE_M)
+    #AucioCodecs: Compatibility with older CMake versions
+    if(${CMAKE_VERSION} VERSION_LESS "3.4.0")
+        set(LIBMPG123_LIBS "${LIBMPG123_LIBS} -lm")
+    else()
+        string(APPEND LIBMPG123_LIBS " -lm")
+    endif()
+endif()
+if(WANT_WIN32_UNICODE)
+    #AucioCodecs: Compatibility with older CMake versions
+    if(${CMAKE_VERSION} VERSION_LESS "3.4.0")
+        set(LIBMPG123_LIBS "${LIBMPG123_LIBS} -lshlwapi")
+    else()
+        string(APPEND LIBMPG123_LIBS " -lshlwapi")
+    endif()
+endif()
+set(LIBMPG123_LIBS "${LIBMPG123_LIBS}" PARENT_SCOPE)
 target_link_libraries(${TARGET} PRIVATE
     $<$<BOOL:${HAVE_M}>:m>
     $<$<BOOL:${WANT_WIN32_UNICODE}>:shlwapi>)
@@ -258,3 +275,4 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../../../../src/include/mpg123.h"
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../../../../src/include/fmt123.h"
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+

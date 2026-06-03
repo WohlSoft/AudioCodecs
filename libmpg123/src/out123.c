@@ -1,7 +1,7 @@
 /*
 	out123: stream data from libmpg123 or libsyn123 to an audio output device
 
-	copyright 1995-2023 by the mpg123 project,
+	copyright 1995-2025 by the mpg123 project,
 	free software under the terms of the LGPL 2.1
 	see COPYING and AUTHORS files in distribution or http://mpg123.org
 
@@ -27,15 +27,12 @@
 */
 
 #define ME "out123"
-#include "config.h"
+#include "mpg123config.h"
 #include "version.h"
 #include "compat/compat.h"
 #include <ctype.h>
-#if _WIN32
+#ifdef _WIN32
 #include "win32_support.h"
-#endif
-#if defined(_WIN32) && defined(DYNAMIC_BUILD)
-#define LINK_MPG123_DLL
 #endif
 #include "out123.h"
 
@@ -1630,7 +1627,10 @@ int main(int sys_argc, char ** sys_argv)
 	}
 
 	if(strcmp(signal_source, "file"))
+	{
+		had_something = 1;
 		generate = TRUE;
+	}
 	else
 		input = open_next_file(argc, argv, 1);
 
@@ -1910,6 +1910,7 @@ static void long_usage(int err)
 	fprintf(o,"                           <a> average events per second\n");
 	fprintf(o," -t     --test             no output, just read and discard data (-o test)\n");
 	fprintf(o," -v[*]  --verbose          increase verboselevel\n");
+	fprintf(o," -q     --quiet            quiet mode\n");
 	#ifdef HAVE_SETPRIORITY
 	fprintf(o,"        --aggressive       tries to get higher priority (nice)\n");
 	#endif

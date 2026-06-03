@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2...3.12)
+cmake_minimum_required(VERSION 3.2...4.0)
 
 include(CheckCSourceCompiles)
 include(CheckFunctionExists)
@@ -41,6 +41,14 @@ function(check_m)
     check_function_exists(sin HAVE_M)
 endfunction(check_m)
 check_m()
+# Cargo coding the check if there is a library rt, possibly providing
+# a canary symbol. I am not sure if this logic really mirrors what
+# autotools does.
+function(check_rt)
+    set(CMAKE_REQUIRED_LIBRARIES rt)
+    check_function_exists(clock_gettime HAVE_RT)
+endfunction(check_rt)
+check_rt()
 
 check_function_exists(atoll HAVE_ATOLL)
 check_function_exists(getaddrinfo HAVE_IPV6)
@@ -59,14 +67,16 @@ check_function_exists(shmdt HAVE_SHMDT)
 check_function_exists(shmctl HAVE_SHMCTL)
 check_function_exists(strerror HAVE_STRERROR)
 check_function_exists(strerror_l HAVE_STRERROR_L)
+check_function_exists(strtok_r HAVE_STRTOK_R)
+check_function_exists(strtok_s HAVE_STRTOK_S)
 check_function_exists(fork HAVE_FORK)
 check_function_exists(execvp HAVE_EXECVP)
 check_function_exists(ctermid HAVE_CTERMID)
 check_function_exists(clock_gettime HAVE_CLOCK_GETTIME)
 
-check_type_size(off_t SIZEOF_OFF_T)
+check_type_size(off_t MPG123_SIZEOF_OFF_T)
 
-if(SIZEOF_OFF_T LESS 8)
+if(MPG123_SIZEOF_OFF_T LESS 8)
 check_function_exists(lseek64 LFS_LARGEFILE_64)
 
 if(LFS_LARGEFILE_64)
@@ -466,7 +476,18 @@ if(UNIX AND NOT PORTABLE_API)
             ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}/"
             LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}/"
             RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}/")
-    endif()
+
+        install(
+           FILES
+            "${CMAKE_CURRENT_SOURCE_DIR}/../../../man1/mpg123.1"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../../../man1/out123.1"
+           DESTINATION "${CMAKE_INSTALL_MANDIR}")
+
+   endif()
 endif()
 
 configure_file(config.cmake.h.in config.h)
+
+set(LIBMPG123_LIBS "${LIBMPG123_LIBS}" PARENT_SCOPE)
+set(LIBOUT123_LIBS "${LIBOUT123_LIBS}" PARENT_SCOPE)
+set(LIBSYN123_LIBS "${LIBSYN123_LIBS}" PARENT_SCOPE)

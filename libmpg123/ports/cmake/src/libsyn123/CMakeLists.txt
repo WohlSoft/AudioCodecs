@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2...3.12)
+cmake_minimum_required(VERSION 3.2...4.0)
 
 include_directories("${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/../../../src/libsyn123/")
 
@@ -19,9 +19,17 @@ target_include_directories(${TARGET} INTERFACE
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
 
+if(HAVE_M)
+    #AucioCodecs: Compatibility with older CMake versions
+    if(${CMAKE_VERSION} VERSION_LESS "3.4.0")
+        set(LIBSYN123_LIBS "${LIBSYN123_LIBS} -lm")
+    else()
+        string(APPEND LIBSYN123_LIBS " -lm")
+    endif()
+endif()
+set(LIBSYN123_LIBS "${LIBSYN123_LIBS}" PARENT_SCOPE)
 target_link_libraries(${TARGET} PRIVATE
-    $<$<BOOL:${HAVE_M}>:m>
-    $<$<BOOL:${WANT_WIN32_UNICODE}>:shlwapi>)
+    $<$<BOOL:${HAVE_M}>:m>)
 
 install(TARGETS ${TARGET} EXPORT targets
     ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}/"
