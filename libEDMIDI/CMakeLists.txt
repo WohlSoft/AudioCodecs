@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.2...3.10)
+cmake_minimum_required (VERSION 3.2...4.0)
 project(libEmuDeMIDI VERSION 1.0.0 LANGUAGES C CXX)
 
 include(GNUInstallDirs)
@@ -58,7 +58,7 @@ function(set_nopie _target)
 endfunction()
 
 function(set_legacy_standard destTarget)
-    if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+    if((CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX) AND CMAKE_VERSION VERSION_GREATER 3.2)
         # Turn on warnings and legacy C/C++ standards to support more compilers
         target_compile_options(${destTarget} PRIVATE
             $<$<COMPILE_LANGUAGE:C>:-Wall -pedantic -std=gnu90 -Wno-long-long>
