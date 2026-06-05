@@ -212,9 +212,6 @@ static bool oplChipInit(ADL_UInt16 address)
 #endif // ADLMIDI_ENABLE_HW_DOS
 
 
-
-
-
 int main(int argc, char **argv)
 {
     s_fprintf(stdout, "==========================================\n"
