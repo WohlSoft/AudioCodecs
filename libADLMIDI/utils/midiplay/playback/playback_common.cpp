@@ -23,6 +23,7 @@
  */
 
 #include <stdint.h>
+#include <string.h>
 #include "playback.h"
 #include "../dev_setup.h"
 
@@ -88,6 +89,32 @@ void fillAudioFormat(const AudioOutputSpec &spec)
     }
 }
 
+void getWavFormat(const AudioOutputSpec &wanted, AudioOutputSpec &obtained)
+{
+    memcpy(&obtained, &wanted, sizeof(AudioOutputSpec));
+
+    // Filter out unsupported formats!
+    switch(obtained.format)
+    {
+    case ADLMIDI_SampleType_S8:
+        obtained.format = ADLMIDI_SampleType_U8;
+        break;
+    case ADLMIDI_SampleType_U16:
+        obtained.format = ADLMIDI_SampleType_S16;
+        break;
+    case ADLMIDI_SampleType_U24:
+        obtained.format = ADLMIDI_SampleType_S24;
+        break;
+    case ADLMIDI_SampleType_U32:
+        obtained.format = ADLMIDI_SampleType_S32;
+        break;
+    case ADLMIDI_SampleType_F64:
+        obtained.format = ADLMIDI_SampleType_F32;
+        break;
+    default:
+        break;
+    }
+}
 
 void applyGain(uint8_t *buffer, size_t bufferSize)
 {
@@ -152,5 +179,94 @@ void applyGain(uint8_t *buffer, size_t bufferSize)
     default:
         break;
     }
+}
+
+size_t stereoToMono(uint8_t *buffer, size_t bufferSize)
+{
+    size_t i;
+
+    switch(g_audioFormat.type)
+    {
+    case ADLMIDI_SampleType_S8:
+    {
+        int8_t *bufSrc = reinterpret_cast<int8_t *>(buffer);
+        int8_t *bufDst = bufSrc;
+        size_t samples = bufferSize;
+        for(i = 0; i < samples; i += 2)
+        {
+            *(bufDst++) = (*(bufSrc) >> 1) + (*(bufSrc + 1) >> 1);
+            bufSrc += 2;
+        }
+        break;
+    }
+    case ADLMIDI_SampleType_U8:
+    {
+        uint8_t *bufSrc = buffer;
+        uint8_t *bufDst = bufSrc;
+        size_t samples = bufferSize;
+        for(i = 0; i < samples; i += 2)
+        {
+            int8_t s1 = static_cast<int8_t>(static_cast<int32_t>(*bufSrc) + (-0x7f - 1));
+            int8_t s2 = static_cast<int8_t>(static_cast<int32_t>(*(bufSrc + 1)) + (-0x7f - 1));
+            *(bufDst++) = static_cast<uint8_t>(static_cast<int32_t>((s1 >> 1) + (s2 >> 1)) - (-0x7f - 1));
+            bufSrc += 2;
+        }
+        break;
+    }
+    case ADLMIDI_SampleType_S16:
+    {
+        int16_t *bufSrc = reinterpret_cast<int16_t *>(buffer);
+        int16_t *bufDst = bufSrc;
+        size_t samples = bufferSize / g_audioFormat.containerSize;
+        for(i = 0; i < samples; i += 2)
+        {
+            *(bufDst++) = (*(bufSrc) >> 1) + (*(bufSrc + 1) >> 1);
+            bufSrc += 2;
+        }
+        break;
+    }
+    case ADLMIDI_SampleType_U16:
+    {
+        uint16_t *bufSrc = reinterpret_cast<uint16_t*>(buffer);
+        uint16_t *bufDst = bufSrc;
+        size_t samples = bufferSize / g_audioFormat.containerSize;
+        for(i = 0; i < samples; i += 2)
+        {
+            int16_t s1 = static_cast<int16_t>(static_cast<int32_t>(*bufSrc) + (-0x7fff - 1));
+            int16_t s2 = static_cast<int16_t>(static_cast<int32_t>(*(bufSrc + 1)) + (-0x7fff - 1));
+            *(bufDst++) = static_cast<uint16_t>(static_cast<int32_t>((s1 >> 1) + (s2 >> 1)) - (-0x7fff - 1));
+            bufSrc += 2;
+        }
+        break;
+    }
+    case ADLMIDI_SampleType_S32:
+    {
+        int32_t *bufSrc = reinterpret_cast<int32_t *>(buffer);
+        int32_t *bufDst = bufSrc;
+        size_t samples = bufferSize / g_audioFormat.containerSize;
+        for(i = 0; i < samples; i += 2)
+        {
+            *(bufDst++) = (*(bufSrc) >> 1) + (*(bufSrc + 1) >> 1);
+            bufSrc += 2;
+        }
+        break;
+    }
+    case ADLMIDI_SampleType_F32:
+    {
+        float *bufSrc = reinterpret_cast<float *>(buffer);
+        float *bufDst = bufSrc;
+        size_t samples = bufferSize / g_audioFormat.containerSize;
+        for(i = 0; i < samples; i += 2)
+        {
+            *(bufDst++) = (*(bufSrc) / 2.0f) + (*(bufSrc + 1) / 2.0f);
+            bufSrc += 2;
+        }
+        break;
+    }
+    default:
+        break;
+    }
+
+    return bufferSize / 2;
 }
 #endif

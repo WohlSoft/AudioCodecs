@@ -285,12 +285,14 @@ int main(int argc, char **argv)
     adl_setLoopEnabled(myDevice, s_devSetup.recordWave ? 0 : s_devSetup.loopEnabled);
 #endif
 
+    adl_setModeEMIDI(myDevice, s_devSetup.modeEMIDI);
+
     adl_setAutoArpeggio(myDevice, s_devSetup.autoArpeggioEnabled);
     adl_setChannelAllocMode(myDevice, s_devSetup.chanAlloc);
 
 #ifdef DEBUG_TRACE_ALL_EVENTS
     //Hook all MIDI events are ticking while generating an output buffer
-    if(!recordWave)
+    if(!s_devSetup.recordWave)
         adl_setRawEventHook(myDevice, debugPrintEvent, NULL);
 #endif
 

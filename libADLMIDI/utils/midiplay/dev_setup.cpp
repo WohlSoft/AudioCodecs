@@ -111,6 +111,7 @@ Args::Args() :
     , recordWave(false)
     , loopEnabled(1)
 #endif
+    , modeEMIDI(0)
 
     , sampleRate(44100)
 
@@ -206,10 +207,18 @@ int Args::parseArgs(int argc, char **argv_arr, bool *quit)
             " --solo <track>             Selects a solo track to play\n"
             " --only <track1,...,trackN> Selects a subset of tracks to play\n"
             " --song <song ID 0...N-1>   Selects a song to play (if XMI)\n"
+            " --emidi Enables handling of MIDI files as Apogee Sound System EMIDI\n"
             " -ea   Enable the auto-arpeggio\n"
 #ifndef ADLMIDI_ENABLE_HW_DOS
             " -fp Enables full-panning stereo support\n"
             " --gain <value> Set the gaining factor (default 2.0)\n"
+            " -mono Monophonic audio output (Stereo by default, Emulators only).\n"
+            " -s8   Try to output as 8bit signed PCM.\n"
+            " -u8   Try to output as 8bit unsigned PCM.\n"
+            " -s16  Try to output as 16bit signed PCM.\n"
+            " -u16  Try to output as 16bit unsigned PCM.\n"
+            " -s32  Try to output as 32bit signed PCM.\n"
+            " -f32  Try to output as 32bit float samples.\n"
 #   ifndef ADLMIDI_DISABLE_NUKED_EMULATOR
             " --emu-nuked  Uses Nuked OPL3 v 1.8 emulator\n"
             " --emu-nuked7 Uses Nuked OPL3 Fast emulator\n"
@@ -316,6 +325,8 @@ int Args::parseArgs(int argc, char **argv_arr, bool *quit)
             recordWave = true;//Record library output into WAV file
         }
 #   endif
+        else if(!std::strcmp("-mono", argv[2]))
+            spec.channels = 1;
         else if(!std::strcmp("-s8", argv[2]))
             spec.format = ADLMIDI_SampleType_S8;
         else if(!std::strcmp("-u8", argv[2]))
@@ -340,6 +351,8 @@ int Args::parseArgs(int argc, char **argv_arr, bool *quit)
         else if(!std::strcmp("-nl", argv[2]))
             loopEnabled = 0; //Enable loop
 #endif
+        else if(!std::strcmp("--emidi", argv[2]))
+            modeEMIDI = 1; //Enable EMIDI mode
         else if(!std::strcmp("-na", argv[2])) // Deprecated
             autoArpeggioEnabled = 0; //Enable auto-arpeggio
         else if(!std::strcmp("-ea", argv[2]))
