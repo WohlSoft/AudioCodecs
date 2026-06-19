@@ -438,6 +438,7 @@ static void IME_Enable(SDL_VideoData *videodata, HWND hwnd)
         ImmAssociateContext(videodata->ime_hwnd_current, videodata->ime_himc);
     }
 
+    SDL_LogDebug(SDL_LOG_CATEGORY_INPUT, "Toggling IME ON");
     videodata->ime_enabled = SDL_TRUE;
     IME_UpdateInputLocale(videodata);
     UILess_EnableUIUpdates(videodata);
@@ -454,6 +455,7 @@ static void IME_Disable(SDL_VideoData *videodata, HWND hwnd)
         ImmAssociateContext(videodata->ime_hwnd_current, (HIMC)0);
     }
 
+    SDL_LogDebug(SDL_LOG_CATEGORY_INPUT, "Toggling IME OFF");
     videodata->ime_enabled = SDL_FALSE;
     UILess_DisableUIUpdates(videodata);
 }
