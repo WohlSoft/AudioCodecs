@@ -584,8 +584,7 @@ int SDL_VideoInit(const char *driver_name)
         SDL_DisableScreenSaver();
     }
 
-/* AudioCodecs HACK: Don't autostart the text input! It should not be enabled when is not needed! */
-#if 0 /*!defined(SDL_VIDEO_DRIVER_N3DS) && !defined(SDL_VIDEO_DRIVER_PSP)*/
+#if !defined(SDL_VIDEO_DRIVER_N3DS) && !defined(SDL_VIDEO_DRIVER_PSP)
     /* In the initial state we don't want to pop up an on-screen keyboard,
      * but we do want to allow text input from other mechanisms.
      */
