@@ -3,6 +3,17 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
     set(EMSCRIPTEN 1)
 endif()
 
+# Define iOS platform markers if they are missing (at some old CMake toolchains)
+if(${CMAKE_SYSTEM_NAME} STREQUAL "iOS")
+    if(NOT DEFINED IOS)
+        set(IOS TRUE)
+    endif()
+
+    if(NOT DEFINED PLATFORM_IOS)
+        set(PLATFORM_IOS TRUE)
+    endif()
+endif()
+
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
 

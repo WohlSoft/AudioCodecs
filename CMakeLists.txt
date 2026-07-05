@@ -13,9 +13,30 @@ if(POLICY CMP0077) # Cache variables override since 3.12
     cmake_policy(SET CMP0077 NEW)
 endif()
 
+if(POLICY CMP0114) # In order to support the Xcode "new build system"
+    cmake_policy(SET CMP0114 NEW)
+endif()
+
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
+    set(EMSCRIPTEN 1)
+    message("AudioCodecs using Emscripten!")
+endif()
+
+# Define iOS platform markers if they are missing (at some old CMake toolchains)
+if(${CMAKE_SYSTEM_NAME} STREQUAL "iOS")
+    if(NOT DEFINED IOS)
+        set(IOS TRUE)
+    endif()
+
+    if(NOT DEFINED PLATFORM_IOS)
+        set(PLATFORM_IOS TRUE)
+    endif()
+    message("AudioCodecs using iOS!")
+endif()
+
 string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_LOWER)
 
-if(NOT EMSCRIPTEN AND NOT VITA AND NOT PSP)
+if(NOT EMSCRIPTEN AND NOT VITA AND NOT PSP AND NOT IOS)
     option(CODECS_BUILD_SHARED "Build shared libraries if possible" OFF)
     option(CODECS_BUILD_STATIC "Build static libraries if possible" ON)
 else()
@@ -29,11 +50,6 @@ if(ANDROID)
     option(USE_USE_NDK_MAKE "Build SDL2 for Android using NDK Make" OFF)
 endif()
 set(SDL2_REPO_PATH "" CACHE PATH "Path to the SDL2")
-
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
-    set(EMSCRIPTEN 1)
-    message("AudioCodecs using Emscripten!")
-endif()
 
 if(NOT WIN32 AND NOT VITA AND NOT PSP AND NOT EMSCRIPTEN AND NOT ANDROID)
     option(ENABLE_FPIC "Build static libraries as position independent code" ON)
@@ -55,7 +71,7 @@ endif()
 if(NOT SDL2_REPO_PATH)
     # Try to resolve sqlite dependency
     if(DOWNLOAD_SDL2_DEPENDENCY OR USE_LOCAL_SDL2)
-        if(NOT EMSCRIPTEN AND NOT VITA AND NOT PSP)
+        if(NOT EMSCRIPTEN AND NOT VITA AND NOT PSP AND NOT IOS)
             option(BUILD_SDL2_SHARED "Enable shared build of SDL2" ON)
             option(BUILD_SDL2_STATIC "Enable static build of SDL2" ON)
         else()
