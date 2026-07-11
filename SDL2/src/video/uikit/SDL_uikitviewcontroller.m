@@ -123,6 +123,7 @@ SDL_HideHomeIndicatorHintChanged(void *userdata, const char *name, const char *o
          * To enable this on phones, you should add the following line to Info.plist:
          * <key>CADisableMinimumFrameDurationOnPhone</key> <true/>
          */
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000
         if (@available(iOS 15.0, tvOS 15.0, *)) {
             SDL_DisplayMode mode;
             if (SDL_GetDesktopDisplayMode(0, &mode) == 0 && mode.refresh_rate > 60.0f) {
@@ -132,6 +133,7 @@ SDL_HideHomeIndicatorHintChanged(void *userdata, const char *name, const char *o
                 [displayLink addToRunLoop:NSRunLoop.currentRunLoop forMode:NSDefaultRunLoopMode];
             }
         }
+#endif
     }
     return self;
 }
