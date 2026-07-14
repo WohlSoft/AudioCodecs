@@ -149,7 +149,7 @@ xmp_check_function(mkstemp "stdlib.h" HAVE_MKSTEMP)
 
 check_include_file(unistd.h HAVE_UNISTD_H)
 
-if(HAVE_UNISTD_H)
+if(HAVE_UNISTD_H AND (NOT APPLE OR (APPLE AND NOT TVOS)))
     xmp_check_function(pipe "unistd.h" HAVE_PIPE)
     xmp_check_function(fork "unistd.h" HAVE_FORK)
     xmp_check_function(execvp "unistd.h" HAVE_EXECVP)
