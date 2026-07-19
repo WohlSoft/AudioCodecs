@@ -40,7 +40,7 @@
  * the app's UI is storyboard-based. SDL is not storyboard-based, however
  * several major third-party ad APIs (e.g. Google admob) incorrectly assume this
  * property always exists, and will crash if it doesn't. */
-@property (nonatomic) UIWindow *window;
+@property (nonatomic, strong) UIWindow *window;
 
 @end
 
