@@ -237,6 +237,44 @@ CGRect UIKit_ComputeViewFrame(SDL_Window *window, UIScreen *screen)
     return frame;
 }
 
+#ifdef SDL_UIKIT_HAS_UISCENE
+UIWindowScene *UIKit_GetActiveWindowScene(void)
+{
+    if (@available(iOS 13.0, tvOS 13.0, *)) {
+        NSSet<UIScene *> *connectedScenes = [UIApplication sharedApplication].connectedScenes;
+
+        // First, try to find an active foreground scene
+        for (UIScene *scene in connectedScenes) {
+            if ([scene isKindOfClass:[UIWindowScene class]]) {
+                UIWindowScene *windowScene = (UIWindowScene *)scene;
+                if (windowScene.activationState == UISceneActivationStateForegroundActive) {
+                    return windowScene;
+                }
+            }
+        }
+
+        // If no active scene, return any foreground scene
+        for (UIScene *scene in connectedScenes) {
+            if ([scene isKindOfClass:[UIWindowScene class]]) {
+                UIWindowScene *windowScene = (UIWindowScene *)scene;
+                if (windowScene.activationState == UISceneActivationStateForegroundInactive) {
+                    return windowScene;
+                }
+            }
+        }
+
+        // Last resort: return first window scene
+        for (UIScene *scene in connectedScenes) {
+            if ([scene isKindOfClass:[UIWindowScene class]]) {
+                return (UIWindowScene *)scene;
+            }
+        }
+    }
+
+    return nil;
+}
+#endif
+
 void UIKit_ForceUpdateHomeIndicator(void)
 {
 #if !TARGET_OS_TV

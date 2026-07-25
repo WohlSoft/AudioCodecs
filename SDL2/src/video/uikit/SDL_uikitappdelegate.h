@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2025 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2026 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -20,6 +20,13 @@
 */
 
 #import <UIKit/UIKit.h>
+#include <AvailabilityVersions.h>
+
+#if (defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000) || (defined(__TV_OS_VERSION_MAX_ALLOWED) && __TV_OS_VERSION_MAX_ALLOWED >= 130000)
+# ifndef SDL_UIKIT_HAS_UISCENE
+#   define SDL_UIKIT_HAS_UISCENE
+# endif
+#endif
 
 @interface SDLLaunchScreenController : UIViewController
 
@@ -29,7 +36,18 @@
 
 @end
 
-@interface SDLUIKitDelegate : NSObject<UIApplicationDelegate>
+#ifdef SDL_UIKIT_HAS_UISCENE
+API_AVAILABLE(ios(13.0))
+@interface SDLUIKitSceneDelegate : NSObject <UIApplicationDelegate, UIWindowSceneDelegate>
+
++ (NSString *)getSceneDelegateClassName;
+
+- (void)hideLaunchScreen;
+
+@end
+#endif
+
+@interface SDLUIKitDelegate : NSObject <UIApplicationDelegate>
 
 + (id)sharedAppDelegate;
 + (NSString *)getAppDelegateClassName;

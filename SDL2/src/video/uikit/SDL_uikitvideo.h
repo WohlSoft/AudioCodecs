@@ -26,6 +26,13 @@
 #ifdef __OBJC__
 
 #include <UIKit/UIKit.h>
+#include <AvailabilityVersions.h>
+
+#if (defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000) || (defined(__TV_OS_VERSION_MAX_ALLOWED) && __TV_OS_VERSION_MAX_ALLOWED >= 130000)
+# ifndef SDL_UIKIT_HAS_UISCENE
+#   define SDL_UIKIT_HAS_UISCENE
+# endif
+#endif
 
 @interface SDL_VideoData : NSObject
 
@@ -34,6 +41,10 @@
 @end
 
 CGRect UIKit_ComputeViewFrame(SDL_Window *window, UIScreen *screen);
+
+#ifdef SDL_UIKIT_HAS_UISCENE
+API_AVAILABLE(ios(13.0)) UIWindowScene *UIKit_GetActiveWindowScene(void);
+#endif
 
 #endif /* __OBJC__ */
 

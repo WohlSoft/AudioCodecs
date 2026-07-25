@@ -116,7 +116,7 @@ static int SetupWindowData(_THIS, SDL_Window *window, UIWindow *uiwindow, SDL_bo
     if (displaydata.uiscreen == [UIScreen mainScreen]) {
         NSUInteger orients = UIKit_GetSupportedOrientations(window);
         BOOL supportsLandscape = (orients & UIInterfaceOrientationMaskLandscape) != 0;
-        BOOL supportsPortrait = (orients & (UIInterfaceOrientationMaskPortrait|UIInterfaceOrientationMaskPortraitUpsideDown)) != 0;
+        BOOL supportsPortrait = (orients & (UIInterfaceOrientationMaskPortrait | UIInterfaceOrientationMaskPortraitUpsideDown)) != 0;
 
         /* Make sure the width/height are oriented correctly */
         if ((width > height && !supportsLandscape) || (height > width && !supportsPortrait)) {
@@ -197,21 +197,49 @@ int UIKit_CreateWindow(_THIS, SDL_Window *window)
         }
 
         if (data.uiscreen == [UIScreen mainScreen]) {
-            if (window->flags & (SDL_WINDOW_FULLSCREEN|SDL_WINDOW_BORDERLESS)) {
-                [UIApplication sharedApplication].statusBarHidden = YES;
+            if (@available(iOS 13.0, *)) {
+                /* iOS 13+ uses view controller's prefersStatusBarHidden */
             } else {
-                [UIApplication sharedApplication].statusBarHidden = NO;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+                if (window->flags & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS)) {
+                    [UIApplication sharedApplication].statusBarHidden = YES;
+                } else {
+                    [UIApplication sharedApplication].statusBarHidden = NO;
+                }
+#pragma clang diagnostic pop
             }
         }
 #endif /* !TARGET_OS_TV */
 
-        /* ignore the size user requested, and make a fullscreen window */
-        /* !!! FIXME: can we have a smaller view? */
-        uiwindow = [[SDL_uikitwindow alloc] initWithFrame:data.uiscreen.bounds];
+#ifdef SDL_UIKIT_HAS_UISCENE
+        if (@available(iOS 13.0, tvOS 13.0, *)) {
+            UIWindowScene *scene = UIKit_GetActiveWindowScene();
+            if (scene) {
+                uiwindow = [[UIWindow alloc] initWithWindowScene:scene];
+            }
+        }
+#endif /* Max iOS SDK */
+
+        if (!uiwindow) {
+            /* ignore the size user requested, and make a fullscreen window */
+            /* !!! FIXME: can we have a smaller view? */
+            uiwindow = [[SDL_uikitwindow alloc] initWithFrame:data.uiscreen.bounds];
+        }
 
         /* put the window on an external display if appropriate. */
         if (data.uiscreen != [UIScreen mainScreen]) {
-            [uiwindow setScreen:data.uiscreen];
+#ifdef SDL_UIKIT_HAS_UISCENE
+            if (@available(iOS 13.0, tvOS 13.0, *)) {
+                /* iOS 13+ uses UIWindowScene to manage screen association */
+            } else
+#endif
+            {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+                [uiwindow setScreen:data.uiscreen];
+#pragma clang diagnostic pop
+            }
         }
 
         if (SetupWindowData(_this, window, uiwindow, SDL_TRUE) < 0) {
@@ -272,10 +300,20 @@ static void UIKit_UpdateWindowBorder(_THIS, SDL_Window * window)
 
 #if !TARGET_OS_TV
     if (data.uiwindow.screen == [UIScreen mainScreen]) {
-        if (window->flags & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS)) {
-            [UIApplication sharedApplication].statusBarHidden = YES;
-        } else {
-            [UIApplication sharedApplication].statusBarHidden = NO;
+#ifdef SDL_UIKIT_HAS_UISCENE
+        if (@available(iOS 13.0, *)) {
+            /* iOS 13+ uses view controller's prefersStatusBarHidden */
+        } else
+#endif
+        {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+            if (window->flags & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS)) {
+                [UIApplication sharedApplication].statusBarHidden = YES;
+            } else {
+                [UIApplication sharedApplication].statusBarHidden = NO;
+            }
+#pragma clang diagnostic pop
         }
 
         [viewcontroller setNeedsStatusBarAppearanceUpdate];

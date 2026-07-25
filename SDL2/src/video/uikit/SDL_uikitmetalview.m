@@ -69,6 +69,12 @@
     CGSize size = self.bounds.size;
     size.width *= self.layer.contentsScale;
     size.height *= self.layer.contentsScale;
+
+    /* Skip invalid sizes (can happen on visionOS before scene geometry is applied) */
+    if (size.width <= 0 || size.height <= 0) {
+        return;
+    }
+
     ((CAMetalLayer *)self.layer).drawableSize = size;
 }
 

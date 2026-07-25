@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2025 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2026 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -52,28 +52,27 @@ static int exit_status;
 
 int SDL_UIKitRunApp(int argc, char *argv[], SDL_main_func mainFunction)
 {
-    int i;
-
     /* store arguments */
     forward_main = mainFunction;
     forward_argc = argc;
-    forward_argv = (char **)malloc((argc+1) * sizeof(char *));
-    for (i = 0; i < argc; i++) {
-        forward_argv[i] = malloc( (strlen(argv[i])+1) * sizeof(char));
-        strcpy(forward_argv[i], argv[i]);
-    }
-    forward_argv[i] = NULL;
+    forward_argv = argv;
 
     /* Give over control to run loop, SDLUIKitDelegate will handle most things from here */
     @autoreleasepool {
-        UIApplicationMain(argc, argv, nil, [SDLUIKitDelegate getAppDelegateClassName]);
-    }
+        NSString *name = nil;
 
-    /* free the memory we used to hold copies of argc and argv */
-    for (i = 0; i < forward_argc; i++) {
-        free(forward_argv[i]);
+#ifdef SDL_UIKIT_HAS_UISCENE
+        if (@available(iOS 13.0, tvOS 13.0, *)) {
+            name = [SDLUIKitSceneDelegate getSceneDelegateClassName];
+        }
+#endif
+
+        if (!name) {
+            name = [SDLUIKitDelegate getAppDelegateClassName];
+        }
+
+        UIApplicationMain(argc, argv, nil, name);
     }
-    free(forward_argv);
 
     return exit_status;
 }
@@ -89,7 +88,10 @@ SDL_IdleTimerDisabledChanged(void *userdata, const char *name, const char *oldVa
 /* Load a launch image using the old UILaunchImageFile-era naming rules. */
 static UIImage *SDL_LoadLaunchImageNamed(NSString *name, int screenh)
 {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     UIInterfaceOrientation curorient = [UIApplication sharedApplication].statusBarOrientation;
+#pragma clang diagnostic pop
     UIUserInterfaceIdiom idiom = [UIDevice currentDevice].userInterfaceIdiom;
     UIImage *image = nil;
 
@@ -125,19 +127,21 @@ static UIImage *SDL_LoadLaunchImageNamed(NSString *name, int screenh)
 }
 
 @interface SDLLaunchStoryboardViewController : UIViewController
-@property (nonatomic, strong) UIViewController *storyboardViewController;
+@property(nonatomic, strong) UIViewController *storyboardViewController;
 - (instancetype)initWithStoryboardViewController:(UIViewController *)storyboardViewController;
 @end
 
 @implementation SDLLaunchStoryboardViewController
 
-- (instancetype)initWithStoryboardViewController:(UIViewController *)storyboardViewController {
+- (instancetype)initWithStoryboardViewController:(UIViewController *)storyboardViewController
+{
     self = [super init];
     self.storyboardViewController = storyboardViewController;
     return self;
 }
 
-- (void)viewDidLoad {
+- (void)viewDidLoad
+{
     [super viewDidLoad];
 
     [self addChildViewController:self.storyboardViewController];
@@ -146,21 +150,26 @@ static UIImage *SDL_LoadLaunchImageNamed(NSString *name, int screenh)
     self.storyboardViewController.view.frame = self.view.bounds;
     [self.storyboardViewController didMoveToParentViewController:self];
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     UIApplication.sharedApplication.statusBarHidden = self.prefersStatusBarHidden;
     UIApplication.sharedApplication.statusBarStyle = self.preferredStatusBarStyle;
+#pragma clang diagnostic pop
 }
 
-- (BOOL)prefersStatusBarHidden {
+- (BOOL)prefersStatusBarHidden
+{
     return [[NSBundle.mainBundle objectForInfoDictionaryKey:@"UIStatusBarHidden"] boolValue];
 }
 
-- (UIStatusBarStyle)preferredStatusBarStyle {
+- (UIStatusBarStyle)preferredStatusBarStyle
+{
     NSString *statusBarStyle = [NSBundle.mainBundle objectForInfoDictionaryKey:@"UIStatusBarStyle"];
     if ([statusBarStyle isEqualToString:@"UIStatusBarStyleLightContent"]) {
         return UIStatusBarStyleLightContent;
     }
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_13_0
-    if (@available(iOS 13.0, *)) {
+#ifdef SDL_UIKIT_HAS_UISCENE
+    if (@available(iOS 13.0, tvOS 13.0, *)) {
         if ([statusBarStyle isEqualToString:@"UIStatusBarStyleDarkContent"]) {
             return UIStatusBarStyleDarkContent;
         }
@@ -218,8 +227,13 @@ static UIImage *SDL_LoadLaunchImageNamed(NSString *name, int screenh)
         int screenw = (int)([UIScreen mainScreen].bounds.size.width + 0.5);
         int screenh = (int)([UIScreen mainScreen].bounds.size.height + 0.5);
 
+
+
 #if !TARGET_OS_TV
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
         UIInterfaceOrientation curorient = [UIApplication sharedApplication].statusBarOrientation;
+#pragma clang diagnostic pop
 
         /* We always want portrait-oriented size, to match UILaunchImageSize. */
         if (screenw > screenh) {
@@ -347,9 +361,203 @@ static UIImage *SDL_LoadLaunchImageNamed(NSString *name, int screenh)
 }
 #endif /* !TARGET_OS_TV */
 
-@end
+@end /* SDLLaunchScreenController */
 
-@implementation SDLUIKitDelegate {
+
+
+#ifdef SDL_UIKIT_HAS_UISCENE
+API_AVAILABLE(ios(13.0))
+@implementation SDLUIKitSceneDelegate
+{
+    UIWindow *launchWindow;
+    NSMutableArray<NSURL *> *launchURLs;
+}
+
++ (NSString *)getSceneDelegateClassName
+{
+    return @"SDLUIKitSceneDelegate";
+}
+
+- (void)scene:(UIScene *)scene willConnectToSession:(UISceneSession *)session options:(UISceneConnectionOptions *)connectionOptions
+{
+    UIWindowScene *windowScene;
+    NSBundle *bundle;
+#ifdef SDL_IPHONE_LAUNCHSCREEN
+    UIViewController *vc = nil;
+    NSString *screenname = nil;
+#endif
+
+    if (![scene isKindOfClass:[UIWindowScene class]]) {
+        return;
+    }
+
+    windowScene = (UIWindowScene *)scene;
+    windowScene.delegate = self;
+
+    bundle = [NSBundle mainBundle];
+
+#ifdef SDL_IPHONE_LAUNCHSCREEN
+#if !TARGET_OS_TV
+    screenname = [bundle objectForInfoDictionaryKey:@"UILaunchStoryboardName"];
+
+    if (screenname) {
+        @try {
+            UIStoryboard *storyboard = [UIStoryboard storyboardWithName:screenname bundle:bundle];
+            __auto_type storyboardVc = [storyboard instantiateInitialViewController];
+            vc = [[SDLLaunchStoryboardViewController alloc] initWithStoryboardViewController:storyboardVc];
+        }
+        @catch (NSException *exception) {
+            // Do nothing (there's more code to execute below).
+        }
+    }
+#endif
+
+    if (vc == nil) {
+        vc = [[SDLLaunchScreenController alloc] initWithNibName:screenname bundle:bundle];
+    }
+
+    if (vc.view) {
+#if TARGET_OS_VISION
+        CGRect viewFrame = CGRectMake(0, 0, SDL_XR_SCREENWIDTH, SDL_XR_SCREENHEIGHT);
+#else
+        CGRect viewFrame = windowScene.coordinateSpace.bounds;
+#endif
+        launchWindow = [[UIWindow alloc] initWithWindowScene:windowScene];
+        launchWindow.frame = viewFrame;
+
+        launchWindow.windowLevel = UIWindowLevelNormal + 1.0;
+        launchWindow.hidden = NO;
+        launchWindow.rootViewController = vc;
+    }
+#endif
+
+    // Set working directory to resource path
+    [[NSFileManager defaultManager] changeCurrentDirectoryPath:[bundle resourcePath]];
+
+    launchURLs = [[NSMutableArray alloc] init];
+
+    for (NSUserActivity *activity in connectionOptions.userActivities) {
+        if (activity.webpageURL) {
+            [launchURLs addObject:activity.webpageURL];
+        }
+    }
+
+    for (UIOpenURLContext *urlContext in connectionOptions.URLContexts) {
+        [launchURLs addObject:urlContext.URL];
+    }
+
+    /* register a callback for the idletimer hint */
+    SDL_AddHintCallback(SDL_HINT_IDLE_TIMER_DISABLED,
+                        SDL_IdleTimerDisabledChanged, NULL);
+
+    SDL_SetMainReady();
+    [self performSelector:@selector(postFinishLaunch) withObject:nil afterDelay:0.0];
+}
+
+- (void)scene:(UIScene *)scene openURLContexts:(NSSet<UIOpenURLContext *> *)URLContexts
+{
+    for (UIOpenURLContext *context in URLContexts) {
+        [self handleURL:context.URL];
+    }
+}
+
+- (void)sceneDidBecomeActive:(UIScene *)scene
+{
+    SDL_OnApplicationDidBecomeActive();
+}
+
+- (void)sceneWillResignActive:(UIScene *)scene
+{
+    SDL_OnApplicationWillResignActive();
+}
+
+- (void)sceneWillEnterForeground:(UIScene *)scene
+{
+    SDL_OnApplicationWillEnterForeground();
+}
+
+- (void)sceneDidEnterBackground:(UIScene *)scene
+{
+    SDL_OnApplicationDidEnterBackground();
+}
+
+- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer
+{
+    return NO; /* Workaround to not steal internal hesture handler */
+}
+
+- (void)handleURL:(NSURL *)url
+{
+    NSURL *fileURL = url.filePathURL;
+    if (fileURL != nil) {
+        SDL_SendDropFile(NULL, fileURL.path.UTF8String);
+    } else {
+        SDL_SendDropFile(NULL, url.absoluteString.UTF8String);
+    }
+    SDL_SendDropComplete(NULL);
+}
+
+- (void)hideLaunchScreen
+{
+    UIWindow *window = launchWindow;
+
+    if (!window || window.hidden) {
+        return;
+    }
+
+    launchWindow = nil;
+
+    [UIView animateWithDuration:0.2
+        animations:^{
+          window.alpha = 0.0;
+        }
+        completion:^(BOOL finished) {
+          window.hidden = YES;
+          UIKit_ForceUpdateHomeIndicator();
+        }];
+}
+
+- (void)postFinishLaunch
+{
+    [self performSelector:@selector(hideLaunchScreen) withObject:nil afterDelay:0.0];
+    [self performSelector:@selector(processLaunchURLs) withObject:nil afterDelay:0.0];
+
+    SDL_iPhoneSetEventPump(SDL_TRUE);
+    exit_status = forward_main(forward_argc, forward_argv);
+    SDL_iPhoneSetEventPump(SDL_FALSE);
+
+    if (launchWindow) {
+        launchWindow.hidden = YES;
+        launchWindow = nil;
+    }
+
+    /* exit, passing the return status from the user's application */
+    /* We don't actually exit to support applications that do setup in their
+     * main function and then allow the Cocoa event loop to run. */
+    /* exit(exit_status); */
+}
+
+- (void)processLaunchURLs
+{
+    for (NSURL *url in launchURLs) {
+        [self handleURL:url];
+    }
+    launchURLs = nil;
+}
+
+- (UISceneConfiguration *)application:(UIApplication *)application configurationForConnectingSceneSession:(UISceneSession *)connectingSceneSession options:(UISceneConnectionOptions *)options API_AVAILABLE(ios(13.0))
+{
+    // This doesn't appear to be called, but it needs to be implemented to signal that we support the UIScene life cycle
+    UISceneConfiguration *config = [[UISceneConfiguration alloc] initWithName:@"SDLSceneConfiguration" sessionRole:connectingSceneSession.role];
+    config.delegateClass = [SDLUIKitSceneDelegate class];
+    return config;
+}
+
+@end // SDLUIKitSceneDelegate
+#endif /* Max SDK allower */
+
+@implementation SDLUIKitDelegate
+{
     UIWindow *launchWindow;
 }
 
@@ -380,12 +588,14 @@ static UIImage *SDL_LoadLaunchImageNamed(NSString *name, int screenh)
     launchWindow = nil;
 
     /* Do a nice animated fade-out (roughly matches the real launch behavior.) */
-    [UIView animateWithDuration:0.2 animations:^{
-        window.alpha = 0.0;
-    } completion:^(BOOL finished) {
-        window.hidden = YES;
-        UIKit_ForceUpdateHomeIndicator(); /* Wait for launch screen to hide so settings are applied to the actual view controller. */
-    }];
+    [UIView animateWithDuration:0.2
+        animations:^{
+          window.alpha = 0.0;
+        }
+        completion:^(BOOL finished) {
+          window.hidden = YES;
+          UIKit_ForceUpdateHomeIndicator(); /* Wait for launch screen to hide so settings are applied to the actual view controller. */
+        }];
 }
 
 - (void)postFinishLaunch
@@ -481,7 +691,7 @@ static UIImage *SDL_LoadLaunchImageNamed(NSString *name, int screenh)
     if (_this) {
         SDL_Window *window = NULL;
         for (window = _this->windows; window != NULL; window = window->next) {
-            SDL_WindowData *data = (__bridge SDL_WindowData *) window->driverdata;
+            SDL_WindowData *data = (__bridge SDL_WindowData *)window->driverdata;
             if (data != nil) {
                 return data.uiwindow;
             }
@@ -493,6 +703,11 @@ static UIImage *SDL_LoadLaunchImageNamed(NSString *name, int screenh)
 - (void)setWindow:(UIWindow *)window
 {
     /* Do nothing. */
+}
+
+- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer
+{
+    return NO; /* Workaround to not steal internal hesture handler */
 }
 
 - (void)sendDropFileForURL:(NSURL *)url

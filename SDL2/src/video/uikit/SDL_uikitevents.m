@@ -60,7 +60,10 @@ static BOOL UIKit_EventPumpEnabled = YES;
         [notificationCenter addObserver:self selector:@selector(applicationWillTerminate) name:UIApplicationWillTerminateNotification object:nil];
         [notificationCenter addObserver:self selector:@selector(applicationDidReceiveMemoryWarning) name:UIApplicationDidReceiveMemoryWarningNotification object:nil];
 #if !TARGET_OS_TV
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
         [notificationCenter addObserver:self selector:@selector(applicationDidChangeStatusBarOrientation) name:UIApplicationDidChangeStatusBarOrientationNotification object:nil];
+#pragma clang diagnostic pop
 #endif
     } else if (!UIKit_EventPumpEnabled && self.isObservingNotifications) {
         self.isObservingNotifications = NO;
