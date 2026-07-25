@@ -178,6 +178,11 @@ static UIImage *SDL_LoadLaunchImageNamed(NSString *name, int screenh)
     return UIStatusBarStyleDefault;
 }
 
+- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer
+{
+    return NO; /* Workaround to not steal internal hesture handler */
+}
+
 @end
 #endif /* !TARGET_OS_TV */
 
@@ -481,11 +486,6 @@ API_AVAILABLE(ios(13.0))
     SDL_OnApplicationDidEnterBackground();
 }
 
-- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer
-{
-    return NO; /* Workaround to not steal internal hesture handler */
-}
-
 - (void)handleURL:(NSURL *)url
 {
     NSURL *fileURL = url.filePathURL;
@@ -703,11 +703,6 @@ API_AVAILABLE(ios(13.0))
 - (void)setWindow:(UIWindow *)window
 {
     /* Do nothing. */
-}
-
-- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer
-{
-    return NO; /* Workaround to not steal internal hesture handler */
 }
 
 - (void)sendDropFileForURL:(NSURL *)url
