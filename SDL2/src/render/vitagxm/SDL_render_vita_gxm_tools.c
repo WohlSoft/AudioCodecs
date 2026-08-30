@@ -244,6 +244,8 @@ static void set_stencil_mask(VITA_GXM_RenderData *data, float x, float y, float 
 
 void set_clip_rectangle(VITA_GXM_RenderData *data, int x_min, int y_min, int x_max, int y_max)
 {
+    const int max_tex_size = 4096;
+
     if (data->drawing) {
         // clear the stencil buffer to 0
         sceGxmSetFrontStencilFunc(
@@ -256,7 +258,7 @@ void set_clip_rectangle(VITA_GXM_RenderData *data, int x_min, int y_min, int x_m
             0xFF);
 
         // because we are in a viewport-based draw env, need to set the stencil mask to the top-left of the 0 point as well as the bottom-right
-        set_stencil_mask(data, -VITA_GXM_SCREEN_WIDTH, -VITA_GXM_SCREEN_HEIGHT, VITA_GXM_SCREEN_WIDTH * 2, VITA_GXM_SCREEN_HEIGHT * 2);
+        set_stencil_mask(data, -max_tex_size, -max_tex_size, max_tex_size * 2, max_tex_size * 2);
 
         // set the stencil to 1 in the desired region
         sceGxmSetFrontStencilFunc(
