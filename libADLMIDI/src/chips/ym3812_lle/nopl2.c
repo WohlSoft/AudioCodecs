@@ -103,7 +103,7 @@ static void nopl2_cycle(nopl2_t *chip)
                 if (shift)
                 {
                     shift--;
-                    chip->sample = mant << shift;
+                    chip->sample = mant * (1 << shift);
                 }
             }
 

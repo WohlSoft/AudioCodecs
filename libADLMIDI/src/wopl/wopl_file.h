@@ -132,7 +132,9 @@ typedef enum WOPL_ErrorCodes
     /* Out of memory */
     WOPL_ERR_OUT_OF_MEMORY,
     /* Given null pointer memory data */
-    WOPL_ERR_NULL_POINTER
+    WOPL_ERR_NULL_POINTER,
+    /* Version of file is not a version of the format */
+    WOPL_ERR_INVALID_VERSION
 } WOPL_ErrorCodes;
 
 /* Operator indeces inside of Instrument Entry */

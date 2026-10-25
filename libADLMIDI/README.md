@@ -15,8 +15,12 @@ Library is based on the ADLMIDI, a MIDI player for Linux and Windows with OPL3 e
 
 # Differences with original tool
 * Reverb code has been removed.
-* Doesn't contains platform specific code. Library can be used with various purposes include making of a custom music decoders for a media players and usage with a games.
+* Doesn't contains platform specific code (except of executable utilities and drivers targeting to specific platforms). Library can be used with various purposes include making of a custom music decoders for a media players and usage with a games.
 * Supports custom non-hardcoded WOPL banks and ability to build without of embedded banks
+* The project is focused on the behaviour accuracy compared to AIL, HMI SOS, DMX, Win9x drivers, etc. So, resulted sounding is majorly different from the original tool.
+* Support for the real-time MIDI playback.
+* Auto-Arpeggio functionality is disabled by default due to messy playback.
+* Supports OPL2 chips in addition to OPL3.
 
 # Tested on platforms
 * Linux GCC 4.8, 4.9, 5.4 / CLang
@@ -65,13 +69,21 @@ sudo make install
 * To compile for DOS via DJGPP on Linux, use `cmake/djgpp/djgpp-cmake.sh` script which a wrapper over CMake to pass DJGPP's stuff required for build
 
 # License
-The library is licensed under in it's parts LGPL 2.1+, GPL v2+, GPL v3+, and MIT.
-* Nuked OPL3 emulators are licensed under LGPL v2.1+.
-* DosBox OPL3 emulator is licensed under GPL v2+.
+The library is licensed under in it's parts LGPL 2.1+, LGPL 2+, GPL v2+, GPL v3+, MIT, BSD 3-Clause, and the Boost Software License 1.0. Some parts are in the public domain, and the embedded FM banks carry their own terms.
+* Nuked OPL3, Nuked OPL2 Lite, Nuked-OPL3-fast, Nuked CQM and ESFMu emulators are licensed under LGPL v2.1+.
+* YMF262-LLE and YM3812-LLE emulators are licensed under GPL v2+.
+* DosBox OPL2 and OPL3 emulators are licensed under GPL v2+.
+* MAME OPL2 emulator is licensed under GPL v2+.
+* JavaOPL3 emulator is licensed under LGPL v2.1+.
+* YMFM emulator is licensed under BSD 3-Clause.
+* Opal emulator is in the public domain.
 * Chip interfaces are licensed under LGPL v2.1+.
-* File Reader class and MIDI Sequencer is licensed under MIT.
+* File Reader class and MIDI Sequencer is licensed under MIT, except the XMIDI converter which is LGPL v2+.
 * WOPL reader and writer module is licensed under MIT.
+* The OPL2/OPL3 models library is licensed under MIT.
+* The pl_list container (src/structures) is licensed under the Boost Software License 1.0.
 * Other parts of library are licensed under GPLv3+.
+* The embedded FM banks carry their own notices where available, see `fm_banks_new/LICENSE-*.txt` and `fm_banks_new/greyzone/README.txt`.
 
 ## Available CMake options
 
@@ -184,7 +196,18 @@ To build that example you will need to have installed SDL2 library.
 * Add support of MIDI Format 2 files
 
 # Changelog
-## 1.6.2   dev
+## 1.6.3   dev
+ * Fixed several minor glitches (Thanks to [yumasansansan](https://github.com/yumasansansan) for contributions).
+ * Disabled the Fast Wavegen hack at the Nuked OPL3 emulator and actualised to the latest mainstream version.
+ * Fixed unstable playback on Windows via the terminal player tool.
+ * The adlmidi2 player tool now shares the same audio backend as the primary `adlmidiplay` tool.
+ * Fixed the incorrect reverb effect at the adlmidi2 player tool.
+
+## 1.6.2.1 2026-08-30
+ * Fixed misses of register writes problem at the LLE-OPL3 emulator (#318).
+ * Fixed build when default embedded banks database regeneration is enabled (#316).
+
+## 1.6.2   2026-08-24
  * Fixed the random stuck problem in the DOS version of the ADLMIDI player.
  * Added support for HMI and HMP files!
  * Added support for in-track (local) loops.
@@ -207,6 +230,7 @@ To build that example you will need to have installed SDL2 library.
  * Added `adl_setDeviceFilterMask()` public API to assign the device filter mask for the HMI/HMP/EMIDI tracks disabling/enabling.
  * Added handling of music files designed for the EMIDI standard from the Apogee Sound System. This feature must be enabled manually to avoid heuristics and possible conflicts.
  * Added `adl_setModeEMIDI()` public API to enable handling EMIDI specification events without conflicts to other formats.
+ * Added an ability to run the DosBox emulator in OPL2 mode.
 
 ## 1.6.1   2025-09-22
  * WinMM: Fixed random crash on waveOutOpen initialisation because of incorrect initialisation structure usage.

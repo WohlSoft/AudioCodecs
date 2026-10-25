@@ -249,6 +249,11 @@ WOPLFile *WOPL_LoadBankFromMem(void *mem, size_t length, int *error)
             return NULL;
         }
         version = toUint16LE(cursor);
+        if(version == 0)
+        {
+            SET_ERROR(WOPL_ERR_INVALID_VERSION);
+            return NULL;
+        }
         if(version  > wopl_latest_version)
         {
             SET_ERROR(WOPL_ERR_NEWER_VERSION);
@@ -361,6 +366,8 @@ int WOPL_LoadInstFromMem(WOPIFile *file, void *mem, size_t length)
         if(length < 2)
             return WOPL_ERR_UNEXPECTED_ENDING;
         version = toUint16LE(cursor);
+        if(version == 0)
+            return WOPL_ERR_INVALID_VERSION;
         if(version  > wopl_latest_version)
             return WOPL_ERR_NEWER_VERSION;
         GO_FORWARD(2);

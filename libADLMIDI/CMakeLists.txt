@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 3.2...4.0)
-project (libADLMIDI VERSION 1.6.2 LANGUAGES C CXX)
+project (libADLMIDI VERSION 1.6.3 LANGUAGES C CXX)
 
 include(GNUInstallDirs)
 include(CheckCCompilerFlag)
@@ -272,6 +272,9 @@ option(WITH_XMI2MID         "Build a XMI to MIDI converter" OFF)
 option(WITH_MIDIDUMP        "Build a MIDI dumper tool" OFF)
 option(EXAMPLE_SDL2_AUDIO   "Build also a simple SDL2 demo MIDI player" OFF)
 
+option(BUILD_NO_GREY_BANKS  "Build without embedding of grey-zone banks even they ara available" OFF)
+mark_as_advanced(BUILD_NO_GREY_BANKS)
+
 option(DEBUG_SONG_DUMP      "Enable debug dumps of all events from the loaded song into .dump.txt text file" OFF)
 option(DEBUG_TRACE_HMI_LOAD "Enable detailed debug print for the HMI loading" OFF)
 option(DEBUG_TRACE_TIME_CALCULATION "Enable detailed debug print for the timeline building" OFF)
@@ -281,6 +284,7 @@ if(WIN32)
 endif()
 
 option(ENABLE_ADDRESS_SANITIZER "Enable the Address Sanitizer GCC feature" OFF)
+option(ENABLE_UNDEFINED_BEHAVIOUR_SANITIZER "Enable the Undefined Behaviour Sanitizer GCC feature" OFF)
 
 if(NOT WIN32
    AND NOT VITA
@@ -299,7 +303,11 @@ endif()
 
 if(WITH_EMBEDDED_BANKS)
     if(NOT WITH_GENADLDATA OR "${GENADLDATA_CUSTOM_BANKLIST}" STREQUAL "")
-        set(ADLDATA_DATABASE "${libADLMIDI_SOURCE_DIR}/src/inst_db.cpp")
+        if(EXISTS "${libADLMIDI_SOURCE_DIR}/banks.ini" AND NOT BUILD_NO_GREY_BANKS)
+            set(ADLDATA_DATABASE "${libADLMIDI_SOURCE_DIR}/src/inst_db.cpp")
+        else()
+            set(ADLDATA_DATABASE "${libADLMIDI_SOURCE_DIR}/src/inst_db_no_grey.cpp")
+        endif()
     else()
         make_directory("${CMAKE_BINARY_DIR}/instdb")
         set(ADLDATA_DATABASE "${CMAKE_BINARY_DIR}/instdb/inst_db.cpp")
@@ -328,6 +336,12 @@ function(handle_options targetLib)
         target_compile_definitions(${targetLib} PRIVATE BWMIDI_DEBUG_TIME_CALCULATION)
     endif()
 
+    # Common files
+    target_sources(${targetLib} PRIVATE
+        ${libADLMIDI_SOURCE_DIR}/src/chips/common/ptr.hpp
+        ${libADLMIDI_SOURCE_DIR}/src/chips/common/mutex.hpp
+    )
+
     if(ADLMIDI_DOS)
         set(HAS_EMULATOR TRUE)
         target_sources(${targetLib} PRIVATE
@@ -340,7 +354,11 @@ function(handle_options targetLib)
         if(USE_DOSBOX_EMULATOR)
             set(HAS_EMULATOR TRUE)
             target_sources(${targetLib} PRIVATE
+                ${libADLMIDI_SOURCE_DIR}/src/chips/dosbox_opl2.cpp
+                ${libADLMIDI_SOURCE_DIR}/src/chips/dosbox_opl2.h
+                ${libADLMIDI_SOURCE_DIR}/src/chips/dosbox_opl3.h
                 ${libADLMIDI_SOURCE_DIR}/src/chips/dosbox_opl3.cpp
+                ${libADLMIDI_SOURCE_DIR}/src/chips/dosbox/dbopl.h
                 ${libADLMIDI_SOURCE_DIR}/src/chips/dosbox/dbopl.cpp
             )
         else()
@@ -525,6 +543,10 @@ function(handle_options targetLib)
     if(ENABLE_ADDRESS_SANITIZER)
         target_compile_options(${targetLib} PUBLIC -fsanitize=address)
         target_link_options(${targetLib} PUBLIC -fsanitize=address)
+    endif()
+    if(ENABLE_UNDEFINED_BEHAVIOUR_SANITIZER)
+        target_compile_options(${targetLib} PUBLIC -fsanitize=undefined)
+        target_link_options(${targetLib} PUBLIC -fsanitize=undefined)
     endif()
 endfunction()
 
@@ -767,10 +789,22 @@ if(WITH_UNIT_TESTS)
 endif()
 
 
+if(NOT ${PROJECT_VERSION_PATCH} STREQUAL "")
+    set(CHECK_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+else()
+    set(CHECK_VERSION_PATCH "0")
+endif()
+
+if(NOT ${PROJECT_VERSION_TWEAK} STREQUAL "")
+    set(CHECK_VERSION_TWEAK ${PROJECT_VERSION_TWEAK})
+else()
+    set(CHECK_VERSION_TWEAK "0")
+endif()
+
 # === Version check ====
 set(VERSION_CHECK_SOURCE "
     #include \"adlmidi.h\"
-    #if !(ADLMIDI_VERSION_MAJOR == ${PROJECT_VERSION_MAJOR} && ADLMIDI_VERSION_MINOR == ${PROJECT_VERSION_MINOR} && ADLMIDI_VERSION_PATCHLEVEL == ${PROJECT_VERSION_PATCH})
+    #if !(ADLMIDI_VERSION_MAJOR == ${PROJECT_VERSION_MAJOR} && ADLMIDI_VERSION_MINOR == ${PROJECT_VERSION_MINOR} && ADLMIDI_VERSION_PATCHLEVEL == ${CHECK_VERSION_PATCH} && ADLMIDI_VERSION_TWEAK == ${CHECK_VERSION_TWEAK})
     #error Project and source code version do not match!
     #endif")
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/version_check.c" "${VERSION_CHECK_SOURCE}")
