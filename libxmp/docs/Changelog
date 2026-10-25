@@ -1,6 +1,34 @@
 Stable versions
 ---------------
 
+4.7.4 (20261010):
+	Changes by Alice Rowan:
+	- Fix sample bounding in Imago Orpheus IMF loader.
+	- Remove maximum samples clamp in libxmp_load_epilogue (isn't
+	  protecting anything and causes leaks in the XM loader).
+
+4.7.3 (20260911):
+	Changes by Alice Rowan:
+	- Fix hangs caused by changing the player mode to an S3M/IT mode
+	  with a loaded module sequence beginning with pattern FF.
+	- Also fixed incomplete rescanning of modules in the same situation.
+	  xmp now fully scans modules with an empty or invalid first sequence,
+	  allowing later sequences in modules that begin with an end marker.
+	- Operations that rescan the module (changing XMP_PLAYER_MODE or
+	  XMP_FLAGS_VBLANK; xmp_scan_module) now reset the current sequence.
+	- Fix missing bounds check on Protracker 2 sample changes that could
+	  be reached by playing modules with instruments but no samples in
+	  Protracker mode.
+
+4.7.2 (20260726):
+	Changes by Alice Rowan:
+	- Fix loading Startrekker modules from memory/handle/callbacks.
+	Changes by Ozkan Sezer:
+	- Fix cmake build failure for certain Apple targets (e.g. tvOS.)
+	Other changes:
+	- Fix stb-vorbis floor1 inverse_db_table indexing (missing part
+	  of CVE-2019-13220 fix.)
+
 4.7.1 (20260704):
 	Changes by Alice Rowan:
 	- Add xmp_set_player(ctx, XMP_PLAYER_DEFPAN, 50) to relevant examples

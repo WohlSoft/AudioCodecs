@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.2...3.10)
-project(libxmp VERSION 4.7.1 LANGUAGES C)
+project(libxmp VERSION 4.7.4 LANGUAGES C)
 
 set(LIBXMP_DEFINES)
 set(LIBXMPLITE_DEFINES)
@@ -139,7 +139,15 @@ if(BUILD_SHARED)
         if(APPLE)
             set_property(TARGET xmp_shared APPEND_STRING PROPERTY
                          LINK_FLAGS " -Wl,-undefined,error")
+            if(NOT HAVE_CLANG)
+              set_property(TARGET xmp_shared APPEND_STRING PROPERTY
+                         LINK_FLAGS " -static-libgcc")
+            endif()
         elseif(NOT CMAKE_SYSTEM_NAME MATCHES "kOpenBSD.*|OpenBSD.*")
+            if(MINGW)
+              set_property(TARGET xmp_shared APPEND_STRING PROPERTY
+                           LINK_FLAGS " -static-libgcc")
+            endif()
             cmake_push_check_state()
             set(CMAKE_REQUIRED_FLAGS "-Wl,--no-undefined")
             check_c_compiler_flag("" HAVE_NO_UNDEFINED)
@@ -196,7 +204,15 @@ if(BUILD_SHARED)
             if(APPLE)
                 set_property(TARGET xmp_lite_shared APPEND_STRING PROPERTY
                              LINK_FLAGS " -Wl,-undefined,error")
+                if(NOT HAVE_CLANG)
+                  set_property(TARGET xmp_lite_shared APPEND_STRING PROPERTY
+                             LINK_FLAGS " -static-libgcc")
+                endif()
             elseif(NOT CMAKE_SYSTEM_NAME MATCHES "kOpenBSD.*|OpenBSD.*")
+                if(MINGW)
+                  set_property(TARGET xmp_lite_shared APPEND_STRING PROPERTY
+                               LINK_FLAGS " -static-libgcc")
+                endif()
                 cmake_push_check_state()
                 set(CMAKE_REQUIRED_FLAGS "-Wl,--no-undefined")
                 check_c_compiler_flag("" HAVE_NO_UNDEFINED)
