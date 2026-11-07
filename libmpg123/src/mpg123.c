@@ -291,7 +291,7 @@ static void controlled_drain(void)
 
 void safe_exit(int code)
 {
-	char *dummy, *dammy;
+	const char *dummy, *dammy;
 
 	dump_close();
 	if(!code)
@@ -503,7 +503,7 @@ static void set_httpauth_file(char *arg, topt *opts)
 		// realistic limits for aith are 255:255.
 		if(rdb > 0 && rdb < sizeof(buf))
 		{
-			buf[sizeof(buf)-1] = 0;
+			buf[rdb] = 0; // terminate string in case of missing EOL
 			for(size_t i=0; i<sizeof(buf); ++i)
 			{
 				if(buf[i] == '\r' || buf[i] == '\n' || buf[i] == 0)
@@ -1323,7 +1323,7 @@ int main(int sys_argc, char ** sys_argv)
 
 	while ((fname = get_next_file()))
 	{
-		char *dirname, *filename;
+		const char *dirname, *filename;
 		int newdir;
 		/* skip_tracks includes the previous one. */
 		if(skip_tracks) --skip_tracks;
